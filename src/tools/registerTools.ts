@@ -2,6 +2,7 @@ import path from "node:path";
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { z } from "zod";
 import type { AppConfig } from "../config.js";
+import { reindexDryRun } from "../indexing/dryRun.js";
 import { GeminiEmbeddingProvider } from "../providers/gemini.js";
 
 function asJsonText(value: unknown) {
@@ -28,8 +29,16 @@ export function registerTools(server: McpServer, config: AppConfig): void {
         projectPath,
         indexPath: path.join(projectPath, config.indexDirName),
         status: "scaffolded",
-        implemented: ["mcp_server", "gemini_embedding_provider", "config"],
-        pending: ["file_scanner", "chunker", "vector_store", "hybrid_ranker"],
+        implemented: [
+          "mcp_server",
+          "gemini_embedding_provider",
+          "config",
+          "file_scanner",
+          "chunker",
+          "reindex_dry_run",
+        ],
+        pending: ["persistent_index", "vector_store", "hybrid_ranker"],
+        indexing: config.indexing,
         gemini: {
           baseUrl: config.gemini.baseUrl,
           model: config.gemini.model,
@@ -61,6 +70,47 @@ export function registerTools(server: McpServer, config: AppConfig): void {
   );
 
   server.registerTool(
+    "repo_reindex",
+    {
+      title: "Repo Reindex",
+      description: "Scan a project and report planned indexing work. Only dry-run mode is implemented in Phase 1.",
+      inputSchema: {
+        project_path: z.string().optional(),
+        dry_run: z.boolean().default(true),
+        max_file_bytes: z.number().int().positive().optional(),
+        target_chunk_chars: z.number().int().positive().optional(),
+        chunk_overlap_chars: z.number().int().nonnegative().optional(),
+        max_chunks_per_file: z.number().int().positive().optional(),
+      },
+    },
+    async ({
+      project_path,
+      dry_run,
+      max_file_bytes,
+      target_chunk_chars,
+      chunk_overlap_chars,
+      max_chunks_per_file,
+    }) => {
+      if (!dry_run) {
+        return asJsonText({
+          status: "not_implemented_yet",
+          message: "Persistent indexing is planned for Phase 2. Run with dry_run=true for Phase 1.",
+        });
+      }
+
+      const result = await reindexDryRun({
+        projectPath: path.resolve(project_path || config.defaultProjectPath),
+        maxFileBytes: max_file_bytes ?? config.indexing.maxFileBytes,
+        targetChunkChars: target_chunk_chars ?? config.indexing.targetChunkChars,
+        chunkOverlapChars: chunk_overlap_chars ?? config.indexing.chunkOverlapChars,
+        maxChunksPerFile: max_chunks_per_file ?? config.indexing.maxChunksPerFile,
+      });
+
+      return asJsonText(result);
+    },
+  );
+
+  server.registerTool(
     "repo_semantic_search",
     {
       title: "Repo Semantic Search",
@@ -83,4 +133,3 @@ export function registerTools(server: McpServer, config: AppConfig): void {
     },
   );
 }
-

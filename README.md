@@ -46,6 +46,7 @@ env = {
 
 - `repo_index_status`: 查看專案、索引路徑、provider 設定與目前實作狀態。
 - `gemini_embedding_probe`: 發一個 embedding request，測官方 Gemini 或中轉站是否相容。
+- `repo_reindex`: 掃描專案並回報 dry-run 索引計畫、chunks 與 skipped files。
 - `repo_semantic_search`: 預留的語義搜尋工具，目前會回傳 scaffold 狀態。
 
 ## Documentation

@@ -21,6 +21,8 @@
 
 ## Phase 1: File Scanner + Chunker
 
+狀態：已完成 dry-run MVP。
+
 目標：能掃描 repo 並產生穩定 chunks。
 
 工作項：
