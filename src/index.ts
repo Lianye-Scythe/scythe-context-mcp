@@ -14,7 +14,7 @@ const server = new McpServer(
   },
   {
     instructions:
-      "Repo Beacon is a local code-context MCP server. Use repo_index_status first, then repo_semantic_search for exploratory code lookup. Semantic search is currently scaffolded while indexing is being implemented.",
+      "Repo Beacon is a local code-context MCP server. Use repo_index_status first. If the index is missing or stale, run repo_reindex with dry_run=false; add index_embeddings=true only when semantic vectors are needed. Use repo_semantic_search for hybrid code lookup and repo_related_files to expand symbols, imports, and reverse imports from a matched file. Respect max_context_chars to keep returned snippets within the task budget.",
   },
 );
 

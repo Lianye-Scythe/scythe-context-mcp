@@ -47,7 +47,7 @@ env = {
 - `repo_index_status`: 查看專案、索引路徑、provider 設定與目前實作狀態。
 - `gemini_embedding_probe`: 發一個 embedding request，測官方 Gemini 或中轉站是否相容。
 - `repo_reindex`: 掃描專案；`dry_run=true` 回報計畫，`dry_run=false` 寫入 file/chunk metadata 到 `.repo-beacon/index.sqlite`。只有設定 `index_embeddings=true` 時才會呼叫 Gemini 寫入向量，並受 `max_embedding_chunks` 限制。
-- `repo_semantic_search`: 對已建立 embeddings 的本機索引做 hybrid 搜尋，回傳檔案、行號、score/distance 與 snippet；可用 `mode=semantic` 排查純向量結果。
+- `repo_semantic_search`: 對已建立 embeddings 的本機索引做 hybrid 搜尋，回傳檔案、行號、score/distance 與 snippet；可用 `mode=semantic` 排查純向量結果。支援 `max_context_chars` 控制整次回傳的 snippet 總字元數，預設 12000。
 - `repo_related_files`: 對已索引檔案回傳該檔 symbols、imports，以及哪些檔案 import 它。適合在 `repo_semantic_search` 找到候選檔案後展開上下文。
 
 ## Documentation

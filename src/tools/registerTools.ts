@@ -164,10 +164,11 @@ export function registerTools(server: McpServer, config: AppConfig): void {
         project_path: z.string().optional(),
         max_results: z.number().int().positive().max(50).default(8),
         max_snippet_chars: z.number().int().positive().max(4000).default(1200),
+        max_context_chars: z.number().int().positive().max(100000).default(12000),
         mode: z.enum(["hybrid", "semantic"]).default("hybrid"),
       },
     },
-    async ({ query, project_path, max_results, max_snippet_chars, mode }) => {
+    async ({ query, project_path, max_results, max_snippet_chars, max_context_chars, mode }) => {
       const projectPath = path.resolve(project_path || config.defaultProjectPath);
       const dbPath = path.join(projectPath, config.indexDirName, "index.sqlite");
       if (!fs.existsSync(dbPath)) {
@@ -203,13 +204,16 @@ export function registerTools(server: McpServer, config: AppConfig): void {
               maxSnippetChars: max_snippet_chars,
             });
 
+      const formatted = formatSearchResults(query, rawResults, { maxContextChars: max_context_chars });
+
       return asJsonText({
         query,
         projectPath,
         dbPath,
         dimensions,
         mode,
-        results: formatSearchResults(query, rawResults),
+        results: formatted.results,
+        context: formatted.summary,
         resultCount: rawResults.length,
       });
     },

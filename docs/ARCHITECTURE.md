@@ -236,6 +236,7 @@ Codex 使用情境下，結果要比一般 RAG 更偏向「可操作」：
 - 返回短片段。
 - 返回為何匹配。
 - 返回建議 grep keywords。
+- 返回 context budget summary，並在超出 `max_context_chars` 時截斷 snippets。
 
 ## 與 Augment / fast-context-mcp 的差異
 
