@@ -71,6 +71,19 @@ GEMINI_BASE_URL=https://proxy.example.com/v1beta
 GEMINI_API_KEY=proxy-key
 ```
 
+`GEMINI_BASE_URL` 會先正規化，支援下列形式：
+
+```text
+https://proxy.example.com
+https://proxy.example.com/
+https://proxy.example.com/v1beta
+https://proxy.example.com/v1beta/
+https://proxy.example.com/gemini
+https://proxy.example.com/gemini/v1beta/
+```
+
+如果 URL 最後不是 `v1` 或 `v1beta`，Repo Beacon 會自動補上 `/v1beta`。如果中轉站已經給完整 `/v1beta` 或 `/v1`，則不會重複追加。
+
 如果中轉站使用 Bearer token：
 
 ```env
@@ -183,7 +196,7 @@ gemini_embedding_probe({ "text": "find code that handles payment logging" })
 
 如果失敗，優先檢查：
 
-1. `GEMINI_BASE_URL` 是否已包含 `/v1beta`。
+1. `GEMINI_BASE_URL` 是否是正確中轉站根路徑；可帶或不帶 `/v1beta`。
 2. 中轉站是否真的支援 `models/{model}:embedContent`。
 3. auth 是 header、Bearer 還是 query。
 4. 中轉站是否支援 `output_dimensionality`。

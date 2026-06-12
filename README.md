@@ -55,3 +55,10 @@ env = {
 - [Development Plan](docs/DEVELOPMENT_PLAN.md)
 - [Gemini Compatibility](docs/GEMINI_COMPATIBILITY.md)
 - [Tech Stack](docs/TECH_STACK.md)
+
+## Local-only Files
+
+本地參考資料與私密 API 檔放在 `local/`，此目錄被 `.gitignore` 排除，不會進 git。建議：
+
+- `local/references/`: 手動保存的文章、HTML、截圖等參考資料。
+- `local/secrets/`: API key、中轉站測試檔、私密設定。

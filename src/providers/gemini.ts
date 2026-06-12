@@ -10,8 +10,25 @@ function trimTrailingSlash(value: string): string {
   return value.replace(/\/+$/, "");
 }
 
+export function normalizeGeminiBaseUrl(baseUrl: string): string {
+  const url = new URL(baseUrl);
+  const pathParts = url.pathname.split("/").filter(Boolean);
+  const lastPart = pathParts.at(-1);
+  if (lastPart !== "v1" && lastPart !== "v1beta") {
+    pathParts.push("v1beta");
+  }
+  url.pathname = `/${pathParts.join("/")}`;
+  url.search = "";
+  url.hash = "";
+  return trimTrailingSlash(url.toString());
+}
+
 function modelResource(model: string): string {
   return model.startsWith("models/") ? model : `models/${model}`;
+}
+
+export function buildGeminiEndpoint(baseUrl: string, model: string, method: "embedContent" | "batchEmbedContents"): URL {
+  return new URL(`${normalizeGeminiBaseUrl(baseUrl)}/${modelResource(model)}:${method}`);
 }
 
 function formatEmbeddingText(input: EmbeddingRequest): string {
@@ -75,9 +92,7 @@ export class GeminiEmbeddingProvider implements EmbeddingProvider {
       throw new Error("GEMINI_API_KEY is required for embedding calls");
     }
 
-    const url = new URL(
-      `${trimTrailingSlash(this.config.baseUrl)}/${modelResource(this.config.model)}:${method}`,
-    );
+    const url = buildGeminiEndpoint(this.config.baseUrl, this.config.model, method);
     const headers: Record<string, string> = {
       "content-type": "application/json",
     };
@@ -120,4 +135,3 @@ export class GeminiEmbeddingProvider implements EmbeddingProvider {
     return vectors;
   }
 }
-
