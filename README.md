@@ -2,7 +2,7 @@
 
 Repo Beacon MCP 是給 Codex App / Codex CLI 使用的本機程式碼上下文引擎。目標是提供類似 Augment Context Engine / fast-context-mcp 的能力，但資料與索引留在本機，embedding provider 可接官方 Gemini API 或第三方 v1beta 中轉站。
 
-目前狀態：已具備 repo 掃描、chunk、SQLite/sqlite-vec metadata 與 embedding index、語義搜尋、FTS keyword search、hybrid ranking。下一階段是 symbol graph、related files 與更完整的 context formatting。
+目前狀態：已具備 repo 掃描、chunk、SQLite/sqlite-vec metadata 與 embedding index、語義搜尋、FTS keyword search、hybrid ranking、輕量 symbol/dependency graph 與 related-file lookup。下一階段是 context budget、結果壓縮與更完整的 Codex workflow polish。
 
 ## Quick Start
 
@@ -48,6 +48,7 @@ env = {
 - `gemini_embedding_probe`: 發一個 embedding request，測官方 Gemini 或中轉站是否相容。
 - `repo_reindex`: 掃描專案；`dry_run=true` 回報計畫，`dry_run=false` 寫入 file/chunk metadata 到 `.repo-beacon/index.sqlite`。只有設定 `index_embeddings=true` 時才會呼叫 Gemini 寫入向量，並受 `max_embedding_chunks` 限制。
 - `repo_semantic_search`: 對已建立 embeddings 的本機索引做 hybrid 搜尋，回傳檔案、行號、score/distance 與 snippet；可用 `mode=semantic` 排查純向量結果。
+- `repo_related_files`: 對已索引檔案回傳該檔 symbols、imports，以及哪些檔案 import 它。適合在 `repo_semantic_search` 找到候選檔案後展開上下文。
 
 ## Documentation
 

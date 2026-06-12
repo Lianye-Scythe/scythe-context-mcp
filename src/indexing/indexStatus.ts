@@ -1,5 +1,6 @@
 import fs from "node:fs";
 import Database from "better-sqlite3";
+import type { Database as SqliteDatabase } from "better-sqlite3";
 
 export interface DetailedIndexStatus {
   exists: boolean;
@@ -7,6 +8,8 @@ export interface DetailedIndexStatus {
   files: number;
   chunks: number;
   ftsRows: number;
+  symbols: number;
+  dependencies: number;
   embeddingSets: Array<{
     id: number;
     provider: string;
@@ -14,6 +17,18 @@ export interface DetailedIndexStatus {
     dimensions: number;
     embeddings: number;
   }>;
+}
+
+function tableExists(db: SqliteDatabase, name: string): boolean {
+  const row = db
+    .prepare("select 1 as existsFlag from sqlite_master where type in ('table', 'virtual table') and name = ?")
+    .get(name) as { existsFlag: number } | undefined;
+  return Boolean(row);
+}
+
+function countTableRows(db: SqliteDatabase, name: string): number {
+  if (!tableExists(db, name)) return 0;
+  return (db.prepare(`select count(*) as count from ${name}`).get() as { count: number }).count;
 }
 
 export function readDetailedIndexStatus(dbPath: string): DetailedIndexStatus {
@@ -24,17 +39,22 @@ export function readDetailedIndexStatus(dbPath: string): DetailedIndexStatus {
       files: 0,
       chunks: 0,
       ftsRows: 0,
+      symbols: 0,
+      dependencies: 0,
       embeddingSets: [],
     };
   }
 
   const db = new Database(dbPath, { readonly: true });
   try {
-    const files = (db.prepare("select count(*) as count from files").get() as { count: number }).count;
-    const chunks = (db.prepare("select count(*) as count from chunks").get() as { count: number }).count;
-    const ftsRows = (db.prepare("select count(*) as count from chunk_fts").get() as { count: number }).count;
-    const embeddingSets = db
-      .prepare(`
+    const files = countTableRows(db, "files");
+    const chunks = countTableRows(db, "chunks");
+    const ftsRows = countTableRows(db, "chunk_fts");
+    const symbols = countTableRows(db, "file_symbols");
+    const dependencies = countTableRows(db, "file_dependencies");
+    const embeddingSets = tableExists(db, "embedding_sets")
+      ? (db
+          .prepare(`
         select embedding_sets.id,
                embedding_sets.provider,
                embedding_sets.model,
@@ -45,11 +65,11 @@ export function readDetailedIndexStatus(dbPath: string): DetailedIndexStatus {
         group by embedding_sets.id
         order by embedding_sets.id
       `)
-      .all() as DetailedIndexStatus["embeddingSets"];
+          .all() as DetailedIndexStatus["embeddingSets"])
+      : [];
 
-    return { exists: true, dbPath, files, chunks, ftsRows, embeddingSets };
+    return { exists: true, dbPath, files, chunks, ftsRows, symbols, dependencies, embeddingSets };
   } finally {
     db.close();
   }
 }
-

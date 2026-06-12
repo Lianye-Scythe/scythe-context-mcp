@@ -52,7 +52,7 @@ repo_index_status(project_path)
 
 ## Phase 2: Local Storage
 
-狀態：sqlite-vec 載入 spike、persistent schema 初始化、file/chunk metadata 寫入、embedding writer 已完成。語義查詢 API 尚未實作。
+狀態：已完成。
 
 目標：能把檔案、chunk、embedding metadata 存到本機。
 
@@ -87,6 +87,7 @@ MVP 儲存選型：
 - `repo_reindex(dry_run=false, index_embeddings=true)` 會顯式呼叫 embedding provider，寫入 `embeddings` 與 `vec_embeddings_1536`。
 - `max_embedding_chunks` 限制單次 embedding 工作量，避免成本失控。
 - batch embedding 失敗時 fallback 到逐筆 embedding。
+- `file_symbols` 與 `file_dependencies` 已加入 schema，與 chunk/embedding cache 解耦。
 
 驗收：
 
@@ -97,7 +98,7 @@ MVP 儲存選型：
 
 ## Phase 3: Semantic Search + Minimal Keyword
 
-狀態：semantic vector lookup、keyword search、hybrid ranker 已完成；symbol graph 尚未實作。
+狀態：已完成。
 
 目標：`repo_semantic_search` 真正返回相關程式碼片段。
 
@@ -144,8 +145,11 @@ MVP 儲存選型：
 - index missing 時回傳可修復訊息。
 - SQLite FTS5 keyword search。
 - hybrid ranker 合併 semantic/keyword 結果。
+- result formatter 回傳 `matchReason` 與 `grepKeywords`。
 
 ## Phase 4: Advanced Hybrid Search
+
+狀態：MVP 已完成。
 
 目標：改善 precision，避免純 embedding 漏掉符號名稱。
 
@@ -160,8 +164,7 @@ MVP 儲存選型：
 工具：
 
 ```text
-repo_hybrid_search(query, project_path, max_results)
-repo_grep_suggest(query, project_path)
+repo_semantic_search(query, project_path, max_results, mode="hybrid")
 ```
 
 驗收：
@@ -171,19 +174,24 @@ repo_grep_suggest(query, project_path)
 
 ## Phase 5: Symbol Graph
 
+狀態：輕量 MVP 已完成；tree-sitter / deeper graph 尚未實作。
+
 目標：接近 context engine 的「關係理解」。
 
 工作項：
 
-1. 解析 imports/exports。
-2. 記錄 function/class/interface symbols。
-3. 建立 file dependency graph。
-4. 查詢時加入 related files。
-5. 支援從 router -> service -> model 的鏈路返回。
+1. 解析 imports/exports。已完成常見 TS/JS/Python/Go/Rust 的保守 regex 抽取。
+2. 記錄 function/class/interface symbols。已完成常見 declarations。
+3. 建立 file dependency graph。已完成 relative import resolution 與 reverse-import 查詢。
+4. 查詢時加入 related files。已完成 `repo_related_files`，採按需展開。
+5. 支援從 router -> service -> model 的鏈路返回。後續加入多跳 graph traversal。
 
 驗收：
 
-- 查詢 API 行為時，同時返回 route、handler、service、schema/test。
+- `repo_reindex(dry_run=false)` 會寫入 symbols/dependencies 統計。
+- `repo_index_status` 會回報 symbol/dependency rows。
+- `repo_related_files(path)` 會返回該檔 symbols、imports、importedBy。
+- 查詢 API 行為時，同時返回 route、handler、service、schema/test。後續多跳 traversal 完成後驗收。
 
 ## Phase 6: Codex Workflow Polish
 

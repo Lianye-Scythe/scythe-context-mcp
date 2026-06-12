@@ -8,6 +8,7 @@ import { indexMissingEmbeddings } from "../indexing/embeddingWriter.js";
 import { searchHybrid } from "../indexing/hybridSearch.js";
 import { readDetailedIndexStatus } from "../indexing/indexStatus.js";
 import { persistentReindexMetadata } from "../indexing/indexWriter.js";
+import { readRelatedFiles } from "../indexing/relatedFiles.js";
 import { formatSearchResults, type FormattableSearchResult } from "../indexing/resultFormat.js";
 import { searchByVector } from "../indexing/semanticSearch.js";
 import { GeminiEmbeddingProvider } from "../providers/gemini.js";
@@ -49,8 +50,10 @@ export function registerTools(server: McpServer, config: AppConfig): void {
           "persistent_metadata_index",
           "embedding_index_writer",
           "semantic_vector_search",
+          "symbol_graph",
+          "related_files",
         ],
-        pending: ["symbol_graph", "related_files", "context_formatting"],
+        pending: ["context_budgeting"],
         indexing: config.indexing,
         gemini: {
           baseUrl: config.gemini.baseUrl,
@@ -208,6 +211,41 @@ export function registerTools(server: McpServer, config: AppConfig): void {
         mode,
         results: formatSearchResults(query, rawResults),
         resultCount: rawResults.length,
+      });
+    },
+  );
+
+  server.registerTool(
+    "repo_related_files",
+    {
+      title: "Repo Related Files",
+      description: "Show symbols, imports, and reverse imports for an indexed file.",
+      inputSchema: {
+        path: z.string().min(1),
+        project_path: z.string().optional(),
+        max_results: z.number().int().positive().max(100).default(24),
+      },
+    },
+    async ({ path: filePath, project_path, max_results }) => {
+      const projectPath = path.resolve(project_path || config.defaultProjectPath);
+      const dbPath = path.join(projectPath, config.indexDirName, "index.sqlite");
+      if (!fs.existsSync(dbPath)) {
+        return asJsonText({
+          path: filePath,
+          projectPath,
+          status: "index_missing",
+          message: "Run repo_reindex with dry_run=false before related file lookup.",
+        });
+      }
+
+      return asJsonText({
+        projectPath,
+        dbPath,
+        ...readRelatedFiles({
+          dbPath,
+          filePath,
+          maxResults: max_results,
+        }),
       });
     },
   );

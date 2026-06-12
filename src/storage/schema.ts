@@ -36,6 +36,22 @@ export interface EmbeddingRecordInput {
   embeddingSetId: number;
 }
 
+export interface SymbolRecordInput {
+  fileId: number;
+  name: string;
+  kind: string;
+  line: number;
+  signature: string;
+  exported: boolean;
+}
+
+export interface DependencyRecordInput {
+  fileId: number;
+  specifier: string;
+  resolvedPath?: string | null;
+  line: number;
+}
+
 export function vectorTableName(dimensions: number): string {
   if (!Number.isInteger(dimensions) || dimensions <= 0) {
     throw new Error("Vector dimensions must be a positive integer");
@@ -103,7 +119,32 @@ export function initializeStorageSchema(db: Database, options: StorageSchemaOpti
       unique(chunk_id, embedding_set_id)
     );
 
+    create table if not exists file_symbols (
+      id integer primary key,
+      file_id integer not null references files(id) on delete cascade,
+      name text not null,
+      kind text not null,
+      line integer not null,
+      signature text not null,
+      exported integer not null default 0
+    );
+
+    create index if not exists idx_file_symbols_name on file_symbols(name);
+    create index if not exists idx_file_symbols_file_id on file_symbols(file_id);
+
+    create table if not exists file_dependencies (
+      id integer primary key,
+      file_id integer not null references files(id) on delete cascade,
+      specifier text not null,
+      resolved_path text,
+      line integer not null
+    );
+
+    create index if not exists idx_file_dependencies_file_id on file_dependencies(file_id);
+    create index if not exists idx_file_dependencies_resolved_path on file_dependencies(resolved_path);
+
     insert or ignore into schema_migrations(version) values (1);
+    insert or ignore into schema_migrations(version) values (2);
   `);
 
   const tableName = vectorTableName(options.vectorDimensions);
@@ -199,4 +240,36 @@ export function getOrCreateEmbeddingRecord(db: Database, input: EmbeddingRecordI
     .prepare("select id from embeddings where chunk_id = ? and embedding_set_id = ?")
     .get(input.chunkId, input.embeddingSetId) as { id: number };
   return row.id;
+}
+
+export function replaceSymbolGraphForFile(
+  db: Database,
+  fileId: number,
+  symbols: SymbolRecordInput[],
+  dependencies: DependencyRecordInput[],
+): void {
+  db.prepare("delete from file_symbols where file_id = ?").run(fileId);
+  db.prepare("delete from file_dependencies where file_id = ?").run(fileId);
+
+  const insertSymbol = db.prepare(`
+    insert into file_symbols(file_id, name, kind, line, signature, exported)
+    values (@fileId, @name, @kind, @line, @signature, @exported)
+  `);
+  for (const symbol of symbols) {
+    insertSymbol.run({
+      ...symbol,
+      exported: symbol.exported ? 1 : 0,
+    });
+  }
+
+  const insertDependency = db.prepare(`
+    insert into file_dependencies(file_id, specifier, resolved_path, line)
+    values (@fileId, @specifier, @resolvedPath, @line)
+  `);
+  for (const dependency of dependencies) {
+    insertDependency.run({
+      ...dependency,
+      resolvedPath: dependency.resolvedPath ?? null,
+    });
+  }
 }

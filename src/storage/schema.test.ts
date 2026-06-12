@@ -24,6 +24,8 @@ describe("storage schema", () => {
           "chunks",
           "embedding_sets",
           "embeddings",
+          "file_dependencies",
+          "file_symbols",
           "files",
           "schema_migrations",
           "vec_embeddings_1536",

@@ -42,13 +42,15 @@ flowchart TD
   C --> D["Index manager"]
   D --> E["File scanner"]
   D --> F["Chunker"]
-  D --> G["Embedding provider"]
-  G --> H["Gemini official API or v1beta proxy"]
-  D --> I["Local vector store"]
-  D --> J["Keyword index / rg"]
+  D --> G["Symbol/dependency extractor"]
+  D --> H["Embedding provider"]
+  H --> I["Gemini official API or v1beta proxy"]
+  D --> J["SQLite metadata + sqlite-vec + FTS5"]
   C --> K["Hybrid ranker"]
-  K --> L["Result formatter"]
-  L --> A
+  C --> L["Related-file lookup"]
+  K --> M["Result formatter"]
+  L --> M
+  M --> A
 ```
 
 ## 模組分層
@@ -68,15 +70,14 @@ flowchart TD
 
 - `repo_index_status`
 - `gemini_embedding_probe`
+- `repo_reindex`
 - `repo_semantic_search`
+- `repo_related_files`
 
 後續 tools：
 
-- `repo_reindex`
-- `repo_hybrid_search`
 - `repo_open_ranges`
 - `repo_grep_suggest`
-- `repo_related_files`
 
 ### Config Layer
 
@@ -104,8 +105,6 @@ flowchart TD
 
 ### Index Manager
 
-下一階段新增。
-
 職責：
 
 - 判斷索引是否過期。
@@ -113,10 +112,10 @@ flowchart TD
 - 增量更新 chunk 和 vector。
 - 控制 batch embedding。
 - 控制併發與 rate limit。
+- 每次 reindex 重建單檔 symbol/dependency metadata。
+- 對未變更 chunks 保留 row id，避免重算 embeddings。
 
 ### File Scanner
-
-下一階段新增。
 
 候選規則：
 
@@ -126,8 +125,6 @@ flowchart TD
 - 可用 allow/deny glob 擴充。
 
 ### Chunker
-
-下一階段新增。
 
 初期策略：
 
@@ -141,6 +138,15 @@ flowchart TD
 - tree-sitter 依 function/class/module 切分。
 - 對大型檔案建立 summary chunk。
 - 記錄 imports/exports/symbols。
+
+### Symbol Graph
+
+目前採用輕量 regex extractor，抽取常見 TS/JS/Python/Go/Rust 的 declarations 與 imports：
+
+- `file_symbols`: name、kind、line、signature、exported。
+- `file_dependencies`: raw specifier、resolved relative path、line。
+
+這層刻意獨立於 chunk/embedding storage，升級 extractor 或之後換成 tree-sitter 時，不會破壞既有 embedding cache。查詢上先提供 `repo_related_files`，讓 Codex 在搜尋命中後按需展開 imports / reverse imports，而不是每次搜尋都塞入大量相關檔案。
 
 ### Storage Layer
 
@@ -190,8 +196,25 @@ chunks(
 embeddings(
   chunk_id integer not null,
   embedding_set_id integer not null,
-  vector blob not null,
   primary key(chunk_id, embedding_set_id)
+);
+
+file_symbols(
+  id integer primary key,
+  file_id integer not null,
+  name text not null,
+  kind text not null,
+  line integer not null,
+  signature text not null,
+  exported integer not null
+);
+
+file_dependencies(
+  id integer primary key,
+  file_id integer not null,
+  specifier text not null,
+  resolved_path text,
+  line integer not null
 );
 ```
 

@@ -4,6 +4,7 @@ import path from "node:path";
 import Database from "better-sqlite3";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import { persistentReindexMetadata } from "./indexWriter.js";
+import { readRelatedFiles } from "./relatedFiles.js";
 import { vectorTableName } from "../storage/schema.js";
 
 let tempDir: string;
@@ -174,5 +175,51 @@ describe("persistentReindexMetadata", () => {
     } finally {
       verifyDb.close();
     }
+  });
+
+  it("persists symbols, dependencies, and reverse imports", async () => {
+    await fs.mkdir(path.join(tempDir, "src"));
+    await fs.writeFile(
+      path.join(tempDir, "src", "helper.ts"),
+      "export function helper() {\n  return 1;\n}\n",
+    );
+    await fs.writeFile(
+      path.join(tempDir, "src", "service.ts"),
+      'import { helper } from "./helper";\nexport class Service {\n  value = helper();\n}\n',
+    );
+
+    const metadata = await persistentReindexMetadata({
+      projectPath: tempDir,
+      indexDirName: ".repo-beacon",
+      vectorDimensions: 1536,
+      maxFileBytes: 2048,
+      targetChunkChars: 100,
+      chunkOverlapChars: 0,
+      maxChunksPerFile: 10,
+    });
+
+    expect(metadata.stats.symbols).toBe(2);
+    expect(metadata.stats.dependencies).toBe(1);
+
+    const helperRelations = readRelatedFiles({
+      dbPath: metadata.dbPath,
+      filePath: "src/helper.ts",
+      maxResults: 10,
+    });
+    const serviceRelations = readRelatedFiles({
+      dbPath: metadata.dbPath,
+      filePath: "src/service.ts",
+      maxResults: 10,
+    });
+
+    expect(helperRelations.symbols).toEqual([
+      expect.objectContaining({ name: "helper", kind: "function", exported: true }),
+    ]);
+    expect(helperRelations.importedBy).toEqual([
+      expect.objectContaining({ path: "src/service.ts", specifier: "./helper" }),
+    ]);
+    expect(serviceRelations.imports).toEqual([
+      expect.objectContaining({ specifier: "./helper", resolvedPath: "src/helper.ts" }),
+    ]);
   });
 });
