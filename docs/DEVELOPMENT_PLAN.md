@@ -52,7 +52,7 @@ repo_index_status(project_path)
 
 ## Phase 2: Local Storage
 
-狀態：sqlite-vec 載入 spike 已完成，persistent schema 尚未實作。
+狀態：sqlite-vec 載入 spike 與 persistent schema 初始化已完成，embedding 寫入流程尚未實作。
 
 目標：能把檔案、chunk、embedding metadata 存到本機。
 
@@ -74,6 +74,15 @@ MVP 儲存選型：
 7. `embedBatch` 不支援時 fallback 到逐筆 `embedContent`。
 8. 加入 embedding rate limit 與 batch size 設定。
 9. sqlite-vec rowid 寫入使用 `BigInt`，避免 better-sqlite3 綁定成非整數型別。
+
+已完成：
+
+- SQLite metadata schema。
+- dimension-specific sqlite-vec virtual table，例如 `vec_embeddings_1536`。
+- file upsert。
+- chunk insert de-duplication。
+- embedding set de-duplication。
+- embedding metadata id 與 sqlite-vec rowid 的連結測試。
 
 驗收：
 

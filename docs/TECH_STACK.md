@@ -121,4 +121,4 @@ Phase 3 search：
 
 ## Recommendation
 
-Phase 1 dry-run scanner/chunker 已完成。`better-sqlite3 + sqlite-vec` 載入 spike 也已完成，可以進入 Phase 2 的 schema/migration 與 persistent index 實作。
+Phase 1 dry-run scanner/chunker 已完成。`better-sqlite3 + sqlite-vec` 載入 spike 與 schema 初始化也已完成，可以進入 Phase 2 的 persistent index 寫入流程。
