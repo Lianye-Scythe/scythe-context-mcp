@@ -38,7 +38,7 @@ export function registerTools(server: McpServer, config: AppConfig): void {
         projectPath,
         indexPath: path.join(projectPath, config.indexDirName),
         index: readDetailedIndexStatus(dbPath),
-        status: "scaffolded",
+        status: "usable_mvp",
         implemented: [
           "mcp_server",
           "gemini_embedding_provider",
@@ -52,8 +52,9 @@ export function registerTools(server: McpServer, config: AppConfig): void {
           "semantic_vector_search",
           "symbol_graph",
           "related_files",
+          "context_budgeting",
         ],
-        pending: ["context_budgeting"],
+        pending: ["context_packer", "multi_hop_related_files", "tree_sitter_symbols"],
         indexing: config.indexing,
         gemini: {
           baseUrl: config.gemini.baseUrl,
@@ -89,7 +90,7 @@ export function registerTools(server: McpServer, config: AppConfig): void {
     "repo_reindex",
     {
       title: "Repo Reindex",
-      description: "Scan a project and report planned indexing work. Only dry-run mode is implemented in Phase 1.",
+      description: "Scan a project, write metadata, and optionally index embeddings.",
       inputSchema: {
         project_path: z.string().optional(),
         dry_run: z.boolean().default(true),

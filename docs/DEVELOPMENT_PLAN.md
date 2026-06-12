@@ -195,7 +195,7 @@ repo_semantic_search(query, project_path, max_results, mode="hybrid")
 
 ## Phase 6: Codex Workflow Polish
 
-狀態：context budget MVP 已完成；server instructions / AGENTS.md 尚未完成。
+狀態：context budget、server instructions、AGENTS.md 已完成；context packer 尚未完成。
 
 目標：讓 Codex 更穩定地使用工具。
 

@@ -116,7 +116,7 @@ Phase 3 search：
 
 | Risk | Impact | Mitigation |
 | --- | --- | --- |
-| 第三方 Gemini 中轉站不支援 batch | 索引慢或失敗 | provider capability cache + 單筆 fallback |
+| 第三方 Gemini 中轉站不支援 batch | 索引變慢 | embedding writer 已有單筆 fallback；後續可加 provider capability cache |
 | sqlite-vec native extension 載入失敗 | Phase 2 卡住 | Spike 已通過；仍保留 FTS-only degrade mode |
 | 大 repo 初次 embedding 成本高 | 慢、花費高 | dry-run 預估 chunks/token/cost；增量索引 |
 | 純語義誤召回 | Codex 讀錯檔 | hybrid ranker、path/symbol boost、grep keywords |
@@ -124,4 +124,4 @@ Phase 3 search：
 
 ## Recommendation
 
-Phase 1 dry-run scanner/chunker 已完成。Phase 2 已完成 `better-sqlite3 + sqlite-vec` 載入 spike、schema 初始化、file/chunk metadata 寫入流程與 embedding index writer。Phase 3 已完成 semantic vector lookup、keyword search 與 hybrid ranker；下一步是 symbol graph / related files。
+Phase 1 dry-run scanner/chunker 已完成。Phase 2 已完成 `better-sqlite3 + sqlite-vec` 載入 spike、schema 初始化、file/chunk metadata 寫入流程與 embedding index writer。Phase 3 已完成 semantic vector lookup、keyword search 與 hybrid ranker。Phase 5 已完成輕量 symbol graph / related files MVP。下一步是 context packer 與多跳 related-file traversal。

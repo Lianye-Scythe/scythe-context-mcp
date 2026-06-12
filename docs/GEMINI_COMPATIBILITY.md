@@ -129,10 +129,10 @@ POST /v1beta/models/gemini-embedding-2:batchEmbedContents
 部分中轉站可能只支援 `embedContent`，不支援 batch。Phase 2 實作索引時需要：
 
 1. 優先嘗試 batch。
-2. 如果回傳 404/501/不支援，fallback 到逐筆 `embedContent`。
-3. 記錄 provider capability cache，避免每次重試 batch。
+2. 如果 batch request 失敗，索引流程 fallback 到逐筆 `embedContent`。
+3. 後續可加入 provider capability cache，避免每次重試 batch。
 
-目前 scaffold 中 `embedBatch` 已按官方 batch 格式送出，但還沒有 fallback。這是 Phase 2 的必要項。
+目前 `embedBatch` 已按官方 batch 格式送出，`repo_reindex(index_embeddings=true)` 的 embedding writer 會在 batch 失敗時 fallback 到單筆 embedding，並在結果中回報 `batchFallbacks`。
 
 ## Codex MCP 設定範例
 
