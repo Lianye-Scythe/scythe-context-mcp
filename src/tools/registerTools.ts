@@ -10,6 +10,7 @@ import { searchHybrid } from "../indexing/hybridSearch.js";
 import { readDetailedIndexStatus } from "../indexing/indexStatus.js";
 import { persistentReindexMetadata } from "../indexing/indexWriter.js";
 import { readRelatedFileGraph, readRelatedFiles } from "../indexing/relatedFiles.js";
+import { readRelatedSnippets } from "../indexing/relatedSnippets.js";
 import { formatSearchResults, type FormattableSearchResult } from "../indexing/resultFormat.js";
 import { searchByVector } from "../indexing/semanticSearch.js";
 import { GeminiEmbeddingProvider } from "../providers/gemini.js";
@@ -85,8 +86,9 @@ export function registerTools(server: McpServer, config: AppConfig): void {
           "context_budgeting",
           "context_packer",
           "multi_hop_related_files",
+          "related_snippet_packing",
         ],
-        pending: ["tree_sitter_symbols", "related_snippet_packing"],
+        pending: ["tree_sitter_symbols"],
         indexing: config.indexing,
         gemini: {
           baseUrl: config.gemini.baseUrl,
@@ -293,6 +295,10 @@ export function registerTools(server: McpServer, config: AppConfig): void {
         max_seed_files: z.number().int().positive().max(10).default(3),
         max_related_files: z.number().int().nonnegative().max(30).default(10),
         max_related_items: z.number().int().positive().max(50).default(8),
+        include_related_snippets: z.boolean().default(false),
+        max_related_snippets_per_file: z.number().int().positive().max(5).default(1),
+        max_related_snippet_chars: z.number().int().positive().max(2000).default(600),
+        max_related_context_chars: z.number().int().nonnegative().max(50000).default(4000),
         related_depth: z.number().int().nonnegative().max(3).default(1),
         mode: z.enum(["hybrid", "semantic"]).default("hybrid"),
       },
@@ -306,6 +312,10 @@ export function registerTools(server: McpServer, config: AppConfig): void {
       max_seed_files,
       max_related_files,
       max_related_items,
+      include_related_snippets,
+      max_related_snippets_per_file,
+      max_related_snippet_chars,
+      max_related_context_chars,
       related_depth,
       mode,
     }) => {
@@ -346,10 +356,25 @@ export function registerTools(server: McpServer, config: AppConfig): void {
         maxFiles: max_related_files,
         maxResultsPerFile: max_related_items,
       });
+      const primaryPathSet = new Set(rawResults.map((result) => result.path));
+      const relatedSnippetPaths = relatedFiles
+        .map((file) => file.path)
+        .filter((filePath) => !primaryPathSet.has(filePath));
+      const relatedSnippets =
+        include_related_snippets && max_related_context_chars > 0
+          ? readRelatedSnippets({
+              dbPath,
+              paths: relatedSnippetPaths,
+              maxSnippetsPerFile: max_related_snippets_per_file,
+              maxSnippetChars: max_related_snippet_chars,
+              maxRelatedContextChars: max_related_context_chars,
+            })
+          : undefined;
       const pack = buildContextPack(query, rawResults, relatedFiles, {
         maxContextChars: max_context_chars,
         maxRelatedFiles: max_related_files,
         maxRelatedItems: max_related_items,
+        relatedSnippets,
       });
 
       return asJsonText({
@@ -360,6 +385,7 @@ export function registerTools(server: McpServer, config: AppConfig): void {
         mode,
         relatedDepth: related_depth,
         relatedSeedCount: relatedPaths.length,
+        includeRelatedSnippets: include_related_snippets,
         ...pack,
       });
     },

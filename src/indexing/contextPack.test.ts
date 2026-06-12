@@ -37,6 +37,7 @@ describe("buildContextPack", () => {
 
     expect(pack.primaryResults).toHaveLength(1);
     expect(pack.primaryResults[0].snippetTruncated).toBe(true);
+    expect(pack.relatedSnippets).toEqual([]);
     expect(pack.relatedFiles).toEqual([
       {
         sourcePath: "src/service.ts",
@@ -50,6 +51,8 @@ describe("buildContextPack", () => {
     expect(pack.context).toEqual(
       expect.objectContaining({
         maxContextChars: 80,
+        maxRelatedContextChars: 0,
+        relatedSnippetCount: 0,
         primaryResultCount: 1,
         relatedFileCount: 1,
         truncatedResults: 1,
@@ -92,5 +95,44 @@ describe("buildContextPack", () => {
     ]);
     expect(pack.suggestedPaths).toEqual(["src/controller.ts", "src/service.ts", "src/repo.ts"]);
     expect(pack.context.relatedFileCount).toBe(2);
+  });
+
+  it("includes optional related snippets with separate budget summary", () => {
+    const pack = buildContextPack(
+      "load service",
+      [{ path: "src/controller.ts", startLine: 1, endLine: 5, snippet: "call loadService()" }],
+      [],
+      {
+        maxContextChars: 200,
+        maxRelatedFiles: 4,
+        maxRelatedItems: 4,
+        relatedSnippets: {
+          snippets: [
+            {
+              path: "src/service.ts",
+              startLine: 1,
+              endLine: 4,
+              snippet: "export function loadService() {}",
+            },
+          ],
+          summary: {
+            maxRelatedContextChars: 120,
+            usedRelatedContextChars: 32,
+            relatedSnippetCount: 1,
+            truncatedRelatedSnippets: 0,
+          },
+        },
+      },
+    );
+
+    expect(pack.relatedSnippets).toEqual([expect.objectContaining({ path: "src/service.ts" })]);
+    expect(pack.context).toEqual(
+      expect.objectContaining({
+        maxRelatedContextChars: 120,
+        usedRelatedContextChars: 32,
+        relatedSnippetCount: 1,
+        truncatedRelatedSnippets: 0,
+      }),
+    );
   });
 });

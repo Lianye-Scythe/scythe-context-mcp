@@ -49,7 +49,7 @@ env = {
 - `repo_reindex`: 掃描專案；`dry_run=true` 回報計畫，`dry_run=false` 寫入 file/chunk metadata 到 `.repo-beacon/index.sqlite`。只有設定 `index_embeddings=true` 時才會呼叫 Gemini 寫入向量，並受 `max_embedding_chunks` 限制。
 - `repo_semantic_search`: 對已建立 embeddings 的本機索引做 hybrid 搜尋，回傳檔案、行號、score/distance 與 snippet；可用 `mode=semantic` 排查純向量結果。支援 `max_context_chars` 控制整次回傳的 snippet 總字元數，預設 12000。
 - `repo_related_files`: 對已索引檔案回傳該檔 symbols、imports，以及哪些檔案 import 它。適合在 `repo_semantic_search` 找到候選檔案後展開上下文。
-- `repo_context_pack`: 針對任務查詢打包 primary snippets、match reasons、grep keywords、symbols、imports、importedBy 與 suggested paths；支援 `max_seed_files`、`max_related_files`、`related_depth` 控制 bounded multi-hop traversal。related traversal 會優先 source 檔，並標註 `role`，建議作為 Codex 實際找上下文的主要入口。
+- `repo_context_pack`: 針對任務查詢打包 primary snippets、match reasons、grep keywords、symbols、imports、importedBy 與 suggested paths；支援 `max_seed_files`、`max_related_files`、`related_depth` 控制 bounded multi-hop traversal。related traversal 會優先 source 檔，並標註 `role`。可用 `include_related_snippets=true` 加入少量 related snippets，並由 `max_related_context_chars` 使用獨立 budget 控制。
 
 ## Documentation
 

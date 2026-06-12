@@ -1,4 +1,5 @@
 import { classifyRelatedPath, type RelatedFileGraphNode, type RelatedFilesResult } from "./relatedFiles.js";
+import type { RelatedSnippet, RelatedSnippetPack } from "./relatedSnippets.js";
 import {
   formatSearchResults,
   type FormattableSearchResult,
@@ -10,6 +11,7 @@ export interface ContextPackOptions {
   maxContextChars: number;
   maxRelatedFiles: number;
   maxRelatedItems: number;
+  relatedSnippets?: RelatedSnippetPack;
 }
 
 export interface ContextPackRelatedFile {
@@ -25,10 +27,15 @@ export interface ContextPackRelatedFile {
 export interface ContextPack<T extends FormattableSearchResult> {
   primaryResults: Array<T & FormattedSearchResult>;
   relatedFiles: ContextPackRelatedFile[];
+  relatedSnippets: RelatedSnippet[];
   suggestedPaths: string[];
   context: FormatSearchResultsSummary & {
     primaryResultCount: number;
     relatedFileCount: number;
+    maxRelatedContextChars: number;
+    usedRelatedContextChars: number;
+    relatedSnippetCount: number;
+    truncatedRelatedSnippets: number;
   };
 }
 
@@ -54,6 +61,17 @@ export function buildContextPack<T extends FormattableSearchResult>(
   options: ContextPackOptions,
 ): ContextPack<T> {
   const formatted = formatSearchResults(query, searchResults, { maxContextChars: options.maxContextChars });
+  const relatedSnippetPack =
+    options.relatedSnippets ??
+    ({
+      snippets: [],
+      summary: {
+        maxRelatedContextChars: 0,
+        usedRelatedContextChars: 0,
+        relatedSnippetCount: 0,
+        truncatedRelatedSnippets: 0,
+      },
+    } satisfies RelatedSnippetPack);
   const primaryPaths = formatted.results.map((result) => result.path);
   const related = relatedFiles
     .slice(0, options.maxRelatedFiles)
@@ -69,9 +87,11 @@ export function buildContextPack<T extends FormattableSearchResult>(
   return {
     primaryResults: formatted.results,
     relatedFiles: related,
+    relatedSnippets: relatedSnippetPack.snippets,
     suggestedPaths,
     context: {
       ...formatted.summary,
+      ...relatedSnippetPack.summary,
       primaryResultCount: formatted.results.length,
       relatedFileCount: related.length,
     },
