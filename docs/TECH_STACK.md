@@ -59,6 +59,13 @@ Phase 2 預計新增：
 
 這個量級仍適合本機 SQLite，但不適合 JSON vector 全表解析。
 
+Spike 結論：
+
+- Node 24 LTS + WSL 可載入 `sqlite-vec`。
+- `better-sqlite3` 可建立 `vec0(embedding float[1536])` virtual table。
+- 寫入 sqlite-vec virtual table 的 `rowid` 需要用 `BigInt` 綁定。
+- vector 以 `Float32Array` buffer 寫入與查詢。
+
 ## Performance Targets
 
 Phase 1 scanner/chunker：
@@ -107,11 +114,11 @@ Phase 3 search：
 | Risk | Impact | Mitigation |
 | --- | --- | --- |
 | 第三方 Gemini 中轉站不支援 batch | 索引慢或失敗 | provider capability cache + 單筆 fallback |
-| sqlite-vec native extension 載入失敗 | Phase 2 卡住 | Phase 2 先做 spike；保留 FTS-only degrade mode |
+| sqlite-vec native extension 載入失敗 | Phase 2 卡住 | Spike 已通過；仍保留 FTS-only degrade mode |
 | 大 repo 初次 embedding 成本高 | 慢、花費高 | dry-run 預估 chunks/token/cost；增量索引 |
 | 純語義誤召回 | Codex 讀錯檔 | hybrid ranker、path/symbol boost、grep keywords |
 | 私有碼送到第三方 provider | 隱私風險 | 明確 remote embedding 開關與文檔警告 |
 
 ## Recommendation
 
-目前方案已足夠開始 Phase 1。Phase 1 不依賴 sqlite-vec，因此可以先做 scanner/chunker/tests。Phase 2 開始前必須先完成 `better-sqlite3 + sqlite-vec` 載入 spike，確認 Node 24 LTS + WSL 環境可用。
+Phase 1 dry-run scanner/chunker 已完成。`better-sqlite3 + sqlite-vec` 載入 spike 也已完成，可以進入 Phase 2 的 schema/migration 與 persistent index 實作。

@@ -52,6 +52,8 @@ repo_index_status(project_path)
 
 ## Phase 2: Local Storage
 
+狀態：sqlite-vec 載入 spike 已完成，persistent schema 尚未實作。
+
 目標：能把檔案、chunk、embedding metadata 存到本機。
 
 MVP 儲存選型：
@@ -71,6 +73,7 @@ MVP 儲存選型：
 6. 建立 `embedding_sets`，避免不同 base URL/model/dimensions 的向量混用。
 7. `embedBatch` 不支援時 fallback 到逐筆 `embedContent`。
 8. 加入 embedding rate limit 與 batch size 設定。
+9. sqlite-vec rowid 寫入使用 `BigInt`，避免 better-sqlite3 綁定成非整數型別。
 
 驗收：
 
