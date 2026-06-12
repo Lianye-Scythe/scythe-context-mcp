@@ -5,6 +5,7 @@ import { z } from "zod";
 import type { AppConfig } from "../config.js";
 import { reindexDryRun } from "../indexing/dryRun.js";
 import { indexMissingEmbeddings } from "../indexing/embeddingWriter.js";
+import { searchHybrid } from "../indexing/hybridSearch.js";
 import { persistentReindexMetadata } from "../indexing/indexWriter.js";
 import { searchByVector } from "../indexing/semanticSearch.js";
 import { GeminiEmbeddingProvider } from "../providers/gemini.js";
@@ -45,7 +46,7 @@ export function registerTools(server: McpServer, config: AppConfig): void {
           "embedding_index_writer",
           "semantic_vector_search",
         ],
-        pending: ["keyword_search", "hybrid_ranker", "symbol_graph"],
+        pending: ["symbol_graph", "related_files", "context_formatting"],
         indexing: config.indexing,
         gemini: {
           baseUrl: config.gemini.baseUrl,
@@ -156,9 +157,10 @@ export function registerTools(server: McpServer, config: AppConfig): void {
         project_path: z.string().optional(),
         max_results: z.number().int().positive().max(50).default(8),
         max_snippet_chars: z.number().int().positive().max(4000).default(1200),
+        mode: z.enum(["hybrid", "semantic"]).default("hybrid"),
       },
     },
-    async ({ query, project_path, max_results, max_snippet_chars }) => {
+    async ({ query, project_path, max_results, max_snippet_chars, mode }) => {
       const projectPath = path.resolve(project_path || config.defaultProjectPath);
       const dbPath = path.join(projectPath, config.indexDirName, "index.sqlite");
       if (!fs.existsSync(dbPath)) {
@@ -176,19 +178,30 @@ export function registerTools(server: McpServer, config: AppConfig): void {
         throw new Error(`Query embedding dimensions mismatch: expected ${dimensions}, got ${queryEmbedding.dimensions}`);
       }
 
-      const results = searchByVector({
-        dbPath,
-        dimensions,
-        queryVector: queryEmbedding.vector,
-        maxResults: max_results,
-        maxSnippetChars: max_snippet_chars,
-      });
+      const results =
+        mode === "semantic"
+          ? searchByVector({
+              dbPath,
+              dimensions,
+              queryVector: queryEmbedding.vector,
+              maxResults: max_results,
+              maxSnippetChars: max_snippet_chars,
+            })
+          : searchHybrid({
+              dbPath,
+              query,
+              dimensions,
+              queryVector: queryEmbedding.vector,
+              maxResults: max_results,
+              maxSnippetChars: max_snippet_chars,
+            });
 
       return asJsonText({
         query,
         projectPath,
         dbPath,
         dimensions,
+        mode,
         results,
         resultCount: results.length,
       });

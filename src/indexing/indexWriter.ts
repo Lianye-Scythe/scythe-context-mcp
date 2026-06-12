@@ -6,7 +6,7 @@ import { resolveIndexingLimits } from "./dryRun.js";
 import { sha256Hex } from "./hash.js";
 import { scanProject } from "./scanner.js";
 import type { IndexingLimits, ReindexDryRunOptions, SkippedFile } from "./types.js";
-import { initializeStorageSchema, insertChunk, upsertFile } from "../storage/schema.js";
+import { deleteChunksForFile, initializeStorageSchema, insertChunk, rebuildChunkFtsForFile, upsertFile } from "../storage/schema.js";
 
 export interface PersistentReindexOptions extends ReindexDryRunOptions {
   indexDirName: string;
@@ -55,15 +55,18 @@ export async function persistentReindexMetadata(options: PersistentReindexOption
         hash: input.hash,
       });
       if (existing?.hash === input.hash) {
+        rebuildChunkFtsForFile(db, fileId, input.relativePath);
         return;
       }
 
-      db.prepare("delete from chunks where file_id = ?").run(fileId);
+      deleteChunksForFile(db, fileId);
       for (const chunk of input.chunks) {
         insertChunk(db, {
           fileId,
+          path: input.relativePath,
           startLine: chunk.startLine,
           endLine: chunk.endLine,
+          title: input.relativePath,
           text: chunk.text,
           hash: chunk.hash,
         });

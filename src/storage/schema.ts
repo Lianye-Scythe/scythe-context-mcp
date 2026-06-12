@@ -15,6 +15,7 @@ export interface FileRecordInput {
 
 export interface ChunkRecordInput {
   fileId: number;
+  path: string;
   startLine: number;
   endLine: number;
   language?: string | null;
@@ -77,6 +78,13 @@ export function initializeStorageSchema(db: Database, options: StorageSchemaOpti
       unique(file_id, start_line, end_line, hash)
     );
 
+    create virtual table if not exists chunk_fts using fts5(
+      path,
+      title,
+      text,
+      tokenize='trigram'
+    );
+
     create table if not exists embedding_sets (
       id integer primary key,
       provider text not null,
@@ -131,7 +139,39 @@ export function insertChunk(db: Database, input: ChunkRecordInput): number {
   const row = db
     .prepare("select id from chunks where file_id = ? and start_line = ? and end_line = ? and hash = ?")
     .get(input.fileId, input.startLine, input.endLine, input.hash) as { id: number };
+  db.prepare("delete from chunk_fts where rowid = ?").run(row.id);
+  db.prepare("insert into chunk_fts(rowid, path, title, text) values (?, ?, ?, ?)").run(
+    row.id,
+    input.path,
+    input.title ?? "",
+    input.text,
+  );
   return row.id;
+}
+
+export function deleteChunksForFile(db: Database, fileId: number): void {
+  const rows = db.prepare("select id from chunks where file_id = ?").all(fileId) as Array<{ id: number }>;
+  for (const row of rows) {
+    db.prepare("delete from chunk_fts where rowid = ?").run(row.id);
+  }
+  db.prepare("delete from chunks where file_id = ?").run(fileId);
+}
+
+export function rebuildChunkFtsForFile(db: Database, fileId: number, filePath: string): void {
+  const rows = db.prepare("select id, title, text from chunks where file_id = ?").all(fileId) as Array<{
+    id: number;
+    title: string | null;
+    text: string;
+  }>;
+  for (const row of rows) {
+    db.prepare("delete from chunk_fts where rowid = ?").run(row.id);
+    db.prepare("insert into chunk_fts(rowid, path, title, text) values (?, ?, ?, ?)").run(
+      row.id,
+      filePath,
+      row.title ?? "",
+      row.text,
+    );
+  }
 }
 
 export function getOrCreateEmbeddingSet(db: Database, input: EmbeddingSetInput): number {

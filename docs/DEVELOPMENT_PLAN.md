@@ -97,7 +97,7 @@ MVP 儲存選型：
 
 ## Phase 3: Semantic Search + Minimal Keyword
 
-狀態：semantic vector lookup 已完成，minimal keyword/path boost 尚未實作。
+狀態：semantic vector lookup、keyword search、hybrid ranker 已完成；symbol graph 尚未實作。
 
 目標：`repo_semantic_search` 真正返回相關程式碼片段。
 
@@ -142,6 +142,8 @@ MVP 儲存選型：
 - sqlite-vec KNN lookup。
 - 回傳 path、line range、distance、snippet。
 - index missing 時回傳可修復訊息。
+- SQLite FTS5 keyword search。
+- hybrid ranker 合併 semantic/keyword 結果。
 
 ## Phase 4: Advanced Hybrid Search
 

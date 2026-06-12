@@ -135,4 +135,44 @@ describe("persistentReindexMetadata", () => {
       db.close();
     }
   });
+
+  it("repairs missing FTS rows for unchanged files", async () => {
+    const filePath = path.join(tempDir, "stable.ts");
+    await fs.writeFile(filePath, "stable keyword\n");
+    const first = await persistentReindexMetadata({
+      projectPath: tempDir,
+      indexDirName: ".repo-beacon",
+      vectorDimensions: 1536,
+      maxFileBytes: 1024,
+      targetChunkChars: 20,
+      chunkOverlapChars: 0,
+      maxChunksPerFile: 10,
+    });
+
+    const db = new Database(first.dbPath);
+    try {
+      db.prepare("delete from chunk_fts").run();
+    } finally {
+      db.close();
+    }
+
+    await persistentReindexMetadata({
+      projectPath: tempDir,
+      indexDirName: ".repo-beacon",
+      vectorDimensions: 1536,
+      maxFileBytes: 1024,
+      targetChunkChars: 20,
+      chunkOverlapChars: 0,
+      maxChunksPerFile: 10,
+    });
+
+    const verifyDb = new Database(first.dbPath);
+    try {
+      const chunks = verifyDb.prepare("select count(*) as count from chunks").get() as { count: number };
+      const fts = verifyDb.prepare("select count(*) as count from chunk_fts").get() as { count: number };
+      expect(fts.count).toBe(chunks.count);
+    } finally {
+      verifyDb.close();
+    }
+  });
 });

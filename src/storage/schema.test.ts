@@ -54,6 +54,7 @@ describe("storage schema", () => {
       });
       const chunkId = insertChunk(db, {
         fileId,
+        path: "src/a.ts",
         startLine: 1,
         endLine: 2,
         text: "hello",
@@ -61,6 +62,7 @@ describe("storage schema", () => {
       });
       const duplicateChunkId = insertChunk(db, {
         fileId,
+        path: "src/a.ts",
         startLine: 1,
         endLine: 2,
         text: "hello",
@@ -100,6 +102,7 @@ describe("storage schema", () => {
       });
       const chunkId = insertChunk(db, {
         fileId,
+        path: "src/a.ts",
         startLine: 1,
         endLine: 2,
         text: "hello",
