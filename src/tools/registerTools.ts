@@ -7,7 +7,7 @@ import { buildContextPack } from "../indexing/contextPack.js";
 import { reindexDryRun } from "../indexing/dryRun.js";
 import { indexMissingEmbeddings } from "../indexing/embeddingWriter.js";
 import { searchHybrid } from "../indexing/hybridSearch.js";
-import { readDetailedIndexStatus } from "../indexing/indexStatus.js";
+import { readDetailedIndexStatus, recommendedNextActions } from "../indexing/indexStatus.js";
 import { persistentReindexMetadata } from "../indexing/indexWriter.js";
 import { readRelatedFileGraph, readRelatedFiles } from "../indexing/relatedFiles.js";
 import { readRelatedSnippets } from "../indexing/relatedSnippets.js";
@@ -65,10 +65,14 @@ export function registerTools(server: McpServer, config: AppConfig): void {
     async ({ project_path }) => {
       const projectPath = path.resolve(project_path || config.defaultProjectPath);
       const dbPath = path.join(projectPath, config.indexDirName, "index.sqlite");
+      const index = readDetailedIndexStatus(dbPath);
       return asJsonText({
         projectPath,
         indexPath: path.join(projectPath, config.indexDirName),
-        index: readDetailedIndexStatus(dbPath),
+        index,
+        recommendedNextActions: recommendedNextActions(index, {
+          desiredDimensions: config.gemini.outputDimensionality ?? 1536,
+        }),
         status: "usable_mvp",
         implemented: [
           "mcp_server",

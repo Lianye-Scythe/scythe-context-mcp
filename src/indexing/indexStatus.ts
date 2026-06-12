@@ -19,6 +19,53 @@ export interface DetailedIndexStatus {
   }>;
 }
 
+export interface IndexRecommendationOptions {
+  desiredDimensions: number;
+}
+
+export function recommendedNextActions(
+  status: DetailedIndexStatus,
+  options: IndexRecommendationOptions,
+): string[] {
+  if (!status.exists) {
+    return [
+      "Run repo_reindex with dry_run=false to create the metadata index.",
+      "Then run repo_reindex with dry_run=false and index_embeddings=true when semantic search or context packs need vectors.",
+    ];
+  }
+
+  const actions: string[] = [];
+  if (status.files === 0 || status.chunks === 0) {
+    actions.push("Run repo_reindex with dry_run=false to index files and chunks.");
+  }
+  if (status.ftsRows < status.chunks) {
+    actions.push("Run repo_reindex with dry_run=false to repair missing keyword-search rows.");
+  }
+  if (status.symbols === 0 && status.files > 0) {
+    actions.push("Run repo_reindex with dry_run=false to populate symbol metadata.");
+  }
+  if (status.dependencies === 0 && status.files > 1) {
+    actions.push("Run repo_reindex with dry_run=false to populate dependency metadata.");
+  }
+
+  const matchingEmbeddingSet = status.embeddingSets.find((set) => set.dimensions === options.desiredDimensions);
+  if (!matchingEmbeddingSet || matchingEmbeddingSet.embeddings === 0) {
+    actions.push(
+      `Run repo_reindex with dry_run=false and index_embeddings=true to create ${options.desiredDimensions}-dimension embeddings for semantic search.`,
+    );
+  } else if (matchingEmbeddingSet.embeddings < status.chunks) {
+    actions.push(
+      "Run repo_reindex with dry_run=false and index_embeddings=true to fill missing embeddings for newly indexed chunks.",
+    );
+  }
+
+  if (actions.length === 0) {
+    actions.push("Index is ready. Prefer repo_context_pack for task-oriented lookup.");
+  }
+
+  return actions;
+}
+
 function tableExists(db: SqliteDatabase, name: string): boolean {
   const row = db
     .prepare("select 1 as existsFlag from sqlite_master where type in ('table', 'virtual table') and name = ?")
