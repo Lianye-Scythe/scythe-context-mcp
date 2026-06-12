@@ -4,4 +4,7 @@ dist/
 .DS_Store
 *.log
 .repo-beacon/
+local/
 coverage/
+*.Zone.Identifier
+*:Zone.Identifier
