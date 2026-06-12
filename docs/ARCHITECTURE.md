@@ -157,6 +157,7 @@ flowchart TD
 - 對 primary snippets 套用 `max_context_chars`。
 - 為命中的前幾個檔案附上 symbols、imports、importedBy。
 - 依 `related_depth` 做 bounded BFS，沿著 imports / importedBy 展開多跳 related files。
+- 對 related paths 做輕量分類，source 優先，test/mock/fixture/generated/docs 後置但不硬排除。
 - 產出 `suggestedPaths`，讓 Codex 判斷下一步要讀哪些檔案。
 
 目前只打包 related-file metadata，不自動讀取 related file snippets，避免 context 膨脹。related snippet packing 留到下一階段。

@@ -1,4 +1,4 @@
-import type { RelatedFileGraphNode, RelatedFilesResult } from "./relatedFiles.js";
+import { classifyRelatedPath, type RelatedFileGraphNode, type RelatedFilesResult } from "./relatedFiles.js";
 import {
   formatSearchResults,
   type FormattableSearchResult,
@@ -14,6 +14,7 @@ export interface ContextPackOptions {
 
 export interface ContextPackRelatedFile {
   sourcePath: string;
+  role: ReturnType<typeof classifyRelatedPath>;
   depth?: number;
   via?: string | null;
   symbols: RelatedFilesResult["symbols"];
@@ -38,6 +39,7 @@ function addUnique(values: string[], value: string | null | undefined): void {
 function compactRelatedFile(related: RelatedFilesResult | RelatedFileGraphNode, maxRelatedItems: number): ContextPackRelatedFile {
   return {
     sourcePath: related.path,
+    role: classifyRelatedPath(related.path),
     ...("depth" in related ? { depth: related.depth, via: related.via } : {}),
     symbols: related.symbols.slice(0, maxRelatedItems),
     imports: related.imports.slice(0, maxRelatedItems),

@@ -42,11 +42,63 @@ export interface RelatedFileGraphNode extends RelatedFilesResult {
   via: string | null;
 }
 
+type RelatedPathRole = "source" | "test" | "mock" | "fixture" | "generated" | "docs";
+interface RelatedQueueItem {
+  path: string;
+  depth: number;
+  via: string | null;
+  order: number;
+}
+
 function tableExists(db: SqliteDatabase, name: string): boolean {
   const row = db
     .prepare("select 1 as existsFlag from sqlite_master where type in ('table', 'virtual table') and name = ?")
     .get(name) as { existsFlag: number } | undefined;
   return Boolean(row);
+}
+
+export function classifyRelatedPath(path: string): RelatedPathRole {
+  const normalized = path.toLowerCase();
+  if (/(^|\/)(test|tests|__tests__|spec|specs)(\/|$)|\.(test|spec)\.[^.]+$/.test(normalized)) return "test";
+  if (/(^|\/)(__mocks__|mocks?)(\/|$)|\bmock\b/.test(normalized)) return "mock";
+  if (/(^|\/)(fixtures?|samples?)(\/|$)/.test(normalized)) return "fixture";
+  if (/(\.generated\.|\.gen\.|\/generated\/|\/dist\/|\/build\/)/.test(normalized)) return "generated";
+  if (/\.(md|mdx|rst|txt)$|(^|\/)docs?\//.test(normalized)) return "docs";
+  return "source";
+}
+
+function relatedPathScore(path: string): number {
+  switch (classifyRelatedPath(path)) {
+    case "source":
+      return 0;
+    case "docs":
+      return 1;
+    case "test":
+      return 2;
+    case "mock":
+      return 3;
+    case "fixture":
+      return 4;
+    case "generated":
+      return 5;
+  }
+}
+
+function sortRelatedPaths(paths: string[]): string[] {
+  return paths
+    .map((path, index) => ({ path, index }))
+    .sort((a, b) => relatedPathScore(a.path) - relatedPathScore(b.path) || a.index - b.index || a.path.localeCompare(b.path))
+    .map((item) => item.path);
+}
+
+function sortQueue(queue: RelatedQueueItem[]): void {
+  queue.sort(
+    (a, b) =>
+      a.depth - b.depth ||
+      relatedPathScore(a.path) - relatedPathScore(b.path) ||
+      a.order - b.order ||
+      a.path.localeCompare(b.path),
+  );
 }
 
 export function readRelatedFiles(options: RelatedFilesOptions): RelatedFilesResult {
@@ -120,11 +172,13 @@ export function readRelatedFileGraph(options: RelatedFileGraphOptions): RelatedF
   const maxFiles = Math.max(0, options.maxFiles);
   if (maxFiles === 0) return [];
 
-  const queue = options.seedPaths.map((path) => ({ path, depth: 0, via: null as string | null }));
+  let order = 0;
+  const queue: RelatedQueueItem[] = options.seedPaths.map((path) => ({ path, depth: 0, via: null, order: order++ }));
   const visited = new Set<string>();
   const nodes: RelatedFileGraphNode[] = [];
 
   while (queue.length > 0 && nodes.length < maxFiles) {
+    sortQueue(queue);
     const next = queue.shift();
     if (!next || visited.has(next.path)) continue;
     visited.add(next.path);
@@ -137,13 +191,13 @@ export function readRelatedFileGraph(options: RelatedFileGraphOptions): RelatedF
     nodes.push({ ...related, depth: next.depth, via: next.via });
 
     if (next.depth >= maxDepth) continue;
-    const neighbors = [
+    const neighbors = sortRelatedPaths([
       ...related.imports.map((item) => item.resolvedPath).filter((path): path is string => Boolean(path)),
       ...related.importedBy.map((item) => item.path),
-    ];
+    ]);
     for (const neighbor of neighbors) {
       if (!visited.has(neighbor) && !queue.some((queued) => queued.path === neighbor)) {
-        queue.push({ path: neighbor, depth: next.depth + 1, via: next.path });
+        queue.push({ path: neighbor, depth: next.depth + 1, via: next.path, order: order++ });
       }
     }
   }

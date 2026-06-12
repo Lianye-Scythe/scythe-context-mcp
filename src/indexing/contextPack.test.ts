@@ -40,6 +40,7 @@ describe("buildContextPack", () => {
     expect(pack.relatedFiles).toEqual([
       {
         sourcePath: "src/service.ts",
+        role: "source",
         symbols: [expect.objectContaining({ name: "loadService" })],
         imports: [expect.objectContaining({ resolvedPath: "src/repo.ts" })],
         importedBy: [expect.objectContaining({ path: "src/controller.ts" })],
@@ -87,7 +88,7 @@ describe("buildContextPack", () => {
 
     expect(pack.relatedFiles).toEqual([
       expect.objectContaining({ sourcePath: "src/controller.ts", depth: 0, via: null }),
-      expect.objectContaining({ sourcePath: "src/service.ts", depth: 1, via: "src/controller.ts" }),
+      expect.objectContaining({ sourcePath: "src/service.ts", role: "source", depth: 1, via: "src/controller.ts" }),
     ]);
     expect(pack.suggestedPaths).toEqual(["src/controller.ts", "src/service.ts", "src/repo.ts"]);
     expect(pack.context.relatedFileCount).toBe(2);

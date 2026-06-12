@@ -184,7 +184,7 @@ repo_semantic_search(query, project_path, max_results, mode="hybrid")
 2. 記錄 function/class/interface symbols。已完成常見 declarations。
 3. 建立 file dependency graph。已完成 relative import resolution 與 reverse-import 查詢。
 4. 查詢時加入 related files。已完成 `repo_related_files`，採按需展開。
-5. 支援從 router -> service -> model 的鏈路返回。已完成 bounded BFS traversal，後續可加入語言感知排序與 test/schema boost。
+5. 支援從 router -> service -> model 的鏈路返回。已完成 bounded BFS traversal 與 source-first related path ranking，後續可加入語言感知排序與 schema/test boost。
 
 驗收：
 
