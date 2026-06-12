@@ -6,7 +6,9 @@ import type { AppConfig } from "../config.js";
 import { reindexDryRun } from "../indexing/dryRun.js";
 import { indexMissingEmbeddings } from "../indexing/embeddingWriter.js";
 import { searchHybrid } from "../indexing/hybridSearch.js";
+import { readDetailedIndexStatus } from "../indexing/indexStatus.js";
 import { persistentReindexMetadata } from "../indexing/indexWriter.js";
+import { formatSearchResults, type FormattableSearchResult } from "../indexing/resultFormat.js";
 import { searchByVector } from "../indexing/semanticSearch.js";
 import { GeminiEmbeddingProvider } from "../providers/gemini.js";
 
@@ -30,9 +32,11 @@ export function registerTools(server: McpServer, config: AppConfig): void {
     },
     async ({ project_path }) => {
       const projectPath = path.resolve(project_path || config.defaultProjectPath);
+      const dbPath = path.join(projectPath, config.indexDirName, "index.sqlite");
       return asJsonText({
         projectPath,
         indexPath: path.join(projectPath, config.indexDirName),
+        index: readDetailedIndexStatus(dbPath),
         status: "scaffolded",
         implemented: [
           "mcp_server",
@@ -178,7 +182,7 @@ export function registerTools(server: McpServer, config: AppConfig): void {
         throw new Error(`Query embedding dimensions mismatch: expected ${dimensions}, got ${queryEmbedding.dimensions}`);
       }
 
-      const results =
+      const rawResults: FormattableSearchResult[] =
         mode === "semantic"
           ? searchByVector({
               dbPath,
@@ -202,8 +206,8 @@ export function registerTools(server: McpServer, config: AppConfig): void {
         dbPath,
         dimensions,
         mode,
-        results,
-        resultCount: results.length,
+        results: formatSearchResults(query, rawResults),
+        resultCount: rawResults.length,
       });
     },
   );
