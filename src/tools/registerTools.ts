@@ -3,6 +3,7 @@ import fs from "node:fs";
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { z } from "zod";
 import type { AppConfig } from "../config.js";
+import { buildContextPack } from "../indexing/contextPack.js";
 import { reindexDryRun } from "../indexing/dryRun.js";
 import { indexMissingEmbeddings } from "../indexing/embeddingWriter.js";
 import { searchHybrid } from "../indexing/hybridSearch.js";
@@ -17,6 +18,35 @@ function asJsonText(value: unknown) {
   return {
     content: [{ type: "text" as const, text: JSON.stringify(value, null, 2) }],
   };
+}
+
+type SearchMode = "hybrid" | "semantic";
+
+function searchIndexedChunks(options: {
+  dbPath: string;
+  query: string;
+  dimensions: number;
+  queryVector: readonly number[];
+  maxResults: number;
+  maxSnippetChars: number;
+  mode: SearchMode;
+}): FormattableSearchResult[] {
+  return options.mode === "semantic"
+    ? searchByVector({
+        dbPath: options.dbPath,
+        dimensions: options.dimensions,
+        queryVector: options.queryVector,
+        maxResults: options.maxResults,
+        maxSnippetChars: options.maxSnippetChars,
+      })
+    : searchHybrid({
+        dbPath: options.dbPath,
+        query: options.query,
+        dimensions: options.dimensions,
+        queryVector: options.queryVector,
+        maxResults: options.maxResults,
+        maxSnippetChars: options.maxSnippetChars,
+      });
 }
 
 export function registerTools(server: McpServer, config: AppConfig): void {
@@ -53,8 +83,9 @@ export function registerTools(server: McpServer, config: AppConfig): void {
           "symbol_graph",
           "related_files",
           "context_budgeting",
+          "context_packer",
         ],
-        pending: ["context_packer", "multi_hop_related_files", "tree_sitter_symbols"],
+        pending: ["multi_hop_related_files", "tree_sitter_symbols"],
         indexing: config.indexing,
         gemini: {
           baseUrl: config.gemini.baseUrl,
@@ -187,23 +218,15 @@ export function registerTools(server: McpServer, config: AppConfig): void {
         throw new Error(`Query embedding dimensions mismatch: expected ${dimensions}, got ${queryEmbedding.dimensions}`);
       }
 
-      const rawResults: FormattableSearchResult[] =
-        mode === "semantic"
-          ? searchByVector({
-              dbPath,
-              dimensions,
-              queryVector: queryEmbedding.vector,
-              maxResults: max_results,
-              maxSnippetChars: max_snippet_chars,
-            })
-          : searchHybrid({
-              dbPath,
-              query,
-              dimensions,
-              queryVector: queryEmbedding.vector,
-              maxResults: max_results,
-              maxSnippetChars: max_snippet_chars,
-            });
+      const rawResults = searchIndexedChunks({
+        dbPath,
+        query,
+        dimensions,
+        queryVector: queryEmbedding.vector,
+        maxResults: max_results,
+        maxSnippetChars: max_snippet_chars,
+        mode,
+      });
 
       const formatted = formatSearchResults(query, rawResults, { maxContextChars: max_context_chars });
 
@@ -251,6 +274,79 @@ export function registerTools(server: McpServer, config: AppConfig): void {
           filePath,
           maxResults: max_results,
         }),
+      });
+    },
+  );
+
+  server.registerTool(
+    "repo_context_pack",
+    {
+      title: "Repo Context Pack",
+      description: "Search code and package primary snippets with symbols/imports/reverse imports for matched files.",
+      inputSchema: {
+        query: z.string().min(1),
+        project_path: z.string().optional(),
+        max_results: z.number().int().positive().max(30).default(6),
+        max_snippet_chars: z.number().int().positive().max(4000).default(1200),
+        max_context_chars: z.number().int().positive().max(100000).default(16000),
+        max_related_files: z.number().int().nonnegative().max(20).default(4),
+        max_related_items: z.number().int().positive().max(50).default(8),
+        mode: z.enum(["hybrid", "semantic"]).default("hybrid"),
+      },
+    },
+    async ({
+      query,
+      project_path,
+      max_results,
+      max_snippet_chars,
+      max_context_chars,
+      max_related_files,
+      max_related_items,
+      mode,
+    }) => {
+      const projectPath = path.resolve(project_path || config.defaultProjectPath);
+      const dbPath = path.join(projectPath, config.indexDirName, "index.sqlite");
+      if (!fs.existsSync(dbPath)) {
+        return asJsonText({
+          query,
+          projectPath,
+          status: "index_missing",
+          message: "Run repo_reindex with dry_run=false and index_embeddings=true before building a context pack.",
+        });
+      }
+
+      const queryEmbedding = await embeddingProvider.embed({ kind: "query", text: query });
+      const dimensions = config.gemini.outputDimensionality ?? 1536;
+      if (queryEmbedding.dimensions !== dimensions) {
+        throw new Error(`Query embedding dimensions mismatch: expected ${dimensions}, got ${queryEmbedding.dimensions}`);
+      }
+
+      const rawResults = searchIndexedChunks({
+        dbPath,
+        query,
+        dimensions,
+        queryVector: queryEmbedding.vector,
+        maxResults: max_results,
+        maxSnippetChars: max_snippet_chars,
+        mode,
+      });
+      const relatedPaths = Array.from(new Set(rawResults.map((result) => result.path))).slice(0, max_related_files);
+      const relatedFiles = relatedPaths.map((filePath) =>
+        readRelatedFiles({ dbPath, filePath, maxResults: max_related_items }),
+      );
+      const pack = buildContextPack(query, rawResults, relatedFiles, {
+        maxContextChars: max_context_chars,
+        maxRelatedFiles: max_related_files,
+        maxRelatedItems: max_related_items,
+      });
+
+      return asJsonText({
+        query,
+        projectPath,
+        dbPath,
+        dimensions,
+        mode,
+        ...pack,
       });
     },
   );

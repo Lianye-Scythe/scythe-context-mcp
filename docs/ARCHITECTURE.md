@@ -73,6 +73,7 @@ flowchart TD
 - `repo_reindex`
 - `repo_semantic_search`
 - `repo_related_files`
+- `repo_context_pack`
 
 後續 tools：
 
@@ -147,6 +148,17 @@ flowchart TD
 - `file_dependencies`: raw specifier、resolved relative path、line。
 
 這層刻意獨立於 chunk/embedding storage，升級 extractor 或之後換成 tree-sitter 時，不會破壞既有 embedding cache。查詢上先提供 `repo_related_files`，讓 Codex 在搜尋命中後按需展開 imports / reverse imports，而不是每次搜尋都塞入大量相關檔案。
+
+### Context Packer
+
+`repo_context_pack` 是 Codex 實際查找上下文的主要入口。它會：
+
+- 執行 semantic/hybrid search。
+- 對 primary snippets 套用 `max_context_chars`。
+- 為命中的前幾個檔案附上 symbols、imports、importedBy。
+- 產出 `suggestedPaths`，讓 Codex 判斷下一步要讀哪些檔案。
+
+第一版只做一跳 related-file metadata，不自動讀取 related file snippets，避免 context 膨脹。多跳 traversal 和 related snippet packing 留到下一階段。
 
 ### Storage Layer
 

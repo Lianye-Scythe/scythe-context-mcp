@@ -2,7 +2,7 @@
 
 Repo Beacon MCP 是給 Codex App / Codex CLI 使用的本機程式碼上下文引擎。目標是提供類似 Augment Context Engine / fast-context-mcp 的能力，但資料與索引留在本機，embedding provider 可接官方 Gemini API 或第三方 v1beta 中轉站。
 
-目前狀態：已具備 repo 掃描、chunk、SQLite/sqlite-vec metadata 與 embedding index、語義搜尋、FTS keyword search、hybrid ranking、輕量 symbol/dependency graph、related-file lookup 與搜尋 context budget。下一階段是 context packer、結果壓縮與更完整的 Codex workflow polish。
+目前狀態：已具備 repo 掃描、chunk、SQLite/sqlite-vec metadata 與 embedding index、語義搜尋、FTS keyword search、hybrid ranking、輕量 symbol/dependency graph、related-file lookup、搜尋 context budget 與 context packer。下一階段是多跳 related files、結果壓縮與更完整的 Codex workflow polish。
 
 ## Quick Start
 
@@ -49,6 +49,7 @@ env = {
 - `repo_reindex`: 掃描專案；`dry_run=true` 回報計畫，`dry_run=false` 寫入 file/chunk metadata 到 `.repo-beacon/index.sqlite`。只有設定 `index_embeddings=true` 時才會呼叫 Gemini 寫入向量，並受 `max_embedding_chunks` 限制。
 - `repo_semantic_search`: 對已建立 embeddings 的本機索引做 hybrid 搜尋，回傳檔案、行號、score/distance 與 snippet；可用 `mode=semantic` 排查純向量結果。支援 `max_context_chars` 控制整次回傳的 snippet 總字元數，預設 12000。
 - `repo_related_files`: 對已索引檔案回傳該檔 symbols、imports，以及哪些檔案 import 它。適合在 `repo_semantic_search` 找到候選檔案後展開上下文。
+- `repo_context_pack`: 針對任務查詢打包 primary snippets、match reasons、grep keywords、symbols、imports、importedBy 與 suggested paths；建議作為 Codex 實際找上下文的主要入口。
 
 ## Documentation
 

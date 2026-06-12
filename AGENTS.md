@@ -5,8 +5,9 @@
 - Start with `repo_index_status` to check whether `.repo-beacon/index.sqlite` exists and whether files, chunks, symbols, dependencies, and embeddings are present.
 - If metadata is missing or stale, run `repo_reindex` with `dry_run=false`.
 - Set `index_embeddings=true` only when semantic search is needed. This sends chunk text to the configured Gemini-compatible endpoint.
-- Use `repo_semantic_search` in default `hybrid` mode for code lookup. Prefer a smaller `max_context_chars` for broad exploration and increase it only when the returned snippets are not enough.
-- After a search result identifies a useful file, call `repo_related_files` for that file to inspect local symbols, imports, and reverse imports.
+- Prefer `repo_context_pack` for task-oriented code lookup. It combines hybrid search, snippet budgeting, related-file metadata, and suggested paths.
+- Use `repo_semantic_search` when debugging raw ranking behavior. Prefer a smaller `max_context_chars` for broad exploration and increase it only when the returned snippets are not enough.
+- After a search result identifies a useful file, call `repo_related_files` for that file when you need a focused view of its symbols, imports, and reverse imports.
 
 ## Privacy
 
