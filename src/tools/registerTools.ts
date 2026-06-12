@@ -3,6 +3,7 @@ import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { z } from "zod";
 import type { AppConfig } from "../config.js";
 import { reindexDryRun } from "../indexing/dryRun.js";
+import { persistentReindexMetadata } from "../indexing/indexWriter.js";
 import { GeminiEmbeddingProvider } from "../providers/gemini.js";
 
 function asJsonText(value: unknown) {
@@ -36,8 +37,10 @@ export function registerTools(server: McpServer, config: AppConfig): void {
           "file_scanner",
           "chunker",
           "reindex_dry_run",
+          "sqlite_schema",
+          "persistent_metadata_index",
         ],
-        pending: ["persistent_index", "vector_store", "hybrid_ranker"],
+        pending: ["embedding_index_writer", "vector_search", "hybrid_ranker"],
         indexing: config.indexing,
         gemini: {
           baseUrl: config.gemini.baseUrl,
@@ -91,20 +94,21 @@ export function registerTools(server: McpServer, config: AppConfig): void {
       chunk_overlap_chars,
       max_chunks_per_file,
     }) => {
-      if (!dry_run) {
-        return asJsonText({
-          status: "not_implemented_yet",
-          message: "Persistent indexing is planned for Phase 2. Run with dry_run=true for Phase 1.",
-        });
-      }
-
-      const result = await reindexDryRun({
+      const commonOptions = {
         projectPath: path.resolve(project_path || config.defaultProjectPath),
         maxFileBytes: max_file_bytes ?? config.indexing.maxFileBytes,
         targetChunkChars: target_chunk_chars ?? config.indexing.targetChunkChars,
         chunkOverlapChars: chunk_overlap_chars ?? config.indexing.chunkOverlapChars,
         maxChunksPerFile: max_chunks_per_file ?? config.indexing.maxChunksPerFile,
-      });
+      };
+
+      const result = dry_run
+        ? await reindexDryRun(commonOptions)
+        : await persistentReindexMetadata({
+            ...commonOptions,
+            indexDirName: config.indexDirName,
+            vectorDimensions: config.gemini.outputDimensionality ?? 1536,
+          });
 
       return asJsonText(result);
     },

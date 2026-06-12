@@ -52,7 +52,7 @@ repo_index_status(project_path)
 
 ## Phase 2: Local Storage
 
-狀態：sqlite-vec 載入 spike 與 persistent schema 初始化已完成，embedding 寫入流程尚未實作。
+狀態：sqlite-vec 載入 spike、persistent schema 初始化、file/chunk metadata 寫入已完成，embedding 寫入流程尚未實作。
 
 目標：能把檔案、chunk、embedding metadata 存到本機。
 
@@ -83,6 +83,7 @@ MVP 儲存選型：
 - chunk insert de-duplication。
 - embedding set de-duplication。
 - embedding metadata id 與 sqlite-vec rowid 的連結測試。
+- `repo_reindex(dry_run=false)` 寫入 `.repo-beacon/index.sqlite` 的 metadata index。
 
 驗收：
 
