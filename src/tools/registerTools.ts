@@ -1,10 +1,12 @@
 import path from "node:path";
+import fs from "node:fs";
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { z } from "zod";
 import type { AppConfig } from "../config.js";
 import { reindexDryRun } from "../indexing/dryRun.js";
 import { indexMissingEmbeddings } from "../indexing/embeddingWriter.js";
 import { persistentReindexMetadata } from "../indexing/indexWriter.js";
+import { searchByVector } from "../indexing/semanticSearch.js";
 import { GeminiEmbeddingProvider } from "../providers/gemini.js";
 
 function asJsonText(value: unknown) {
@@ -40,8 +42,10 @@ export function registerTools(server: McpServer, config: AppConfig): void {
           "reindex_dry_run",
           "sqlite_schema",
           "persistent_metadata_index",
+          "embedding_index_writer",
+          "semantic_vector_search",
         ],
-        pending: ["embedding_index_writer", "vector_search", "hybrid_ranker"],
+        pending: ["keyword_search", "hybrid_ranker", "symbol_graph"],
         indexing: config.indexing,
         gemini: {
           baseUrl: config.gemini.baseUrl,
@@ -146,21 +150,47 @@ export function registerTools(server: McpServer, config: AppConfig): void {
     "repo_semantic_search",
     {
       title: "Repo Semantic Search",
-      description: "Planned semantic code search endpoint. Currently returns scaffold status.",
+      description: "Search indexed code chunks by semantic similarity. Requires repo_reindex with index_embeddings=true first.",
       inputSchema: {
         query: z.string().min(1),
         project_path: z.string().optional(),
         max_results: z.number().int().positive().max(50).default(8),
+        max_snippet_chars: z.number().int().positive().max(4000).default(1200),
       },
     },
-    async ({ query, project_path, max_results }) => {
+    async ({ query, project_path, max_results, max_snippet_chars }) => {
       const projectPath = path.resolve(project_path || config.defaultProjectPath);
+      const dbPath = path.join(projectPath, config.indexDirName, "index.sqlite");
+      if (!fs.existsSync(dbPath)) {
+        return asJsonText({
+          query,
+          projectPath,
+          status: "index_missing",
+          message: "Run repo_reindex with dry_run=false and index_embeddings=true before semantic search.",
+        });
+      }
+
+      const queryEmbedding = await embeddingProvider.embed({ kind: "query", text: query });
+      const dimensions = config.gemini.outputDimensionality ?? 1536;
+      if (queryEmbedding.dimensions !== dimensions) {
+        throw new Error(`Query embedding dimensions mismatch: expected ${dimensions}, got ${queryEmbedding.dimensions}`);
+      }
+
+      const results = searchByVector({
+        dbPath,
+        dimensions,
+        queryVector: queryEmbedding.vector,
+        maxResults: max_results,
+        maxSnippetChars: max_snippet_chars,
+      });
+
       return asJsonText({
         query,
         projectPath,
-        maxResults: max_results,
-        status: "not_implemented_yet",
-        nextImplementationStep: "Build file scanner, chunker, and local vector store before returning code ranges.",
+        dbPath,
+        dimensions,
+        results,
+        resultCount: results.length,
       });
     },
   );

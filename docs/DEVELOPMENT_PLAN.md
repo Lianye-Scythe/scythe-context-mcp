@@ -97,6 +97,8 @@ MVP 儲存選型：
 
 ## Phase 3: Semantic Search + Minimal Keyword
 
+狀態：semantic vector lookup 已完成，minimal keyword/path boost 尚未實作。
+
 目標：`repo_semantic_search` 真正返回相關程式碼片段。
 
 工作項：
@@ -133,6 +135,13 @@ MVP 儲存選型：
 - 自然語言查詢可找到非同字面命中的檔案。
 - 返回結果可讓 Codex 直接接著 Read/Edit。
 - 精確函式名查詢不應被純語義結果完全蓋掉。
+
+已完成：
+
+- query embedding。
+- sqlite-vec KNN lookup。
+- 回傳 path、line range、distance、snippet。
+- index missing 時回傳可修復訊息。
 
 ## Phase 4: Advanced Hybrid Search
 
