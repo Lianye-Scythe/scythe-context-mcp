@@ -30,6 +30,11 @@ export interface EmbeddingSetInput {
   dimensions: number;
 }
 
+export interface EmbeddingRecordInput {
+  chunkId: number;
+  embeddingSetId: number;
+}
+
 export function vectorTableName(dimensions: number): string {
   if (!Number.isInteger(dimensions) || dimensions <= 0) {
     throw new Error("Vector dimensions must be a positive integer");
@@ -144,3 +149,14 @@ export function getOrCreateEmbeddingSet(db: Database, input: EmbeddingSetInput):
   return row.id;
 }
 
+export function getOrCreateEmbeddingRecord(db: Database, input: EmbeddingRecordInput): number {
+  db.prepare(`
+    insert or ignore into embeddings(chunk_id, embedding_set_id)
+    values (@chunkId, @embeddingSetId)
+  `).run(input);
+
+  const row = db
+    .prepare("select id from embeddings where chunk_id = ? and embedding_set_id = ?")
+    .get(input.chunkId, input.embeddingSetId) as { id: number };
+  return row.id;
+}

@@ -46,7 +46,7 @@ env = {
 
 - `repo_index_status`: 查看專案、索引路徑、provider 設定與目前實作狀態。
 - `gemini_embedding_probe`: 發一個 embedding request，測官方 Gemini 或中轉站是否相容。
-- `repo_reindex`: 掃描專案；`dry_run=true` 回報計畫，`dry_run=false` 寫入 file/chunk metadata 到 `.repo-beacon/index.sqlite`。
+- `repo_reindex`: 掃描專案；`dry_run=true` 回報計畫，`dry_run=false` 寫入 file/chunk metadata 到 `.repo-beacon/index.sqlite`。只有設定 `index_embeddings=true` 時才會呼叫 Gemini 寫入向量，並受 `max_embedding_chunks` 限制。
 - `repo_semantic_search`: 預留的語義搜尋工具，目前會回傳 scaffold 狀態。
 
 ## Documentation

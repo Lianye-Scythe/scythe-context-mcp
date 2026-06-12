@@ -3,6 +3,7 @@ import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { z } from "zod";
 import type { AppConfig } from "../config.js";
 import { reindexDryRun } from "../indexing/dryRun.js";
+import { indexMissingEmbeddings } from "../indexing/embeddingWriter.js";
 import { persistentReindexMetadata } from "../indexing/indexWriter.js";
 import { GeminiEmbeddingProvider } from "../providers/gemini.js";
 
@@ -84,6 +85,9 @@ export function registerTools(server: McpServer, config: AppConfig): void {
         target_chunk_chars: z.number().int().positive().optional(),
         chunk_overlap_chars: z.number().int().nonnegative().optional(),
         max_chunks_per_file: z.number().int().positive().optional(),
+        index_embeddings: z.boolean().default(false),
+        embedding_batch_size: z.number().int().positive().max(128).optional(),
+        max_embedding_chunks: z.number().int().positive().max(10000).optional(),
       },
     },
     async ({
@@ -93,6 +97,9 @@ export function registerTools(server: McpServer, config: AppConfig): void {
       target_chunk_chars,
       chunk_overlap_chars,
       max_chunks_per_file,
+      index_embeddings,
+      embedding_batch_size,
+      max_embedding_chunks,
     }) => {
       const commonOptions = {
         projectPath: path.resolve(project_path || config.defaultProjectPath),
@@ -102,15 +109,36 @@ export function registerTools(server: McpServer, config: AppConfig): void {
         maxChunksPerFile: max_chunks_per_file ?? config.indexing.maxChunksPerFile,
       };
 
-      const result = dry_run
-        ? await reindexDryRun(commonOptions)
-        : await persistentReindexMetadata({
-            ...commonOptions,
-            indexDirName: config.indexDirName,
-            vectorDimensions: config.gemini.outputDimensionality ?? 1536,
-          });
+      if (dry_run) {
+        return asJsonText(await reindexDryRun(commonOptions));
+      }
 
-      return asJsonText(result);
+      const metadataResult = await persistentReindexMetadata({
+        ...commonOptions,
+        indexDirName: config.indexDirName,
+        vectorDimensions: config.gemini.outputDimensionality ?? 1536,
+      });
+
+      if (!index_embeddings) {
+        return asJsonText(metadataResult);
+      }
+
+      const embeddingResult = await indexMissingEmbeddings({
+        dbPath: metadataResult.dbPath,
+        providerName: "gemini",
+        providerBaseUrl: config.gemini.baseUrl,
+        model: config.gemini.model,
+        dimensions: config.gemini.outputDimensionality ?? 1536,
+        batchSize: embedding_batch_size ?? config.indexing.embeddingBatchSize,
+        maxChunks: max_embedding_chunks ?? config.indexing.maxEmbeddingChunks,
+        provider: embeddingProvider,
+      });
+
+      return asJsonText({
+        ...metadataResult,
+        status: "metadata_and_embeddings_indexed",
+        embeddings: embeddingResult,
+      });
     },
   );
 

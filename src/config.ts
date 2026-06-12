@@ -12,6 +12,8 @@ export interface AppConfig {
     targetChunkChars: number;
     chunkOverlapChars: number;
     maxChunksPerFile: number;
+    embeddingBatchSize: number;
+    maxEmbeddingChunks: number;
   };
   gemini: {
     apiKey?: string;
@@ -61,6 +63,8 @@ export function loadConfig(): AppConfig {
       maxChunksPerFile:
         numberFromEnv("REPO_BEACON_MAX_CHUNKS_PER_FILE", DEFAULT_INDEXING_LIMITS.maxChunksPerFile) ??
         DEFAULT_INDEXING_LIMITS.maxChunksPerFile,
+      embeddingBatchSize: numberFromEnv("REPO_BEACON_EMBEDDING_BATCH_SIZE", 16) ?? 16,
+      maxEmbeddingChunks: numberFromEnv("REPO_BEACON_MAX_EMBEDDING_CHUNKS", 256) ?? 256,
     },
     gemini: {
       apiKey: process.env.GEMINI_API_KEY,

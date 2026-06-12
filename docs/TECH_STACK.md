@@ -79,6 +79,8 @@ Phase 2 indexing：
 - 增量索引必須以 file hash/chunk hash 避免重複 embedding。
 - embedding batch size 預設 16-64，依 provider 錯誤調整。
 - 中轉站不支援 batch 時 fallback 單筆，但要有 rate limit。
+- `repo_reindex` 預設只寫 metadata；必須顯式 `index_embeddings=true` 才會產生 embedding API 成本。
+- `max_embedding_chunks` 預設限制單次 embedding 數量，避免第一次索引大 repo 時成本失控。
 
 Phase 3 search：
 
@@ -104,6 +106,7 @@ Phase 3 search：
 - `max_chunks_per_file`
 - `embedding_batch_size`
 - `embedding_concurrency`
+- `max_embedding_chunks`
 - `max_results`
 - `max_context_chars`
 
@@ -121,4 +124,4 @@ Phase 3 search：
 
 ## Recommendation
 
-Phase 1 dry-run scanner/chunker 已完成。Phase 2 已完成 `better-sqlite3 + sqlite-vec` 載入 spike、schema 初始化、file/chunk metadata 寫入流程；下一步是 embedding index writer。
+Phase 1 dry-run scanner/chunker 已完成。Phase 2 已完成 `better-sqlite3 + sqlite-vec` 載入 spike、schema 初始化、file/chunk metadata 寫入流程與 embedding index writer；下一步是 `repo_semantic_search` 的 vector lookup + result formatter。
