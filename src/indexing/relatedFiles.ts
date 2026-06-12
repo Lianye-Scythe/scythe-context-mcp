@@ -8,6 +8,14 @@ export interface RelatedFilesOptions {
   maxResults: number;
 }
 
+export interface RelatedFileGraphOptions {
+  dbPath: string;
+  seedPaths: string[];
+  maxDepth: number;
+  maxFiles: number;
+  maxResultsPerFile: number;
+}
+
 export interface RelatedFilesResult {
   path: string;
   symbols: Array<{
@@ -27,6 +35,11 @@ export interface RelatedFilesResult {
     specifier: string;
     line: number;
   }>;
+}
+
+export interface RelatedFileGraphNode extends RelatedFilesResult {
+  depth: number;
+  via: string | null;
 }
 
 function tableExists(db: SqliteDatabase, name: string): boolean {
@@ -100,4 +113,40 @@ export function readRelatedFiles(options: RelatedFilesOptions): RelatedFilesResu
   } finally {
     db.close();
   }
+}
+
+export function readRelatedFileGraph(options: RelatedFileGraphOptions): RelatedFileGraphNode[] {
+  const maxDepth = Math.max(0, options.maxDepth);
+  const maxFiles = Math.max(0, options.maxFiles);
+  if (maxFiles === 0) return [];
+
+  const queue = options.seedPaths.map((path) => ({ path, depth: 0, via: null as string | null }));
+  const visited = new Set<string>();
+  const nodes: RelatedFileGraphNode[] = [];
+
+  while (queue.length > 0 && nodes.length < maxFiles) {
+    const next = queue.shift();
+    if (!next || visited.has(next.path)) continue;
+    visited.add(next.path);
+
+    const related = readRelatedFiles({
+      dbPath: options.dbPath,
+      filePath: next.path,
+      maxResults: options.maxResultsPerFile,
+    });
+    nodes.push({ ...related, depth: next.depth, via: next.via });
+
+    if (next.depth >= maxDepth) continue;
+    const neighbors = [
+      ...related.imports.map((item) => item.resolvedPath).filter((path): path is string => Boolean(path)),
+      ...related.importedBy.map((item) => item.path),
+    ];
+    for (const neighbor of neighbors) {
+      if (!visited.has(neighbor) && !queue.some((queued) => queued.path === neighbor)) {
+        queue.push({ path: neighbor, depth: next.depth + 1, via: next.path });
+      }
+    }
+  }
+
+  return nodes;
 }

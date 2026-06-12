@@ -1,4 +1,4 @@
-import type { RelatedFilesResult } from "./relatedFiles.js";
+import type { RelatedFileGraphNode, RelatedFilesResult } from "./relatedFiles.js";
 import {
   formatSearchResults,
   type FormattableSearchResult,
@@ -14,6 +14,8 @@ export interface ContextPackOptions {
 
 export interface ContextPackRelatedFile {
   sourcePath: string;
+  depth?: number;
+  via?: string | null;
   symbols: RelatedFilesResult["symbols"];
   imports: RelatedFilesResult["imports"];
   importedBy: RelatedFilesResult["importedBy"];
@@ -33,9 +35,10 @@ function addUnique(values: string[], value: string | null | undefined): void {
   if (value && !values.includes(value)) values.push(value);
 }
 
-function compactRelatedFile(related: RelatedFilesResult, maxRelatedItems: number): ContextPackRelatedFile {
+function compactRelatedFile(related: RelatedFilesResult | RelatedFileGraphNode, maxRelatedItems: number): ContextPackRelatedFile {
   return {
     sourcePath: related.path,
+    ...("depth" in related ? { depth: related.depth, via: related.via } : {}),
     symbols: related.symbols.slice(0, maxRelatedItems),
     imports: related.imports.slice(0, maxRelatedItems),
     importedBy: related.importedBy.slice(0, maxRelatedItems),
@@ -51,7 +54,6 @@ export function buildContextPack<T extends FormattableSearchResult>(
   const formatted = formatSearchResults(query, searchResults, { maxContextChars: options.maxContextChars });
   const primaryPaths = formatted.results.map((result) => result.path);
   const related = relatedFiles
-    .filter((item) => primaryPaths.includes(item.path))
     .slice(0, options.maxRelatedFiles)
     .map((item) => compactRelatedFile(item, options.maxRelatedItems));
 

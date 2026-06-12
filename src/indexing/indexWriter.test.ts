@@ -4,7 +4,7 @@ import path from "node:path";
 import Database from "better-sqlite3";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import { persistentReindexMetadata } from "./indexWriter.js";
-import { readRelatedFiles } from "./relatedFiles.js";
+import { readRelatedFileGraph, readRelatedFiles } from "./relatedFiles.js";
 import { vectorTableName } from "../storage/schema.js";
 
 let tempDir: string;
@@ -220,6 +220,37 @@ describe("persistentReindexMetadata", () => {
     ]);
     expect(serviceRelations.imports).toEqual([
       expect.objectContaining({ specifier: "./helper", resolvedPath: "src/helper.ts" }),
+    ]);
+  });
+
+  it("reads a bounded multi-hop related file graph", async () => {
+    await fs.mkdir(path.join(tempDir, "src"));
+    await fs.writeFile(path.join(tempDir, "src", "controller.ts"), 'import { service } from "./service";\nservice();\n');
+    await fs.writeFile(path.join(tempDir, "src", "service.ts"), 'import { repo } from "./repo";\nexport function service() { repo(); }\n');
+    await fs.writeFile(path.join(tempDir, "src", "repo.ts"), "export function repo() {}\n");
+
+    const metadata = await persistentReindexMetadata({
+      projectPath: tempDir,
+      indexDirName: ".repo-beacon",
+      vectorDimensions: 1536,
+      maxFileBytes: 2048,
+      targetChunkChars: 100,
+      chunkOverlapChars: 0,
+      maxChunksPerFile: 10,
+    });
+
+    const graph = readRelatedFileGraph({
+      dbPath: metadata.dbPath,
+      seedPaths: ["src/controller.ts"],
+      maxDepth: 2,
+      maxFiles: 10,
+      maxResultsPerFile: 10,
+    });
+
+    expect(graph.map((node) => ({ path: node.path, depth: node.depth, via: node.via }))).toEqual([
+      { path: "src/controller.ts", depth: 0, via: null },
+      { path: "src/service.ts", depth: 1, via: "src/controller.ts" },
+      { path: "src/repo.ts", depth: 2, via: "src/service.ts" },
     ]);
   });
 });

@@ -55,4 +55,41 @@ describe("buildContextPack", () => {
       }),
     );
   });
+
+  it("keeps multi-hop related nodes with depth and via metadata", () => {
+    const pack = buildContextPack(
+      "load service",
+      [{ path: "src/controller.ts", startLine: 1, endLine: 5, snippet: "call loadService()" }],
+      [
+        {
+          path: "src/controller.ts",
+          depth: 0,
+          via: null,
+          symbols: [],
+          imports: [{ specifier: "./service", resolvedPath: "src/service.ts", line: 1 }],
+          importedBy: [],
+        },
+        {
+          path: "src/service.ts",
+          depth: 1,
+          via: "src/controller.ts",
+          symbols: [{ name: "loadService", kind: "function", line: 1, signature: "export function loadService()", exported: true }],
+          imports: [{ specifier: "./repo", resolvedPath: "src/repo.ts", line: 2 }],
+          importedBy: [{ path: "src/controller.ts", specifier: "./service", line: 1 }],
+        },
+      ],
+      {
+        maxContextChars: 200,
+        maxRelatedFiles: 4,
+        maxRelatedItems: 4,
+      },
+    );
+
+    expect(pack.relatedFiles).toEqual([
+      expect.objectContaining({ sourcePath: "src/controller.ts", depth: 0, via: null }),
+      expect.objectContaining({ sourcePath: "src/service.ts", depth: 1, via: "src/controller.ts" }),
+    ]);
+    expect(pack.suggestedPaths).toEqual(["src/controller.ts", "src/service.ts", "src/repo.ts"]);
+    expect(pack.context.relatedFileCount).toBe(2);
+  });
 });

@@ -174,7 +174,7 @@ repo_semantic_search(query, project_path, max_results, mode="hybrid")
 
 ## Phase 5: Symbol Graph
 
-狀態：輕量 MVP 已完成；tree-sitter / deeper graph 尚未實作。
+狀態：輕量 MVP 已完成；bounded multi-hop traversal 已完成；tree-sitter / deeper semantic graph 尚未實作。
 
 目標：接近 context engine 的「關係理解」。
 
@@ -184,7 +184,7 @@ repo_semantic_search(query, project_path, max_results, mode="hybrid")
 2. 記錄 function/class/interface symbols。已完成常見 declarations。
 3. 建立 file dependency graph。已完成 relative import resolution 與 reverse-import 查詢。
 4. 查詢時加入 related files。已完成 `repo_related_files`，採按需展開。
-5. 支援從 router -> service -> model 的鏈路返回。後續加入多跳 graph traversal。
+5. 支援從 router -> service -> model 的鏈路返回。已完成 bounded BFS traversal，後續可加入語言感知排序與 test/schema boost。
 
 驗收：
 
@@ -195,7 +195,7 @@ repo_semantic_search(query, project_path, max_results, mode="hybrid")
 
 ## Phase 6: Codex Workflow Polish
 
-狀態：context budget、context packer、server instructions、AGENTS.md 已完成；多跳 related-file traversal 尚未完成。
+狀態：context budget、context packer、bounded multi-hop related-file traversal、server instructions、AGENTS.md 已完成；related snippet packing 尚未完成。
 
 目標：讓 Codex 更穩定地使用工具。
 

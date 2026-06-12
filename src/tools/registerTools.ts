@@ -9,7 +9,7 @@ import { indexMissingEmbeddings } from "../indexing/embeddingWriter.js";
 import { searchHybrid } from "../indexing/hybridSearch.js";
 import { readDetailedIndexStatus } from "../indexing/indexStatus.js";
 import { persistentReindexMetadata } from "../indexing/indexWriter.js";
-import { readRelatedFiles } from "../indexing/relatedFiles.js";
+import { readRelatedFileGraph, readRelatedFiles } from "../indexing/relatedFiles.js";
 import { formatSearchResults, type FormattableSearchResult } from "../indexing/resultFormat.js";
 import { searchByVector } from "../indexing/semanticSearch.js";
 import { GeminiEmbeddingProvider } from "../providers/gemini.js";
@@ -84,8 +84,9 @@ export function registerTools(server: McpServer, config: AppConfig): void {
           "related_files",
           "context_budgeting",
           "context_packer",
+          "multi_hop_related_files",
         ],
-        pending: ["multi_hop_related_files", "tree_sitter_symbols"],
+        pending: ["tree_sitter_symbols", "related_snippet_packing"],
         indexing: config.indexing,
         gemini: {
           baseUrl: config.gemini.baseUrl,
@@ -289,8 +290,10 @@ export function registerTools(server: McpServer, config: AppConfig): void {
         max_results: z.number().int().positive().max(30).default(6),
         max_snippet_chars: z.number().int().positive().max(4000).default(1200),
         max_context_chars: z.number().int().positive().max(100000).default(16000),
-        max_related_files: z.number().int().nonnegative().max(20).default(4),
+        max_seed_files: z.number().int().positive().max(10).default(3),
+        max_related_files: z.number().int().nonnegative().max(30).default(10),
         max_related_items: z.number().int().positive().max(50).default(8),
+        related_depth: z.number().int().nonnegative().max(3).default(1),
         mode: z.enum(["hybrid", "semantic"]).default("hybrid"),
       },
     },
@@ -300,8 +303,10 @@ export function registerTools(server: McpServer, config: AppConfig): void {
       max_results,
       max_snippet_chars,
       max_context_chars,
+      max_seed_files,
       max_related_files,
       max_related_items,
+      related_depth,
       mode,
     }) => {
       const projectPath = path.resolve(project_path || config.defaultProjectPath);
@@ -330,10 +335,17 @@ export function registerTools(server: McpServer, config: AppConfig): void {
         maxSnippetChars: max_snippet_chars,
         mode,
       });
-      const relatedPaths = Array.from(new Set(rawResults.map((result) => result.path))).slice(0, max_related_files);
-      const relatedFiles = relatedPaths.map((filePath) =>
-        readRelatedFiles({ dbPath, filePath, maxResults: max_related_items }),
+      const relatedPaths = Array.from(new Set(rawResults.map((result) => result.path))).slice(
+        0,
+        Math.min(max_seed_files, max_related_files),
       );
+      const relatedFiles = readRelatedFileGraph({
+        dbPath,
+        seedPaths: relatedPaths,
+        maxDepth: related_depth,
+        maxFiles: max_related_files,
+        maxResultsPerFile: max_related_items,
+      });
       const pack = buildContextPack(query, rawResults, relatedFiles, {
         maxContextChars: max_context_chars,
         maxRelatedFiles: max_related_files,
@@ -346,6 +358,8 @@ export function registerTools(server: McpServer, config: AppConfig): void {
         dbPath,
         dimensions,
         mode,
+        relatedDepth: related_depth,
+        relatedSeedCount: relatedPaths.length,
         ...pack,
       });
     },

@@ -156,9 +156,10 @@ flowchart TD
 - 執行 semantic/hybrid search。
 - 對 primary snippets 套用 `max_context_chars`。
 - 為命中的前幾個檔案附上 symbols、imports、importedBy。
+- 依 `related_depth` 做 bounded BFS，沿著 imports / importedBy 展開多跳 related files。
 - 產出 `suggestedPaths`，讓 Codex 判斷下一步要讀哪些檔案。
 
-第一版只做一跳 related-file metadata，不自動讀取 related file snippets，避免 context 膨脹。多跳 traversal 和 related snippet packing 留到下一階段。
+目前只打包 related-file metadata，不自動讀取 related file snippets，避免 context 膨脹。related snippet packing 留到下一階段。
 
 ### Storage Layer
 
