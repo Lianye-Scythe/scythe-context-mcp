@@ -9,6 +9,7 @@ This project follows semantic versioning before npm publication where practical.
 ### Added
 
 - Add `repo_doctor` local diagnostics for runtime, native modules, Gemini env, WSL interop, and index health without external API calls.
+- Expand the context-search benchmark to cover 30 repo-self lookup cases and exclude benchmark case text from scoring.
 
 ## [0.1.5] - 2026-06-14
 

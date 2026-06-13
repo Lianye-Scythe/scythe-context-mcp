@@ -74,5 +74,218 @@
       "src/storage/schema.ts"
     ],
     "notes": "Keyword search internals and schema lookup."
+  },
+  {
+    "id": "doctor-native-modules",
+    "query": "diagnose better-sqlite3 sqlite-vec native module load failure without external API calls",
+    "expectedPaths": [
+      "src/tools/doctor.ts",
+      "src/storage/sqliteVec.ts",
+      "src/tools/doctor.test.ts"
+    ],
+    "notes": "Install/runtime diagnostics for native dependencies."
+  },
+  {
+    "id": "doctor-embedding-coverage",
+    "query": "repo doctor should warn when embedding coverage is incomplete",
+    "expectedPaths": [
+      "src/tools/doctor.ts",
+      "src/tools/doctor.test.ts"
+    ],
+    "notes": "Doctor index health and embedding coverage warning behavior."
+  },
+  {
+    "id": "register-repo-doctor-tool",
+    "query": "where is repo_doctor registered as an MCP tool",
+    "expectedPaths": [
+      "src/tools/registerTools.ts",
+      "src/tools/doctor.ts"
+    ],
+    "notes": "Exact tool wiring lookup."
+  },
+  {
+    "id": "server-instructions-rg-vs-context",
+    "query": "server instructions tell Codex when to use Scythe Context and when rg is better",
+    "expectedPaths": [
+      "src/index.ts",
+      "README.md",
+      "docs/codex-integration.md"
+    ],
+    "notes": "Prompt/tool-use policy lookup."
+  },
+  {
+    "id": "cli-version-help",
+    "query": "CLI --version and --help should match package version and show MCP config",
+    "expectedPaths": [
+      "src/cli.ts",
+      "src/cli.test.ts",
+      "package.json"
+    ],
+    "notes": "CLI smoke and version consistency."
+  },
+  {
+    "id": "config-default-project-pwd",
+    "query": "default project path should prefer SCYTHE_CONTEXT_DEFAULT_PROJECT then PWD then cwd",
+    "expectedPaths": [
+      "src/config.ts",
+      "src/config.test.ts"
+    ],
+    "notes": "Multi-repo default project behavior."
+  },
+  {
+    "id": "legacy-env-aliases",
+    "query": "legacy REPO_BEACON environment variables should still work as fallback aliases",
+    "expectedPaths": [
+      "src/config.ts",
+      "src/config.test.ts",
+      "README.md"
+    ],
+    "notes": "Rename compatibility and config migration."
+  },
+  {
+    "id": "gemini-batch-fallback",
+    "query": "embedding writer should fall back from batch embedding to single embed requests",
+    "expectedPaths": [
+      "src/indexing/embeddingWriter.ts",
+      "src/indexing/embeddingWriter.test.ts"
+    ],
+    "notes": "Provider capability and batch compatibility behavior."
+  },
+  {
+    "id": "gemini-error-classification",
+    "query": "Gemini provider should classify retryable HTTP errors and include safe body snippets",
+    "expectedPaths": [
+      "src/providers/gemini.ts",
+      "src/providers/gemini.test.ts"
+    ],
+    "notes": "Provider error handling lookup."
+  },
+  {
+    "id": "context-budgeting-truncation",
+    "query": "context pack should respect max context chars and mark truncated snippets",
+    "expectedPaths": [
+      "src/indexing/contextPack.ts",
+      "src/indexing/resultFormat.ts",
+      "src/indexing/contextPack.test.ts",
+      "src/indexing/resultFormat.test.ts"
+    ],
+    "notes": "Context budget and formatting behavior."
+  },
+  {
+    "id": "related-snippet-packing",
+    "query": "include related snippets for non-primary related files in context pack",
+    "expectedPaths": [
+      "src/indexing/relatedSnippets.ts",
+      "src/tools/registerTools.ts",
+      "src/indexing/contextPack.test.ts"
+    ],
+    "notes": "Related context expansion query."
+  },
+  {
+    "id": "code-aware-reranker-source-counterpart",
+    "query": "local code-aware reranker should add source counterpart when matched test file contains query terms",
+    "expectedPaths": [
+      "src/indexing/codeAwareReranker.ts",
+      "src/indexing/hybridSearch.test.ts",
+      "src/indexing/hybridSearch.ts"
+    ],
+    "notes": "Reranker source/test relation behavior."
+  },
+  {
+    "id": "path-role-ranking",
+    "query": "ranking should boost source files and downrank docs tests generated files depending on query intent",
+    "expectedPaths": [
+      "src/indexing/codeAwareReranker.ts",
+      "src/indexing/relatedFiles.ts"
+    ],
+    "notes": "File role and intent based ranking."
+  },
+  {
+    "id": "scanner-ignore-local-secrets",
+    "query": "scanner should ignore local secrets references screenshots and index directories",
+    "expectedPaths": [
+      "src/indexing/scanner.ts",
+      ".gitignore",
+      "AGENTS.md"
+    ],
+    "notes": "Privacy and ignored files behavior."
+  },
+  {
+    "id": "dry-run-indexing-stats",
+    "query": "dry run should scan project and report skipped files chunks bytes without writing metadata",
+    "expectedPaths": [
+      "src/indexing/dryRun.ts",
+      "src/indexing/dryRun.test.ts"
+    ],
+    "notes": "Safe indexing preview lookup."
+  },
+  {
+    "id": "sqlite-schema-fts-vector",
+    "query": "SQLite schema creates chunk FTS virtual table and sqlite-vec vector table",
+    "expectedPaths": [
+      "src/storage/schema.ts",
+      "src/storage/schema.test.ts",
+      "src/storage/sqliteVec.ts"
+    ],
+    "notes": "Storage schema internals."
+  },
+  {
+    "id": "dependency-resolution-relative-imports",
+    "query": "resolve relative imports to active project paths for TypeScript Python Rust and Go",
+    "expectedPaths": [
+      "src/indexing/symbolGraph.ts",
+      "src/indexing/symbolGraph.test.ts"
+    ],
+    "notes": "Symbol/dependency graph extraction."
+  },
+  {
+    "id": "semantic-vector-search-sqlite-vec",
+    "query": "semantic search uses sqlite-vec table and query vector dimensions",
+    "expectedPaths": [
+      "src/indexing/semanticSearch.ts",
+      "src/indexing/semanticSearch.test.ts",
+      "src/storage/sqliteVec.ts"
+    ],
+    "notes": "Raw semantic vector search behavior."
+  },
+  {
+    "id": "benchmark-rg-baseline",
+    "query": "benchmark compares rg smart baseline against scythe keyword and hybrid search",
+    "expectedPaths": [
+      "scripts/context-benchmark.mjs",
+      "benchmarks/context-search-cases.json",
+      "docs/benchmark.md"
+    ],
+    "notes": "Benchmark harness and no-MCP baseline."
+  },
+  {
+    "id": "npm-package-files",
+    "query": "npm package should include dist docs benchmark cases and context benchmark script but not local secrets",
+    "expectedPaths": [
+      "package.json",
+      ".gitignore",
+      "scripts/context-benchmark.mjs"
+    ],
+    "notes": "Package files and privacy boundary."
+  },
+  {
+    "id": "github-ci-release-checks",
+    "query": "CI should run tests build smoke audit before release",
+    "expectedPaths": [
+      ".github/workflows/ci.yml",
+      "package.json",
+      "CONTRIBUTING.md"
+    ],
+    "notes": "Contributor and CI workflow lookup."
+  },
+  {
+    "id": "security-privacy-embedding-text",
+    "query": "security policy should explain embedding text goes to configured remote provider and local indexes are not committed",
+    "expectedPaths": [
+      "SECURITY.md",
+      "README.md",
+      "AGENTS.md"
+    ],
+    "notes": "Privacy docs and remote embedding risk."
   }
 ]

@@ -143,14 +143,18 @@ function percentile(values, p) {
   return sorted[index];
 }
 
-function benchmarkMethod(name, cases, runCase) {
+function benchmarkMethod(name, cases, runCase, options = {}) {
+  const excludedPaths = new Set((options.excludedPaths ?? []).map(normalizeRelativePath));
   const caseResults = [];
   for (const testCase of cases) {
     const startedAt = performance.now();
     try {
       const result = runCase(testCase);
       const latencyMs = performance.now() - startedAt;
-      const paths = uniquePaths(result.paths ?? []);
+      const paths = uniquePaths(result.paths ?? []).filter((candidate) => !excludedPaths.has(candidate));
+      const contextPaths = result.contextPaths
+        ? uniquePaths(result.contextPaths).filter((candidate) => !excludedPaths.has(candidate))
+        : undefined;
       caseResults.push({
         id: testCase.id,
         query: testCase.query,
@@ -158,10 +162,10 @@ function benchmarkMethod(name, cases, runCase) {
         status: result.status ?? "ok",
         latencyMs,
         paths,
-        contextPaths: result.contextPaths ? uniquePaths(result.contextPaths) : undefined,
+        contextPaths,
         error: result.error,
         ...metricsFor(paths, testCase.expectedPaths),
-        context: result.contextPaths ? metricsFor(uniquePaths(result.contextPaths), testCase.expectedPaths) : undefined,
+        context: contextPaths ? metricsFor(contextPaths, testCase.expectedPaths) : undefined,
       });
     } catch (error) {
       const latencyMs = performance.now() - startedAt;
@@ -305,6 +309,7 @@ async function main() {
   const repoRoot = path.resolve(path.dirname(new URL(import.meta.url).pathname), "..");
   const projectPath = path.resolve(args.project);
   const casesPath = path.resolve(args.cases);
+  const casesRelativePath = normalizeRelativePath(path.relative(projectPath, casesPath));
   const cases = readCases(casesPath);
   const dbPath = path.join(projectPath, ".scythe-context", "index.sqlite");
 
@@ -327,6 +332,7 @@ async function main() {
   const methods = [
     benchmarkMethod("rg-smart", cases, (testCase) =>
       rgSmartSearch(projectPath, testCase.query, args.maxResults, keywordTerms),
+      { excludedPaths: [casesRelativePath] },
     ),
     benchmarkMethod("scythe-keyword", cases, (testCase) => {
       const rawResults = searchKeywordOnly({
@@ -343,7 +349,7 @@ async function main() {
           maxContextChars: args.maxContextChars,
         }),
       };
-    }),
+    }, { excludedPaths: [casesRelativePath] }),
   ];
 
   if (args.includeHybrid) {
@@ -388,12 +394,13 @@ async function main() {
             maxResults: args.maxResults,
             maxSnippetChars: args.maxSnippetChars,
           });
-          const paths = uniquePaths(rawResults);
+          const paths = uniquePaths(rawResults).filter((candidate) => candidate !== casesRelativePath);
           const contextPaths = contextPathsFromResults(rawResults, buildContextPack, readRelatedFileGraph, {
             dbPath,
             query: testCase.query,
             maxContextChars: args.maxContextChars,
           });
+          const filteredContextPaths = uniquePaths(contextPaths).filter((candidate) => candidate !== casesRelativePath);
           hybridCases.push({
             id: testCase.id,
             query: testCase.query,
@@ -401,9 +408,9 @@ async function main() {
             status: "ok",
             latencyMs: performance.now() - startedAt,
             paths,
-            contextPaths: uniquePaths(contextPaths),
+            contextPaths: filteredContextPaths,
             ...metricsFor(paths, testCase.expectedPaths),
-            context: metricsFor(uniquePaths(contextPaths), testCase.expectedPaths),
+            context: metricsFor(filteredContextPaths, testCase.expectedPaths),
           });
         } catch (error) {
           hybridCases.push({

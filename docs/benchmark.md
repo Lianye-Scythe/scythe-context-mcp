@@ -39,3 +39,5 @@ The benchmark expects an existing `.scythe-context/index.sqlite` for the target 
 ```
 
 The default case file is `benchmarks/context-search-cases.json`. Each case has a natural-language query and one or more expected paths. The summary reports ok/skipped/error counts, hit@1, hit@3, hit@5, MRR, and latency. Use this before and after ranking changes so reranker improvements are measured instead of judged by feel.
+
+The runner excludes the case file itself from scoring so benchmark query text does not become a self-match.
