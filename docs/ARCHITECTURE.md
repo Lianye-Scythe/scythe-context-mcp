@@ -2,7 +2,7 @@
 
 ## 目標
 
-Scythe Context MCP 的目標不是複製完整商業版 Augment Context Engine，而是先做一個本機、可控、可接 Codex App 的上下文搜尋層：
+Scythe Context MCP 的目標是做一個本機、可控、可接 Codex App / CLI 的上下文搜尋層：
 
 1. 對 repo 建立本機索引。
 2. 支援自然語言查詢程式碼。
@@ -253,15 +253,9 @@ Codex 使用情境下，結果要比一般 RAG 更偏向「可操作」：
 - 返回建議 grep keywords。
 - 返回 context budget summary，並在超出 `max_context_chars` 時截斷 snippets。
 
-## 與 Augment / fast-context-mcp 的差異
+## 設計取捨
 
-### 相對 fast-context-mcp
-
-Scythe Context 會更偏本機索引與可配置 provider，不依賴 Windsurf/Devin key。查詢可以混合 embedding 與 keyword，而不是只靠查詢時推理與 grep。
-
-### 相對 Augment Context Engine
-
-Scythe Context MVP 不包含：
+Scythe Context 優先做本機索引、可配置 provider、可診斷 tool output 與 Codex 可操作上下文。MVP 目前不包含：
 
 - 團隊級跨 repo 權限系統。
 - 即時 IDE active context。

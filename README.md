@@ -1,13 +1,13 @@
 # Scythe Context MCP
 
-Scythe Context MCP 是給 Codex App / Codex CLI 使用的本機程式碼上下文引擎。目標是提供類似 Augment Context Engine / fast-context-mcp 的能力，但資料與索引留在本機，embedding provider 可接官方 Gemini API 或第三方 v1beta 中轉站。
+Scythe Context MCP 是給 Codex App / Codex CLI 使用的本機程式碼上下文引擎。目標是用本機索引、混合搜尋與可配置 embedding provider，幫 Codex 更快定位相關檔案、行號、符號關係與可操作上下文。
 
 目前狀態：已具備 repo 掃描、chunk、SQLite/sqlite-vec metadata 與 embedding index、語義搜尋、FTS keyword search、hybrid ranking、輕量 symbol/dependency graph、related-file lookup、搜尋 context budget、context packer、bounded multi-hop related-file traversal、opt-in related snippet packing、provider diagnostics 與索引 freshness diagnostics。下一階段優先做 provider capability cache、更多可修復錯誤訊息與必要時的 tree-sitter symbols。
 
 ## Quick Start
 
 ```bash
-git clone https://github.com/OWNER/scythe-context-mcp.git
+git clone https://github.com/Lianye-Scythe/scythe-context-mcp.git
 cd scythe-context-mcp
 npm install
 cp .env.example .env
@@ -15,8 +15,6 @@ npm run build
 ```
 
 Runtime target: Node.js 24 LTS. Node 26 may work, but it is not the baseline until it enters LTS.
-
-Before publishing, replace `OWNER` in repository URLs with the GitHub account or organization that will host the project.
 
 舊專案名 `repo-beacon-mcp` 已改為 `scythe-context-mcp`。既有本機 Codex thread 可暫時透過舊路徑 symlink 繼續運作；新的 MCP 設定請使用新路徑與 `[mcp_servers.scythe_context]`。舊的 `REPO_BEACON_*` 環境變數仍作為 fallback 相容，但新設定應改用 `SCYTHE_CONTEXT_*`。
 
