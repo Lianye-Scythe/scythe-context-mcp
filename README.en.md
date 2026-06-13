@@ -142,12 +142,17 @@ If you really want to pin one default project, set `SCYTHE_CONTEXT_DEFAULT_PROJE
 
 ### Gemini / v1beta proxy
 
+Non-secret settings can go under `[mcp_servers.scythe_context.env]`:
+
 ```toml
 [mcp_servers.scythe_context.env]
 GEMINI_BASE_URL = "https://your-proxy.example.com/v1beta"
+GEMINI_MODEL = "gemini-embedding-2"
 GEMINI_AUTH_MODE = "bearer"
 GEMINI_OUTPUT_DIMENSIONALITY = "1536"
 ```
+
+Set `GEMINI_API_KEY` in the environment that starts Codex, or in the system environment, and forward it with `env_vars = ["GEMINI_API_KEY"]`. Do not write the key into synced or committed config files except for local throwaway testing.
 
 Supported auth modes:
 
@@ -155,9 +160,18 @@ Supported auth modes:
 - `bearer`
 - `query`
 
-Set `GEMINI_API_KEY` in the shell or system environment before starting Codex. Do not write API keys into synced or committed config files.
+Official Gemini usually uses `x-goog-api-key`; many third-party proxies use `bearer`. If a proxy requires a query-string key, use `query` and set `GEMINI_API_KEY_QUERY_PARAM` if needed.
 
-When using the Windows Codex App + WSL repo mode, add any extra Gemini variables to `WSLENV`, for example `PWD/p:GEMINI_API_KEY/w:GEMINI_BASE_URL/w:GEMINI_AUTH_MODE/w:GEMINI_OUTPUT_DIMENSIONALITY/w`.
+`WSLENV` is a WSL interop rule, not a Codex-specific field. You only need it when the Windows Codex App opens a WSL repo and the MCP server is launched through Windows Node. If you set extra Gemini variables, include them in `WSLENV`:
+
+```toml
+[mcp_servers.scythe_context.env]
+WSLENV = "PWD/p:GEMINI_API_KEY/w:GEMINI_BASE_URL/w:GEMINI_MODEL/w:GEMINI_AUTH_MODE/w:GEMINI_OUTPUT_DIMENSIONALITY/w"
+GEMINI_BASE_URL = "https://your-proxy.example.com/v1beta"
+GEMINI_MODEL = "gemini-embedding-2"
+GEMINI_AUTH_MODE = "bearer"
+GEMINI_OUTPUT_DIMENSIONALITY = "1536"
+```
 
 ## Typical Workflow
 

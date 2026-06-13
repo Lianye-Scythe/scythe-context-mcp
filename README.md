@@ -142,12 +142,17 @@ enabled_tools = [
 
 ### Gemini / v1beta proxy
 
+非秘密設定可以放在 `[mcp_servers.scythe_context.env]`：
+
 ```toml
 [mcp_servers.scythe_context.env]
 GEMINI_BASE_URL = "https://your-proxy.example.com/v1beta"
+GEMINI_MODEL = "gemini-embedding-2"
 GEMINI_AUTH_MODE = "bearer"
 GEMINI_OUTPUT_DIMENSIONALITY = "1536"
 ```
+
+`GEMINI_API_KEY` 建議放在 Codex 啟動環境或系統環境變數，並用 `env_vars = ["GEMINI_API_KEY"]` 轉發給 MCP server。除非只做本機臨時測試，否則不要把 key 寫進可同步或可提交的 config。
 
 支援的 auth mode：
 
@@ -155,9 +160,18 @@ GEMINI_OUTPUT_DIMENSIONALITY = "1536"
 - `bearer`
 - `query`
 
-啟動 Codex 前在 shell 或系統環境中設定 `GEMINI_API_KEY`，避免把 key 寫進可同步或可提交的設定檔。
+官方 Gemini 通常使用 `x-goog-api-key`；很多第三方中轉站使用 `bearer`。如果中轉站要求 query string key，可以使用 `query`，必要時再設定 `GEMINI_API_KEY_QUERY_PARAM`。
 
-如果使用 Windows Codex App + WSL repo 模式，且設定了額外 Gemini 變數，記得把它們加進 `WSLENV`，例如 `PWD/p:GEMINI_API_KEY/w:GEMINI_BASE_URL/w:GEMINI_AUTH_MODE/w:GEMINI_OUTPUT_DIMENSIONALITY/w`。
+`WSLENV` 是 WSL interop 規則，不是 Codex 專用欄位。只有在 Windows Codex App + WSL repo 模式需要讓 WSL 把變數轉交給 Windows Node 時才需要。若設定了額外 Gemini 變數，記得把它們加進 `WSLENV`：
+
+```toml
+[mcp_servers.scythe_context.env]
+WSLENV = "PWD/p:GEMINI_API_KEY/w:GEMINI_BASE_URL/w:GEMINI_MODEL/w:GEMINI_AUTH_MODE/w:GEMINI_OUTPUT_DIMENSIONALITY/w"
+GEMINI_BASE_URL = "https://your-proxy.example.com/v1beta"
+GEMINI_MODEL = "gemini-embedding-2"
+GEMINI_AUTH_MODE = "bearer"
+GEMINI_OUTPUT_DIMENSIONALITY = "1536"
+```
 
 ## 常用工作流
 
