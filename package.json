@@ -1,6 +1,6 @@
 {
   "name": "scythe-context-mcp",
-  "version": "0.1.1",
+  "version": "0.1.2",
   "description": "Local MCP context engine for Codex with Gemini Embedding 2 support.",
   "type": "module",
   "license": "Apache-2.0",
@@ -34,13 +34,13 @@
     ".env.example"
   ],
   "scripts": {
-    "build": "tsc -p tsconfig.json",
+    "build": "tsc -p tsconfig.json && node scripts/bin-mode.mjs ensure",
     "dev": "tsx src/index.ts",
     "prepack": "npm run build",
     "smoke": "node dist/index.js --version && node dist/index.js --help",
     "test": "vitest run",
     "typecheck": "tsc -p tsconfig.json --noEmit",
-    "verify": "npm test && npm run build && npm run smoke && npm audit --omit=dev && npm pack --dry-run"
+    "verify": "npm test && npm run build && node scripts/bin-mode.mjs check && npm run smoke && npm audit --omit=dev && npm pack --dry-run"
   },
   "engines": {
     "node": ">=24.11.0 <27"

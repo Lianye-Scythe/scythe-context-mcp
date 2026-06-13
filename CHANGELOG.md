@@ -6,6 +6,12 @@ This project follows semantic versioning before npm publication where practical.
 
 ## [Unreleased]
 
+## [0.1.2] - 2026-06-13
+
+### Fixed
+
+- Ensure the npm bin entrypoint is executable so `npx -y scythe-context-mcp` works on Unix-like environments.
+
 ## [0.1.1] - 2026-06-13
 
 ### Added
