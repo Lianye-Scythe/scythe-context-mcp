@@ -83,7 +83,7 @@ MVP 儲存選型：
 - chunk insert de-duplication。
 - embedding set de-duplication。
 - embedding metadata id 與 sqlite-vec rowid 的連結測試。
-- `repo_reindex(dry_run=false)` 寫入 `.repo-beacon/index.sqlite` 的 metadata index。
+- `repo_reindex(dry_run=false)` 寫入 `.scythe-context/index.sqlite` 的 metadata index。
 - `repo_reindex(dry_run=false, index_embeddings=true)` 會顯式呼叫 embedding provider，寫入 `embeddings` 與 `vec_embeddings_1536`。
 - `max_embedding_chunks` 限制單次 embedding 工作量，避免成本失控。
 - batch embedding 失敗時 fallback 到逐筆 embedding。
@@ -191,7 +191,7 @@ repo_semantic_search(query, project_path, max_results, mode="hybrid")
 - `repo_reindex(dry_run=false)` 會寫入 symbols/dependencies 統計。
 - `repo_index_status` 會回報 symbol/dependency rows。
 - `repo_related_files(path)` 會返回該檔 symbols、imports、importedBy。
-- 查詢 API 行為時，同時返回 route、handler、service、schema/test。後續多跳 traversal 完成後驗收。
+- 查詢 API 行為時，可透過 context pack 同時返回 route、handler、service、schema/test 候選路徑；更精準的語言感知排序留待後續優化。
 
 ## Phase 6: Codex Workflow Polish
 

@@ -9,12 +9,12 @@ const config = loadConfig();
 
 const server = new McpServer(
   {
-    name: "repo-beacon-mcp",
+    name: "scythe-context-mcp",
     version: "0.1.0",
   },
   {
     instructions:
-      "Repo Beacon is a local code-context MCP server for Codex. Use repo_index_status first, repo_reindex(dry_run=false) when metadata is missing or stale, and repo_context_pack for task lookup. Only set index_embeddings=true when semantic vectors are needed because chunk text is sent to the configured embedding endpoint. Keep max_context_chars and max_related_context_chars bounded. Use repo_semantic_search for ranking/debugging and repo_related_files for a focused file graph.",
+      "Scythe Context is a local code-context MCP server for Codex. Use repo_index_status first, repo_reindex(dry_run=false) when metadata is missing or stale, and repo_context_pack for task lookup. Only set index_embeddings=true when semantic vectors are needed because chunk text is sent to the configured embedding endpoint. Keep max_context_chars and max_related_context_chars bounded. Use repo_semantic_search for ranking/debugging and repo_related_files for a focused file graph.",
   },
 );
 

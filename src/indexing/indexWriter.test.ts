@@ -11,7 +11,7 @@ import { vectorTableName } from "../storage/schema.js";
 let tempDir: string;
 
 beforeEach(async () => {
-  tempDir = await fs.mkdtemp(path.join(os.tmpdir(), "repo-beacon-writer-"));
+  tempDir = await fs.mkdtemp(path.join(os.tmpdir(), "scythe-context-writer-"));
 });
 
 afterEach(async () => {
@@ -25,7 +25,7 @@ describe("persistentReindexMetadata", () => {
 
     const result = await persistentReindexMetadata({
       projectPath: tempDir,
-      indexDirName: ".repo-beacon",
+      indexDirName: ".scythe-context",
       vectorDimensions: 1536,
       maxFileBytes: 1024,
       targetChunkChars: 10,
@@ -58,7 +58,7 @@ describe("persistentReindexMetadata", () => {
     await fs.writeFile(filePath, "one\ntwo\nthree\n");
     const first = await persistentReindexMetadata({
       projectPath: tempDir,
-      indexDirName: ".repo-beacon",
+      indexDirName: ".scythe-context",
       vectorDimensions: 1536,
       maxFileBytes: 1024,
       targetChunkChars: 8,
@@ -69,7 +69,7 @@ describe("persistentReindexMetadata", () => {
     await fs.writeFile(filePath, "changed\n");
     const second = await persistentReindexMetadata({
       projectPath: tempDir,
-      indexDirName: ".repo-beacon",
+      indexDirName: ".scythe-context",
       vectorDimensions: 1536,
       maxFileBytes: 1024,
       targetChunkChars: 8,
@@ -100,7 +100,7 @@ describe("persistentReindexMetadata", () => {
 
     const first = await persistentReindexMetadata({
       projectPath: tempDir,
-      indexDirName: ".repo-beacon",
+      indexDirName: ".scythe-context",
       vectorDimensions: 1536,
       maxFileBytes: 1024,
       targetChunkChars: 20,
@@ -116,7 +116,7 @@ describe("persistentReindexMetadata", () => {
     await fs.rm(removedFile);
     const second = await persistentReindexMetadata({
       projectPath: tempDir,
-      indexDirName: ".repo-beacon",
+      indexDirName: ".scythe-context",
       vectorDimensions: 1536,
       maxFileBytes: 1024,
       targetChunkChars: 20,
@@ -143,7 +143,7 @@ describe("persistentReindexMetadata", () => {
     await fs.writeFile(filePath, "stable keyword\n");
     const first = await persistentReindexMetadata({
       projectPath: tempDir,
-      indexDirName: ".repo-beacon",
+      indexDirName: ".scythe-context",
       vectorDimensions: 1536,
       maxFileBytes: 1024,
       targetChunkChars: 20,
@@ -160,7 +160,7 @@ describe("persistentReindexMetadata", () => {
 
     await persistentReindexMetadata({
       projectPath: tempDir,
-      indexDirName: ".repo-beacon",
+      indexDirName: ".scythe-context",
       vectorDimensions: 1536,
       maxFileBytes: 1024,
       targetChunkChars: 20,
@@ -191,7 +191,7 @@ describe("persistentReindexMetadata", () => {
 
     const metadata = await persistentReindexMetadata({
       projectPath: tempDir,
-      indexDirName: ".repo-beacon",
+      indexDirName: ".scythe-context",
       vectorDimensions: 1536,
       maxFileBytes: 2048,
       targetChunkChars: 100,
@@ -232,7 +232,7 @@ describe("persistentReindexMetadata", () => {
 
     const metadata = await persistentReindexMetadata({
       projectPath: tempDir,
-      indexDirName: ".repo-beacon",
+      indexDirName: ".scythe-context",
       vectorDimensions: 1536,
       maxFileBytes: 2048,
       targetChunkChars: 100,
@@ -263,7 +263,7 @@ describe("persistentReindexMetadata", () => {
 
     const metadata = await persistentReindexMetadata({
       projectPath: tempDir,
-      indexDirName: ".repo-beacon",
+      indexDirName: ".scythe-context",
       vectorDimensions: 1536,
       maxFileBytes: 2048,
       targetChunkChars: 100,
@@ -292,7 +292,7 @@ describe("persistentReindexMetadata", () => {
 
     const metadata = await persistentReindexMetadata({
       projectPath: tempDir,
-      indexDirName: ".repo-beacon",
+      indexDirName: ".scythe-context",
       vectorDimensions: 1536,
       maxFileBytes: 2048,
       targetChunkChars: 100,
@@ -324,7 +324,7 @@ describe("persistentReindexMetadata", () => {
 
     const metadata = await persistentReindexMetadata({
       projectPath: tempDir,
-      indexDirName: ".repo-beacon",
+      indexDirName: ".scythe-context",
       vectorDimensions: 1536,
       maxFileBytes: 2048,
       targetChunkChars: 100,

@@ -7,6 +7,7 @@ import type { FileCandidate, IndexingLimits, ScanResult, SkippedFile } from "./t
 
 const BUILT_IN_IGNORES = [
   ".git/**",
+  ".scythe-context/**",
   ".repo-beacon/**",
   "node_modules/**",
   "dist/**",

@@ -36,6 +36,20 @@ function numberFromEnv(name: string, fallback?: number): number | undefined {
   return parsed;
 }
 
+function envValue(name: string, legacyName?: string): string | undefined {
+  return process.env[name] || (legacyName ? process.env[legacyName] : undefined);
+}
+
+function numberFromEnvAlias(name: string, legacyName: string, fallback?: number): number | undefined {
+  const value = envValue(name, legacyName);
+  if (!value) return fallback;
+  const parsed = Number(value);
+  if (!Number.isFinite(parsed) || parsed <= 0) {
+    throw new Error(`${name} or ${legacyName} must be a positive number`);
+  }
+  return parsed;
+}
+
 function authModeFromEnv(value: string | undefined): GeminiAuthMode {
   if (!value) return "x-goog-api-key";
   if (value === "x-goog-api-key" || value === "bearer" || value === "query") {
@@ -47,24 +61,24 @@ function authModeFromEnv(value: string | undefined): GeminiAuthMode {
 export function loadConfig(): AppConfig {
   return {
     defaultProjectPath: path.resolve(
-      process.env.REPO_BEACON_DEFAULT_PROJECT || process.cwd(),
+      envValue("SCYTHE_CONTEXT_DEFAULT_PROJECT", "REPO_BEACON_DEFAULT_PROJECT") || process.cwd(),
     ),
-    indexDirName: process.env.REPO_BEACON_INDEX_DIR || ".repo-beacon",
+    indexDirName: envValue("SCYTHE_CONTEXT_INDEX_DIR", "REPO_BEACON_INDEX_DIR") || ".scythe-context",
     indexing: {
       maxFileBytes:
-        numberFromEnv("REPO_BEACON_MAX_FILE_BYTES", DEFAULT_INDEXING_LIMITS.maxFileBytes) ??
+        numberFromEnvAlias("SCYTHE_CONTEXT_MAX_FILE_BYTES", "REPO_BEACON_MAX_FILE_BYTES", DEFAULT_INDEXING_LIMITS.maxFileBytes) ??
         DEFAULT_INDEXING_LIMITS.maxFileBytes,
       targetChunkChars:
-        numberFromEnv("REPO_BEACON_TARGET_CHUNK_CHARS", DEFAULT_INDEXING_LIMITS.targetChunkChars) ??
+        numberFromEnvAlias("SCYTHE_CONTEXT_TARGET_CHUNK_CHARS", "REPO_BEACON_TARGET_CHUNK_CHARS", DEFAULT_INDEXING_LIMITS.targetChunkChars) ??
         DEFAULT_INDEXING_LIMITS.targetChunkChars,
       chunkOverlapChars:
-        numberFromEnv("REPO_BEACON_CHUNK_OVERLAP_CHARS", DEFAULT_INDEXING_LIMITS.chunkOverlapChars) ??
+        numberFromEnvAlias("SCYTHE_CONTEXT_CHUNK_OVERLAP_CHARS", "REPO_BEACON_CHUNK_OVERLAP_CHARS", DEFAULT_INDEXING_LIMITS.chunkOverlapChars) ??
         DEFAULT_INDEXING_LIMITS.chunkOverlapChars,
       maxChunksPerFile:
-        numberFromEnv("REPO_BEACON_MAX_CHUNKS_PER_FILE", DEFAULT_INDEXING_LIMITS.maxChunksPerFile) ??
+        numberFromEnvAlias("SCYTHE_CONTEXT_MAX_CHUNKS_PER_FILE", "REPO_BEACON_MAX_CHUNKS_PER_FILE", DEFAULT_INDEXING_LIMITS.maxChunksPerFile) ??
         DEFAULT_INDEXING_LIMITS.maxChunksPerFile,
-      embeddingBatchSize: numberFromEnv("REPO_BEACON_EMBEDDING_BATCH_SIZE", 16) ?? 16,
-      maxEmbeddingChunks: numberFromEnv("REPO_BEACON_MAX_EMBEDDING_CHUNKS", 256) ?? 256,
+      embeddingBatchSize: numberFromEnvAlias("SCYTHE_CONTEXT_EMBEDDING_BATCH_SIZE", "REPO_BEACON_EMBEDDING_BATCH_SIZE", 16) ?? 16,
+      maxEmbeddingChunks: numberFromEnvAlias("SCYTHE_CONTEXT_MAX_EMBEDDING_CHUNKS", "REPO_BEACON_MAX_EMBEDDING_CHUNKS", 256) ?? 256,
     },
     gemini: {
       apiKey: process.env.GEMINI_API_KEY,

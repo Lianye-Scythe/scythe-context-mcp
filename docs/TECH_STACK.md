@@ -26,11 +26,6 @@
 | `typescript` | typecheck/build | 用目前穩定版 |
 | `tsx` | dev runner | 只用於開發 |
 | `vitest` | unit tests | Phase 1 開始加入 |
-
-Phase 2 預計新增：
-
-| Package | 用途 | 備註 |
-| --- | --- | --- |
 | `better-sqlite3` | SQLite native driver | 同步 API 簡單、效能好，適合本機 MCP |
 | `sqlite-vec` | SQLite vector extension | `vec0(embedding float[1536])` |
 
@@ -39,7 +34,7 @@ Phase 2 預計新增：
 - ORM：schema 很小，直接 SQL 更可控。
 - LangChain/LlamaIndex：抽象太厚，對本機 code search 反而增加不可控成本。
 - 外部向量 DB：MVP 不需要啟動 Qdrant/Weaviate 這類服務。
-- tree-sitter：Phase 1 先做穩定文字 chunker，Phase 5 再引入 symbol graph。
+- tree-sitter：目前先用輕量 regex symbol graph；只有當 retrieval 品質瓶頸明確時才引入。
 
 ## Storage Choice
 
@@ -124,4 +119,4 @@ Phase 3 search：
 
 ## Recommendation
 
-Phase 1 dry-run scanner/chunker 已完成。Phase 2 已完成 `better-sqlite3 + sqlite-vec` 載入 spike、schema 初始化、file/chunk metadata 寫入流程與 embedding index writer。Phase 3 已完成 semantic vector lookup、keyword search 與 hybrid ranker。Phase 5 已完成輕量 symbol graph / related files MVP。下一步是 context packer 與多跳 related-file traversal。
+Phase 1 dry-run scanner/chunker 已完成。Phase 2 已完成 `better-sqlite3 + sqlite-vec` 載入 spike、schema 初始化、file/chunk metadata 寫入流程與 embedding index writer。Phase 3 已完成 semantic vector lookup、keyword search 與 hybrid ranker。Phase 5 已完成輕量 symbol graph / related files MVP。Context packer、多跳 related-file traversal 與 related snippets 也已完成。下一步建議是 provider diagnostics、索引新鮮度訊號與必要時的 tree-sitter spike。

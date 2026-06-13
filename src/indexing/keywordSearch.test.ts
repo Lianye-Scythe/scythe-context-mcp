@@ -8,7 +8,7 @@ import { keywordTerms, searchByKeyword } from "./keywordSearch.js";
 let tempDir: string;
 
 beforeEach(async () => {
-  tempDir = await fs.mkdtemp(path.join(os.tmpdir(), "repo-beacon-keyword-"));
+  tempDir = await fs.mkdtemp(path.join(os.tmpdir(), "scythe-context-keyword-"));
 });
 
 afterEach(async () => {
@@ -30,7 +30,7 @@ describe("keyword search", () => {
     await fs.writeFile(path.join(tempDir, "user.ts"), "export function loadUser() { return 'user'; }\n");
     const metadata = await persistentReindexMetadata({
       projectPath: tempDir,
-      indexDirName: ".repo-beacon",
+      indexDirName: ".scythe-context",
       vectorDimensions: 1536,
       maxFileBytes: 1024,
       targetChunkChars: 200,
@@ -59,7 +59,7 @@ describe("keyword search", () => {
     await fs.writeFile(path.join(tempDir, "go.ts"), "go\n");
     const metadata = await persistentReindexMetadata({
       projectPath: tempDir,
-      indexDirName: ".repo-beacon",
+      indexDirName: ".scythe-context",
       vectorDimensions: 1536,
       maxFileBytes: 1024,
       targetChunkChars: 200,

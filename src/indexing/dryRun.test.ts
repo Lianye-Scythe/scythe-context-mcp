@@ -7,7 +7,7 @@ import { reindexDryRun } from "./dryRun.js";
 let tempDir: string;
 
 beforeEach(async () => {
-  tempDir = await fs.mkdtemp(path.join(os.tmpdir(), "repo-beacon-dryrun-"));
+  tempDir = await fs.mkdtemp(path.join(os.tmpdir(), "scythe-context-dryrun-"));
 });
 
 afterEach(async () => {

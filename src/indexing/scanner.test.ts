@@ -7,7 +7,7 @@ import { scanProject } from "./scanner.js";
 let tempDir: string;
 
 beforeEach(async () => {
-  tempDir = await fs.mkdtemp(path.join(os.tmpdir(), "repo-beacon-scanner-"));
+  tempDir = await fs.mkdtemp(path.join(os.tmpdir(), "scythe-context-scanner-"));
 });
 
 afterEach(async () => {

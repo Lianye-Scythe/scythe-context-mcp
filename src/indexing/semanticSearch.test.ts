@@ -30,7 +30,7 @@ class ContentAwareProvider implements EmbeddingProvider {
 let tempDir: string;
 
 beforeEach(async () => {
-  tempDir = await fs.mkdtemp(path.join(os.tmpdir(), "repo-beacon-search-"));
+  tempDir = await fs.mkdtemp(path.join(os.tmpdir(), "scythe-context-search-"));
 });
 
 afterEach(async () => {
@@ -43,7 +43,7 @@ describe("searchByVector", () => {
     await fs.writeFile(path.join(tempDir, "user.ts"), "export function userFlow() { return 'user'; }\n");
     const metadata = await persistentReindexMetadata({
       projectPath: tempDir,
-      indexDirName: ".repo-beacon",
+      indexDirName: ".scythe-context",
       vectorDimensions: 4,
       maxFileBytes: 1024,
       targetChunkChars: 100,

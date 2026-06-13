@@ -42,7 +42,7 @@ class FakeEmbeddingProvider implements EmbeddingProvider {
 let tempDir: string;
 
 beforeEach(async () => {
-  tempDir = await fs.mkdtemp(path.join(os.tmpdir(), "repo-beacon-embeddings-"));
+  tempDir = await fs.mkdtemp(path.join(os.tmpdir(), "scythe-context-embeddings-"));
 });
 
 afterEach(async () => {
@@ -54,7 +54,7 @@ async function createMetadataIndex() {
   await fs.writeFile(path.join(tempDir, "b.ts"), "export const b = 2;\n");
   return persistentReindexMetadata({
     projectPath: tempDir,
-    indexDirName: ".repo-beacon",
+    indexDirName: ".scythe-context",
     vectorDimensions: 1536,
     maxFileBytes: 1024,
     targetChunkChars: 10,

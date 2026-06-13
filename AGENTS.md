@@ -1,8 +1,8 @@
-# Repo Beacon MCP Agent Guide
+# Scythe Context MCP Agent Guide
 
 ## Workflow
 
-- Start with `repo_index_status` to check whether `.repo-beacon/index.sqlite` exists and whether files, chunks, symbols, dependencies, and embeddings are present.
+- Start with `repo_index_status` to check whether `.scythe-context/index.sqlite` exists and whether files, chunks, symbols, dependencies, and embeddings are present.
 - If metadata is missing or stale, run `repo_reindex` with `dry_run=false`.
 - Set `index_embeddings=true` only when semantic search is needed. This sends chunk text to the configured Gemini-compatible endpoint.
 - Prefer `repo_context_pack` for task-oriented code lookup. It combines hybrid search, snippet budgeting, related-file metadata, bounded multi-hop traversal, and suggested paths.
@@ -11,7 +11,7 @@
 
 ## Privacy
 
-- Do not commit `.repo-beacon/` or `local/`.
+- Do not commit `.scythe-context/`, legacy `.repo-beacon/`, or `local/`.
 - Do not print API keys, proxy tokens, or contents of files under `local/secrets/`.
 - Treat third-party Gemini-compatible proxy endpoints as remote services that can see query and chunk text.
 

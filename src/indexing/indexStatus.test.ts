@@ -8,7 +8,7 @@ import { readDetailedIndexStatus, recommendedNextActions, type DetailedIndexStat
 let tempDir: string;
 
 beforeEach(async () => {
-  tempDir = await fs.mkdtemp(path.join(os.tmpdir(), "repo-beacon-status-"));
+  tempDir = await fs.mkdtemp(path.join(os.tmpdir(), "scythe-context-status-"));
 });
 
 afterEach(async () => {
@@ -26,7 +26,7 @@ describe("readDetailedIndexStatus", () => {
     await fs.writeFile(path.join(tempDir, "a.ts"), "export const a = 1;\n");
     const metadata = await persistentReindexMetadata({
       projectPath: tempDir,
-      indexDirName: ".repo-beacon",
+      indexDirName: ".scythe-context",
       vectorDimensions: 1536,
       maxFileBytes: 1024,
       targetChunkChars: 100,
@@ -51,7 +51,7 @@ describe("recommendedNextActions", () => {
   it("recommends embedding indexing for metadata-only indexes", () => {
     const status: DetailedIndexStatus = {
       exists: true,
-      dbPath: "/repo/.repo-beacon/index.sqlite",
+      dbPath: "/repo/.scythe-context/index.sqlite",
       files: 2,
       chunks: 4,
       ftsRows: 4,
@@ -68,7 +68,7 @@ describe("recommendedNextActions", () => {
   it("recommends context pack when the index is ready", () => {
     const status: DetailedIndexStatus = {
       exists: true,
-      dbPath: "/repo/.repo-beacon/index.sqlite",
+      dbPath: "/repo/.scythe-context/index.sqlite",
       files: 2,
       chunks: 4,
       ftsRows: 4,

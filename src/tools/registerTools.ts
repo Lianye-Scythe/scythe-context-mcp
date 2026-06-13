@@ -57,7 +57,7 @@ export function registerTools(server: McpServer, config: AppConfig): void {
     "repo_index_status",
     {
       title: "Repo Index Status",
-      description: "Show Repo Beacon configuration and current index status.",
+      description: "Show Scythe Context configuration and current index status.",
       inputSchema: {
         project_path: z.string().optional(),
       },

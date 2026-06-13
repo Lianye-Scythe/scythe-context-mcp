@@ -14,7 +14,7 @@ POST https://generativelanguage.googleapis.com/v1beta/models/gemini-embedding-2:
 x-goog-api-key: $GEMINI_API_KEY
 ```
 
-Repo Beacon 預設設定：
+Scythe Context 預設設定：
 
 ```env
 GEMINI_BASE_URL=https://generativelanguage.googleapis.com/v1beta
@@ -40,7 +40,7 @@ task: code retrieval | query: {query}
 title: {path or symbol} | text: {chunk}
 ```
 
-Repo Beacon 的 `GeminiEmbeddingProvider` 會自動套用這個格式。
+Scythe Context 的 `GeminiEmbeddingProvider` 會自動套用這個格式。
 
 ## Output dimensionality
 
@@ -53,7 +53,7 @@ GEMINI_OUTPUT_DIMENSIONALITY=1536
 建議：
 
 - `768`: 省空間，速度快，適合非常小的個人 repo 或低成本模式。
-- `1536`: Repo Beacon 預設，精度與成本較平衡。
+- `1536`: Scythe Context 預設，精度與成本較平衡。
 - `3072`: 最高精度，但索引體積與相似度計算成本較高。
 
 ## 第三方 v1beta 中轉站
@@ -82,7 +82,7 @@ https://proxy.example.com/gemini
 https://proxy.example.com/gemini/v1beta/
 ```
 
-如果 URL 最後不是 `v1` 或 `v1beta`，Repo Beacon 會自動補上 `/v1beta`。如果中轉站已經給完整 `/v1beta` 或 `/v1`，則不會重複追加。
+如果 URL 最後不是 `v1` 或 `v1beta`，Scythe Context 會自動補上 `/v1beta`。如果中轉站已經給完整 `/v1beta` 或 `/v1`，則不會重複追加。
 
 如果中轉站使用 Bearer token：
 
@@ -139,41 +139,47 @@ POST /v1beta/models/gemini-embedding-2:batchEmbedContents
 官方 Gemini：
 
 ```toml
-[mcp_servers.repo_beacon]
+[mcp_servers.scythe_context]
 command = "node"
-args = ["/home/po120/Git/repo-beacon-mcp/dist/index.js"]
-env = {
-  GEMINI_API_KEY = "your-google-ai-studio-key",
-  GEMINI_BASE_URL = "https://generativelanguage.googleapis.com/v1beta",
-  GEMINI_AUTH_MODE = "x-goog-api-key"
-}
+args = ["/home/po120/Git/scythe-context-mcp/dist/index.js"]
+cwd = "/home/po120/Git/scythe-context-mcp"
+env_vars = ["GEMINI_API_KEY"]
+
+[mcp_servers.scythe_context.env]
+GEMINI_BASE_URL = "https://generativelanguage.googleapis.com/v1beta"
+GEMINI_AUTH_MODE = "x-goog-api-key"
+GEMINI_OUTPUT_DIMENSIONALITY = "1536"
 ```
 
 Bearer 中轉站：
 
 ```toml
-[mcp_servers.repo_beacon]
+[mcp_servers.scythe_context]
 command = "node"
-args = ["/home/po120/Git/repo-beacon-mcp/dist/index.js"]
-env = {
-  GEMINI_API_KEY = "your-proxy-key",
-  GEMINI_BASE_URL = "https://proxy.example.com/v1beta",
-  GEMINI_AUTH_MODE = "bearer"
-}
+args = ["/home/po120/Git/scythe-context-mcp/dist/index.js"]
+cwd = "/home/po120/Git/scythe-context-mcp"
+env_vars = ["GEMINI_API_KEY"]
+
+[mcp_servers.scythe_context.env]
+GEMINI_BASE_URL = "https://proxy.example.com/v1beta"
+GEMINI_AUTH_MODE = "bearer"
+GEMINI_OUTPUT_DIMENSIONALITY = "1536"
 ```
 
 Query key 中轉站：
 
 ```toml
-[mcp_servers.repo_beacon]
+[mcp_servers.scythe_context]
 command = "node"
-args = ["/home/po120/Git/repo-beacon-mcp/dist/index.js"]
-env = {
-  GEMINI_API_KEY = "your-proxy-key",
-  GEMINI_BASE_URL = "https://proxy.example.com/v1beta",
-  GEMINI_AUTH_MODE = "query",
-  GEMINI_API_KEY_QUERY_PARAM = "key"
-}
+args = ["/home/po120/Git/scythe-context-mcp/dist/index.js"]
+cwd = "/home/po120/Git/scythe-context-mcp"
+env_vars = ["GEMINI_API_KEY"]
+
+[mcp_servers.scythe_context.env]
+GEMINI_BASE_URL = "https://proxy.example.com/v1beta"
+GEMINI_AUTH_MODE = "query"
+GEMINI_API_KEY_QUERY_PARAM = "key"
+GEMINI_OUTPUT_DIMENSIONALITY = "1536"
 ```
 
 ## 測試方式

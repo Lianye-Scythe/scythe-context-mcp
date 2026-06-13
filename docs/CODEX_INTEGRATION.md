@@ -11,11 +11,11 @@
 
 ### MCP transport
 
-Repo Beacon is aligned with Codex's local MCP path:
+Scythe Context is aligned with Codex's local MCP path:
 
 - Codex supports local STDIO MCP servers.
-- Repo Beacon runs as a STDIO server through `node dist/index.js`.
-- Configuration should use `[mcp_servers.repo_beacon]` and `[mcp_servers.repo_beacon.env]` tables in `config.toml`.
+- Scythe Context runs as a STDIO server through `node dist/index.js`.
+- Configuration should use `[mcp_servers.scythe_context]` and `[mcp_servers.scythe_context.env]` tables in `config.toml`.
 - Secrets should be forwarded with `env_vars = ["GEMINI_API_KEY"]` instead of written into project config.
 
 This is preferable to a remote HTTP MCP server for the current project because the index database and scanner are local to the repo.
@@ -24,7 +24,7 @@ This is preferable to a remote HTTP MCP server for the current project because t
 
 Codex reads the MCP server `instructions` field during initialization. The most important guidance should appear early because Codex may use the beginning of the instructions while deciding whether to call a server.
 
-Repo Beacon's server instructions now put the key workflow first:
+Scythe Context's server instructions now put the key workflow first:
 
 1. Check `repo_index_status`.
 2. Run metadata reindex only when needed.
@@ -38,10 +38,10 @@ Codex CLI and the IDE extension share MCP configuration through `config.toml`. T
 
 ### AGENTS.md
 
-Codex reads `AGENTS.md` before work and layers global plus project guidance. Repo Beacon's `AGENTS.md` is intentionally short enough to fit comfortably under the default project instruction limit and focuses on:
+Codex reads `AGENTS.md` before work and layers global plus project guidance. Scythe Context's `AGENTS.md` is intentionally short enough to fit comfortably under the default project instruction limit and focuses on:
 
 - Preferred tool workflow.
-- Privacy rules for `.repo-beacon/` and `local/`.
+- Privacy rules for `.scythe-context/` and `local/`.
 - Verification commands.
 
 This is aligned with Codex's expected durable instruction surface.
@@ -64,7 +64,7 @@ Recommended config should expose all tools by default during development, but `e
 - STDIO MCP server.
 - Early, self-contained server instructions.
 - `AGENTS.md` project guidance.
-- Valid Codex TOML examples using `[mcp_servers.repo_beacon.env]`.
+- Valid Codex TOML examples using `[mcp_servers.scythe_context.env]`.
 - Secret-safe config examples using `env_vars` for `GEMINI_API_KEY`.
 - `cwd` in MCP config so relative `.env` loading is predictable.
 - `startup_timeout_sec` and `tool_timeout_sec` tuned above defaults.
@@ -81,7 +81,7 @@ Recommended config should expose all tools by default during development, but `e
 
 ### MCP server does not appear
 
-1. In the Codex TUI, run `/mcp` and confirm `repo_beacon` appears.
+1. In the Codex TUI, run `/mcp` and confirm `scythe_context` appears.
 2. Confirm the config is in `~/.codex/config.toml` or in a trusted project's `.codex/config.toml`.
 3. Restart Codex after changing config. Codex reads MCP config at session startup.
 4. Check that `command`, `args`, and `cwd` point to the built repo and that `npm run build` has produced `dist/index.js`.

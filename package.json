@@ -1,10 +1,10 @@
 {
-  "name": "repo-beacon-mcp",
+  "name": "scythe-context-mcp",
   "version": "0.1.0",
   "description": "Local MCP context engine for Codex with Gemini Embedding 2 support.",
   "type": "module",
   "bin": {
-    "repo-beacon-mcp": "./dist/index.js"
+    "scythe-context-mcp": "./dist/index.js"
   },
   "scripts": {
     "build": "tsc -p tsconfig.json",
