@@ -1,0 +1,78 @@
+[
+  {
+    "id": "embedding-fallback",
+    "query": "embedding unavailable should fall back to keyword-only context pack",
+    "expectedPaths": [
+      "src/tools/registerTools.ts",
+      "src/indexing/hybridSearch.ts"
+    ],
+    "notes": "Task-style query for the hybrid-to-keyword fallback path."
+  },
+  {
+    "id": "stable-chunk-ids",
+    "query": "preserve stable chunk row ids so embedding cache remains useful after reindex",
+    "expectedPaths": [
+      "src/indexing/indexWriter.ts",
+      "src/storage/schema.ts",
+      "src/storage/sqliteVec.test.ts"
+    ],
+    "notes": "Looks for storage and reindex behavior tied to embedding reuse."
+  },
+  {
+    "id": "utf8-binary-detection",
+    "query": "UTF-8 scanner should not treat a file as binary when prefix ends in multibyte character",
+    "expectedPaths": [
+      "src/indexing/binary.ts",
+      "src/indexing/scanner.test.ts"
+    ],
+    "notes": "Regression coverage for text detection around multibyte boundaries."
+  },
+  {
+    "id": "codex-wsl-config",
+    "query": "Codex App WSL Windows node setup with PWD and WSLENV",
+    "expectedPaths": [
+      "README.md",
+      "docs/codex-integration.md",
+      "src/config.ts"
+    ],
+    "notes": "Documentation and config lookup for the Windows Node plus WSL workspace mode."
+  },
+  {
+    "id": "related-file-graph",
+    "query": "related files imports reverse imports graph for context pack",
+    "expectedPaths": [
+      "src/indexing/relatedFiles.ts",
+      "src/indexing/contextPack.ts"
+    ],
+    "notes": "Finds symbol and dependency graph code used by repo_context_pack."
+  },
+  {
+    "id": "gemini-proxy-url",
+    "query": "Gemini v1beta compatible proxy base URL bearer auth output dimensionality",
+    "expectedPaths": [
+      "src/providers/gemini.ts",
+      "src/config.ts",
+      "docs/gemini-compatibility.md"
+    ],
+    "notes": "Provider compatibility query with base URL and auth details."
+  },
+  {
+    "id": "npm-bin-mode",
+    "query": "npm package executable bin mode should be checked before publish",
+    "expectedPaths": [
+      "scripts/bin-mode.mjs",
+      "package.json",
+      "src/cli.ts"
+    ],
+    "notes": "Release packaging and executable bit smoke coverage."
+  },
+  {
+    "id": "fts-keyword-search",
+    "query": "FTS trigram keyword search ranks chunks by bm25 and file path fallback",
+    "expectedPaths": [
+      "src/indexing/keywordSearch.ts",
+      "src/storage/schema.ts"
+    ],
+    "notes": "Keyword search internals and schema lookup."
+  }
+]

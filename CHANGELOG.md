@@ -6,6 +6,13 @@ This project follows semantic versioning before npm publication where practical.
 
 ## [Unreleased]
 
+## [0.1.5] - 2026-06-14
+
+### Added
+
+- Add a context-search benchmark comparing `rg`, keyword-only Scythe search, and Gemini-backed hybrid search.
+- Add a local code-aware reranker that uses path, snippet, symbol, import graph, file-role, and source-counterpart signals without extra model/API calls.
+
 ## [0.1.4] - 2026-06-14
 
 ### Added

@@ -45,6 +45,9 @@ export function matchReason(result: FormattableSearchResult): string {
   if (matchTypes.includes("keyword")) {
     return "keyword/path match";
   }
+  if (matchTypes.includes("local")) {
+    return "local code-aware related file";
+  }
   if (typeof result.distance === "number") {
     return `semantic similarity distance ${result.distance.toFixed(4)}`;
   }

@@ -248,9 +248,9 @@ Use `PWD/p` only if you intentionally run a Windows Node process and need WSL to
 
 ## Feature Status
 
-Implemented: repo scanning, chunking, SQLite metadata, SQLite FTS5, sqlite-vec, Gemini Embedding 2 provider, semantic/keyword/hybrid search, lightweight symbol/dependency graph, related-file lookup, `repo_context_pack`, provider diagnostics, and index freshness diagnostics.
+Implemented: repo scanning, chunking, SQLite metadata, SQLite FTS5, sqlite-vec, Gemini Embedding 2 provider, semantic/keyword/hybrid search, keyword-only fallback when embeddings fail, local code-aware reranker, lightweight symbol/dependency graph, related-file lookup, `repo_context_pack`, provider diagnostics, and index freshness diagnostics.
 
-Next: provider capability cache, install/native dependency doctor, keyword-only fallback when embeddings fail, and tree-sitter symbol extraction if needed.
+Next: provider capability cache, install/native dependency doctor, and tree-sitter symbol extraction if needed.
 
 ## Privacy and Local Files
 
@@ -268,6 +268,7 @@ Do not include API keys, proxy tokens, private source snippets, or index databas
 - [Gemini Compatibility](docs/gemini-compatibility.md)
 - [Tech Stack](docs/tech-stack.md)
 - [Codex Integration Review](docs/codex-integration.md)
+- [Context Search Benchmark](docs/benchmark.md)
 
 ## Development and Publishing Checks
 

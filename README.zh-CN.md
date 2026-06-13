@@ -248,9 +248,9 @@ GEMINI_OUTPUT_DIMENSIONALITY = "1536"
 
 ## 功能状态
 
-已完成：repo 扫描、chunking、SQLite metadata、SQLite FTS5、sqlite-vec、Gemini Embedding 2 provider、semantic/keyword/hybrid search、轻量 symbol/dependency graph、related-file lookup、`repo_context_pack`、provider diagnostics、index freshness diagnostics。
+已完成：repo 扫描、chunking、SQLite metadata、SQLite FTS5、sqlite-vec、Gemini Embedding 2 provider、semantic/keyword/hybrid search、embedding 失败时的 keyword-only fallback、local code-aware reranker、轻量 symbol/dependency graph、related-file lookup、`repo_context_pack`、provider diagnostics、index freshness diagnostics。
 
-下一步：provider capability cache、安装/原生依赖 doctor、embedding 失败时的 keyword-only fallback、必要时加入 tree-sitter symbol extraction。
+下一步：provider capability cache、安装/原生依赖 doctor、必要时加入 tree-sitter symbol extraction。
 
 ## 隐私与本地文件
 
@@ -268,6 +268,7 @@ GEMINI_OUTPUT_DIMENSIONALITY = "1536"
 - [Gemini 兼容性](docs/gemini-compatibility.md)
 - [技术栈](docs/tech-stack.md)
 - [Codex 集成审查](docs/codex-integration.md)
+- [Context search benchmark](docs/benchmark.md)
 
 ## 开发与发布检查
 

@@ -1,4 +1,5 @@
 import { searchByKeyword, type KeywordSearchResult } from "./keywordSearch.js";
+import { rerankCodeAware } from "./codeAwareReranker.js";
 import { searchByVector, type VectorSearchResult } from "./semanticSearch.js";
 
 export interface HybridSearchOptions {
@@ -18,7 +19,7 @@ export interface HybridSearchResult {
   distance?: number;
   keywordScore?: number;
   snippet: string;
-  matchTypes: Array<"semantic" | "keyword">;
+  matchTypes: Array<"semantic" | "keyword" | "local">;
 }
 
 function keyOf(result: Pick<HybridSearchResult, "path" | "startLine" | "endLine">): string {
@@ -95,7 +96,13 @@ export function searchHybrid(options: HybridSearchOptions): HybridSearchResult[]
     maxSnippetChars: options.maxSnippetChars,
   });
 
-  return mergeHybridResults(semanticResults, keywordResults, options.maxResults);
+  return rerankCodeAware({
+    dbPath: options.dbPath,
+    query: options.query,
+    results: mergeHybridResults(semanticResults, keywordResults, Math.max(options.maxResults * 3, options.maxResults)),
+    maxResults: options.maxResults,
+    maxSnippetChars: options.maxSnippetChars,
+  });
 }
 
 export function searchKeywordOnly(options: Omit<HybridSearchOptions, "dimensions" | "queryVector">): HybridSearchResult[] {
@@ -106,5 +113,11 @@ export function searchKeywordOnly(options: Omit<HybridSearchOptions, "dimensions
     maxSnippetChars: options.maxSnippetChars,
   });
 
-  return mergeHybridResults([], keywordResults, options.maxResults);
+  return rerankCodeAware({
+    dbPath: options.dbPath,
+    query: options.query,
+    results: mergeHybridResults([], keywordResults, Math.max(options.maxResults * 3, options.maxResults)),
+    maxResults: options.maxResults,
+    maxSnippetChars: options.maxSnippetChars,
+  });
 }
