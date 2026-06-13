@@ -21,6 +21,8 @@ Privacy note: query or chunk text is sent to the configured Gemini-compatible en
 
 ## Quick Start
 
+Codex MCP config can use `npx -y scythe-context-mcp` directly; a global install is not required. Global installation is mostly useful for checking that the CLI runs, or for using the short command form in Codex config.
+
 ```bash
 npm install -g scythe-context-mcp
 scythe-context-mcp --version
@@ -53,6 +55,8 @@ Codex MCP configuration uses fields such as `command`, `args`, `cwd`, `env`, and
 | Codex App on Windows opens a WSL repo | The App's WSL MCP bridge may still be unreliable; run MCP on Windows Node and pass the current WSL workspace to the Windows process with `PWD` + `WSLENV`. |
 
 ### Native Windows
+
+Use `where node` and `npm root -g` to confirm your own Windows Node/npm paths first; the example below uses an nvm4w installation path.
 
 Minimum config:
 
@@ -91,9 +95,11 @@ When running from source:
 [mcp_servers.scythe_context]
 command = "node"
 args = ["/path/to/scythe-context-mcp/dist/index.js"]
-cwd = "/path/to/scythe-context-mcp"
+cwd = "/home/you/Git/your-repo"
 env_vars = ["GEMINI_API_KEY"]
 ```
+
+Here `args` points to the built Scythe Context MCP entrypoint, while `cwd` points to the target repo you want to index.
 
 ### Windows Codex App + WSL repo
 

@@ -6,6 +6,8 @@ This project follows semantic versioning before npm publication where practical.
 
 ## [Unreleased]
 
+## [0.1.1] - 2026-06-13
+
 ### Added
 
 - CLI smoke-test flags: `--help` and `--version`.

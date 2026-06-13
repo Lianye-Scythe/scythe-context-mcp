@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { PACKAGE_VERSION, parseCliArgs, renderHelp } from "./cli.js";
+import packageJson from "../package.json" with { type: "json" };
 
 describe("CLI helpers", () => {
   it("starts the MCP server when no CLI flags are provided", () => {
@@ -11,6 +12,10 @@ describe("CLI helpers", () => {
     expect(parseCliArgs(["-h"])).toEqual({ kind: "help" });
     expect(parseCliArgs(["--version"])).toEqual({ kind: "version" });
     expect(parseCliArgs(["-v"])).toEqual({ kind: "version" });
+  });
+
+  it("matches package.json version", () => {
+    expect(PACKAGE_VERSION).toBe(packageJson.version);
   });
 
   it("rejects unknown flags before starting stdio", () => {
