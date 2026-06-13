@@ -3,6 +3,7 @@ import os from "node:os";
 import path from "node:path";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import type { AppConfig } from "../config.js";
+import { persistentReindexMetadata } from "../indexing/indexWriter.js";
 import { runRepoDoctor } from "./doctor.js";
 
 let tempDir: string;
@@ -88,5 +89,30 @@ describe("runRepoDoctor", () => {
     const geminiCheck = result.checks.find((check) => check.name === "gemini_config");
     expect(geminiCheck).toEqual(expect.objectContaining({ status: "warn" }));
     expect(geminiCheck?.recommendedActions).toContain("Set GEMINI_API_KEY in the environment that starts Codex, or forward it with env_vars.");
+  });
+
+  it("warns when metadata exists but embeddings are not populated", async () => {
+    await fs.writeFile(path.join(tempDir, "example.ts"), "export const example = 1;\n");
+    await persistentReindexMetadata({
+      projectPath: tempDir,
+      indexDirName: ".scythe-context",
+      vectorDimensions: 1536,
+      maxFileBytes: 4096,
+      targetChunkChars: 200,
+      chunkOverlapChars: 0,
+      maxChunksPerFile: 10,
+    });
+
+    const result = await runRepoDoctor({
+      config: testConfig(),
+      projectPath: tempDir,
+      expectedDimensions: 1536,
+    });
+
+    const indexCheck = result.checks.find((check) => check.name === "index");
+    expect(indexCheck).toEqual(expect.objectContaining({ status: "warn" }));
+    expect(indexCheck?.recommendedActions).toContain(
+      "Run repo_reindex with dry_run=false and index_embeddings=true to create 1536-dimension embeddings for semantic search.",
+    );
   });
 });

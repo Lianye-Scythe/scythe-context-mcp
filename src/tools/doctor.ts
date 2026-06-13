@@ -138,7 +138,10 @@ async function indexCheck(config: AppConfig, projectPath: string, dbPath: string
       })
     : undefined;
   const matchingEmbeddingSet = index.embeddingSets.find((set) => set.dimensions === expectedDimensions);
-  const status: DoctorStatus = !index.exists || index.chunks === 0 || freshness?.status === "stale" ? "warn" : "ok";
+  const embeddingCoverageIncomplete =
+    index.chunks > 0 && (!matchingEmbeddingSet || matchingEmbeddingSet.embeddings < index.chunks);
+  const status: DoctorStatus =
+    !index.exists || index.chunks === 0 || freshness?.status === "stale" || embeddingCoverageIncomplete ? "warn" : "ok";
 
   return {
     name: "index",
