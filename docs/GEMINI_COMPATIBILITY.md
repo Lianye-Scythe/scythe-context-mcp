@@ -141,8 +141,8 @@ POST /v1beta/models/gemini-embedding-2:batchEmbedContents
 ```toml
 [mcp_servers.scythe_context]
 command = "node"
-args = ["/home/po120/Git/scythe-context-mcp/dist/index.js"]
-cwd = "/home/po120/Git/scythe-context-mcp"
+args = ["/path/to/scythe-context-mcp/dist/index.js"]
+cwd = "/path/to/scythe-context-mcp"
 env_vars = ["GEMINI_API_KEY"]
 
 [mcp_servers.scythe_context.env]
@@ -156,8 +156,8 @@ Bearer 中轉站：
 ```toml
 [mcp_servers.scythe_context]
 command = "node"
-args = ["/home/po120/Git/scythe-context-mcp/dist/index.js"]
-cwd = "/home/po120/Git/scythe-context-mcp"
+args = ["/path/to/scythe-context-mcp/dist/index.js"]
+cwd = "/path/to/scythe-context-mcp"
 env_vars = ["GEMINI_API_KEY"]
 
 [mcp_servers.scythe_context.env]
@@ -171,8 +171,8 @@ Query key 中轉站：
 ```toml
 [mcp_servers.scythe_context]
 command = "node"
-args = ["/home/po120/Git/scythe-context-mcp/dist/index.js"]
-cwd = "/home/po120/Git/scythe-context-mcp"
+args = ["/path/to/scythe-context-mcp/dist/index.js"]
+cwd = "/path/to/scythe-context-mcp"
 env_vars = ["GEMINI_API_KEY"]
 
 [mcp_servers.scythe_context.env]

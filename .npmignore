@@ -1,0 +1,10 @@
+src/
+local/
+.scythe-context/
+.repo-beacon/
+node_modules/
+coverage/
+.env
+*.log
+*.Zone.Identifier
+*:Zone.Identifier
