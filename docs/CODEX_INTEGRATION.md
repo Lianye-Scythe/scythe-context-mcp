@@ -70,12 +70,13 @@ Recommended config should expose all tools by default during development, but `e
 - `startup_timeout_sec` and `tool_timeout_sec` tuned above defaults.
 - Bounded context output for primary and related snippets.
 - Explicit opt-in embedding and opt-in related snippet packing.
+- `repo_index_status` freshness diagnostics for stale/new/modified/missing files.
 
 ## Remaining Work
 
 - Consider a plugin package later if Codex App plugin distribution becomes the preferred installation route.
 - Add tree-sitter symbol extraction only if regex extraction becomes a retrieval-quality bottleneck.
-- Continue expanding diagnostics for index freshness and provider capability caching.
+- Continue expanding provider capability caching and error-specific remediation hints.
 
 ## Troubleshooting
 

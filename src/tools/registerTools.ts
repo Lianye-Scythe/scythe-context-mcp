@@ -7,7 +7,7 @@ import { buildContextPack } from "../indexing/contextPack.js";
 import { reindexDryRun } from "../indexing/dryRun.js";
 import { indexMissingEmbeddings } from "../indexing/embeddingWriter.js";
 import { searchHybrid } from "../indexing/hybridSearch.js";
-import { readDetailedIndexStatus, recommendedNextActions } from "../indexing/indexStatus.js";
+import { readDetailedIndexStatus, readIndexFreshness, recommendedNextActions } from "../indexing/indexStatus.js";
 import { persistentReindexMetadata } from "../indexing/indexWriter.js";
 import { readRelatedFileGraph, readRelatedFiles } from "../indexing/relatedFiles.js";
 import { readRelatedSnippets } from "../indexing/relatedSnippets.js";
@@ -95,13 +95,20 @@ export function registerTools(server: McpServer, config: AppConfig): void {
       const projectPath = path.resolve(project_path || config.defaultProjectPath);
       const dbPath = path.join(projectPath, config.indexDirName, "index.sqlite");
       const index = readDetailedIndexStatus(dbPath);
+      const freshness = await readIndexFreshness({
+        projectPath,
+        dbPath,
+        limits: { maxFileBytes: config.indexing.maxFileBytes },
+      });
       return asJsonText({
         projectPath,
         indexPath: path.join(projectPath, config.indexDirName),
         index,
         recommendedNextActions: recommendedNextActions(index, {
           desiredDimensions: expectedDimensions,
+          freshness,
         }),
+        freshness,
         status: "usable_mvp",
         implemented: [
           "mcp_server",

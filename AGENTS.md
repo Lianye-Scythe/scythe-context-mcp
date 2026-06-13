@@ -2,7 +2,7 @@
 
 ## Workflow
 
-- Start with `repo_index_status` to check whether `.scythe-context/index.sqlite` exists and whether files, chunks, symbols, dependencies, and embeddings are present.
+- Start with `repo_index_status` to check whether `.scythe-context/index.sqlite` exists, whether files/chunks/symbols/dependencies/embeddings are present, and whether freshness reports stale files.
 - If metadata is missing or stale, run `repo_reindex` with `dry_run=false`.
 - Set `index_embeddings=true` only when semantic search is needed. This sends chunk text to the configured Gemini-compatible endpoint.
 - Prefer `repo_context_pack` for task-oriented code lookup. It combines hybrid search, snippet budgeting, related-file metadata, bounded multi-hop traversal, and suggested paths.

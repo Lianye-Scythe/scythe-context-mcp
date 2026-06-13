@@ -2,7 +2,7 @@
 
 Scythe Context MCP 是給 Codex App / Codex CLI 使用的本機程式碼上下文引擎。目標是提供類似 Augment Context Engine / fast-context-mcp 的能力，但資料與索引留在本機，embedding provider 可接官方 Gemini API 或第三方 v1beta 中轉站。
 
-目前狀態：已具備 repo 掃描、chunk、SQLite/sqlite-vec metadata 與 embedding index、語義搜尋、FTS keyword search、hybrid ranking、輕量 symbol/dependency graph、related-file lookup、搜尋 context budget、context packer、bounded multi-hop related-file traversal 與 opt-in related snippet packing。下一階段優先做 provider diagnostics、錯誤訊息硬化與索引新鮮度訊號；tree-sitter symbols 會在 regex extraction 明確成為 retrieval 品質瓶頸時再加入。
+目前狀態：已具備 repo 掃描、chunk、SQLite/sqlite-vec metadata 與 embedding index、語義搜尋、FTS keyword search、hybrid ranking、輕量 symbol/dependency graph、related-file lookup、搜尋 context budget、context packer、bounded multi-hop related-file traversal、opt-in related snippet packing、provider diagnostics 與索引 freshness diagnostics。下一階段優先做 provider capability cache、更多可修復錯誤訊息與必要時的 tree-sitter symbols。
 
 ## Quick Start
 
@@ -62,7 +62,7 @@ GEMINI_OUTPUT_DIMENSIONALITY = "1536"
 
 ## MCP Tools
 
-- `repo_index_status`: 查看專案、索引路徑、provider 設定與目前實作狀態。
+- `repo_index_status`: 查看專案、索引路徑、provider 設定、metadata/embedding 覆蓋率與 freshness diagnostics；會列出 new/modified/missing/metadata_changed 的 stale reason samples。
 - `gemini_embedding_probe`: 發一個 embedding request，測官方 Gemini 或中轉站是否相容；成功/失敗都回傳 endpoint、latency 與可修復建議，不回傳 API key。
 - `repo_reindex`: 掃描專案；`dry_run=true` 回報計畫，`dry_run=false` 寫入 file/chunk metadata 到 `.scythe-context/index.sqlite`。只有設定 `index_embeddings=true` 時才會呼叫 Gemini 寫入向量，並受 `max_embedding_chunks` 限制。
 - `repo_semantic_search`: 對已建立 embeddings 的本機索引做 hybrid 搜尋，回傳檔案、行號、score/distance 與 snippet；可用 `mode=semantic` 排查純向量結果。支援 `max_context_chars` 控制整次回傳的 snippet 總字元數，預設 12000。

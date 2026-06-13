@@ -195,7 +195,7 @@ repo_semantic_search(query, project_path, max_results, mode="hybrid")
 
 ## Phase 6: Codex Workflow Polish
 
-狀態：context budget、context packer、bounded multi-hop related-file traversal、related snippet packing、server instructions、AGENTS.md 已完成。
+狀態：context budget、context packer、bounded multi-hop related-file traversal、related snippet packing、server instructions、AGENTS.md、provider diagnostics、index freshness diagnostics 已完成。
 
 目標：讓 Codex 更穩定地使用工具。
 
@@ -207,7 +207,8 @@ repo_semantic_search(query, project_path, max_results, mode="hybrid")
 4. 支援 `max_context_chars`。已完成 `repo_semantic_search` 的 snippet 總字元限制。
 5. 新增 context packer。已完成 `repo_context_pack`，會打包 primary snippets、related metadata 與 suggested paths。
 6. 新增 related snippet packing。已完成 opt-in `include_related_snippets` 與獨立 `max_related_context_chars`。
-7. 錯誤訊息加入可修復建議。
+7. 錯誤訊息加入可修復建議。已完成 Gemini probe diagnostics 與 secret-safe provider errors。
+8. 新增 index freshness diagnostics。已完成 `repo_index_status` 的 new/modified/missing/metadata_changed stale reason samples。
 
 ## 風險與取捨
 
