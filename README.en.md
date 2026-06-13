@@ -52,7 +52,7 @@ Codex MCP configuration uses fields such as `command`, `args`, `cwd`, `env`, and
 | --- | --- |
 | Codex and MCP both run on Windows | Use Windows `node.exe` plus Windows npm `npx-cli.js`. |
 | Codex CLI runs inside WSL/Linux/macOS | Use `npx` or `node dist/index.js` from the same environment. |
-| Codex App on Windows opens a WSL repo | The App's WSL MCP bridge may still be unreliable; run MCP on Windows Node and pass the current WSL workspace to the Windows process with `PWD` + `WSLENV`. |
+| Codex App on Windows opens a WSL repo | Use Windows `wsl.exe` to start WSL Node, so the SQLite index stays on the WSL filesystem. Avoid Windows Node directly reading or writing `.scythe-context/` inside a WSL repo. |
 
 ### Native Windows
 
@@ -99,39 +99,41 @@ Here `args` points to the built Scythe Context MCP entrypoint; do not pin `cwd` 
 
 ### Windows Codex App + WSL repo
 
-Codex App on Windows may not reliably start WSL-side stdio MCP servers while using WSL agent mode. If MCP tools do not appear in the App, MCP handshakes time out, or config paths cross Windows/WSL boundaries, run the MCP server on Windows Node and let Scythe Context index the WSL repo path.
+Codex App on Windows may not reliably start WSL-side stdio MCP servers while using WSL agent mode. The most reliable tested workaround is to let Codex run Windows `wsl.exe`, then let `wsl.exe` start WSL Node and the WSL npm package.
 
-Minimum config:
+Install inside WSL first:
+
+```bash
+npm install -g scythe-context-mcp
+command -v scythe-context-mcp
+scythe-context-mcp --version
+```
+
+Then use this Codex config:
 
 ```toml
 [mcp_servers.scythe_context]
-command = "/mnt/c/nvm4w/nodejs/node.exe"
-args = ['C:\nvm4w\nodejs\node_modules\npm\bin\npx-cli.js', "-y", "scythe-context-mcp"]
-cwd = "/mnt/c/Users/you"
-env_vars = ["GEMINI_API_KEY", "PWD"]
+command = "/mnt/c/Windows/System32/wsl.exe"
+args = ["-d", "Ubuntu", "--", "bash", "-lc", "PATH=/home/you/.nvm/current/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin exec /home/you/.nvm/current/bin/scythe-context-mcp"]
+startup_timeout_sec = 40
+tool_timeout_sec = 120
+env_vars = ["PWD", "GEMINI_API_KEY"]
 
 [mcp_servers.scythe_context.env]
-WSLENV = "PWD/p"
-```
-
-Notes:
-
-- Keep `cwd` on a Windows-accessible directory such as `/mnt/c/Users/you`. Do not use the WSL repo's UNC directory as `cwd`, because npm/npx may go through CMD, and CMD does not support UNC current directories.
-- This `cwd` is not the repo to index; it is only a safe startup directory for the Windows process. The real WSL repo is passed through `PWD/p`.
-- `PWD/p` lets WSL convert the current workspace path into a UNC path readable by the Windows process, so you do not need to edit config for every repo.
-- If `GEMINI_API_KEY` already exists in the Windows user environment or is forwarded by Codex `env_vars`, you do not need to put the key in `WSLENV`.
-- Do not point Windows `node.exe` at `dist/index.js` inside a WSL checkout unless that checkout's dependencies were installed by Windows npm. `better-sqlite3` and `sqlite-vec` include native modules, and Windows Node cannot load native binaries installed by Linux npm.
-
-Proxy URL, model, and auth mode can be written directly in Codex config; they do not need to go through `WSLENV`:
-
-```toml
-[mcp_servers.scythe_context.env]
-WSLENV = "PWD/p"
+WSLENV = "PWD:GEMINI_API_KEY:GEMINI_BASE_URL:GEMINI_MODEL:GEMINI_AUTH_MODE:GEMINI_OUTPUT_DIMENSIONALITY"
 GEMINI_BASE_URL = "https://your-proxy.example.com/v1beta"
 GEMINI_MODEL = "gemini-embedding-2"
 GEMINI_AUTH_MODE = "bearer"
 GEMINI_OUTPUT_DIMENSIONALITY = "1536"
 ```
+
+Notes:
+
+- Replace `Ubuntu` with your WSL distribution name; check it with `wsl.exe -l -v`.
+- Replace `/home/you/.nvm/current/bin` with your WSL Node/npm path; check it inside WSL with `which node` and `which scythe-context-mcp`.
+- Do not pin `cwd` or `SCYTHE_CONTEXT_DEFAULT_PROJECT` in global config. This setup follows the current Codex workspace, so you do not need to edit config for every repo.
+- `WSLENV` lists variable names to preserve across WSL/Windows interop; it does not contain the key itself. Prefer keeping `GEMINI_API_KEY` in the environment that starts Codex, then forward it with `env_vars`; write it directly under `[mcp_servers.scythe_context.env]` only for local throwaway testing.
+- Avoid using Windows Node to index `.scythe-context/` directly inside a WSL repo. SQLite can report `database is locked` across the UNC / WSL filesystem boundary, and native modules can also accidentally mix Windows and WSL binaries.
 
 ### Optional hardening
 
@@ -186,16 +188,18 @@ Supported auth modes:
 
 Official Gemini usually uses `x-goog-api-key`; many third-party proxies use `bearer`. If a proxy requires a query-string key, use `query` and set `GEMINI_API_KEY_QUERY_PARAM` if needed.
 
-`WSLENV` is a WSL interop rule, not a Codex-specific field. You only need it when the Windows Codex App opens a WSL repo and the MCP server is launched through Windows Node. Add `GEMINI_API_KEY`, URL, or model variables to `WSLENV` only when they exist only in the WSL environment:
+`WSLENV` is a WSL interop rule, not a Codex-specific field. You only need it when Windows Codex App opens a WSL repo and the server is launched through a `wsl.exe` wrapper or another cross-environment command. With the `wsl.exe` wrapper above, use the no-suffix form:
 
 ```toml
 [mcp_servers.scythe_context.env]
-WSLENV = "PWD/p:GEMINI_API_KEY/w:GEMINI_BASE_URL/w:GEMINI_MODEL/w:GEMINI_AUTH_MODE/w:GEMINI_OUTPUT_DIMENSIONALITY/w"
+WSLENV = "PWD:GEMINI_API_KEY:GEMINI_BASE_URL:GEMINI_MODEL:GEMINI_AUTH_MODE:GEMINI_OUTPUT_DIMENSIONALITY"
 GEMINI_BASE_URL = "https://your-proxy.example.com/v1beta"
 GEMINI_MODEL = "gemini-embedding-2"
 GEMINI_AUTH_MODE = "bearer"
 GEMINI_OUTPUT_DIMENSIONALITY = "1536"
 ```
+
+Use `PWD/p` only if you intentionally run a Windows Node process and need WSL to convert the workspace path to a Windows-readable UNC path. That mode is currently not recommended for directly reading or writing the repo-local SQLite index in WSL.
 
 ## Typical Workflow
 

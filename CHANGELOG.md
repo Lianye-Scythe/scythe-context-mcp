@@ -6,6 +6,18 @@ This project follows semantic versioning before npm publication where practical.
 
 ## [Unreleased]
 
+## [0.1.3] - 2026-06-14
+
+### Changed
+
+- Clarify MCP server instructions so Codex prefers Scythe Context for unknown-location, semantic, and related-file lookup, while using `rg` or direct file reads for exact strings, known paths, and small targeted checks.
+- Update Windows Codex App + WSL documentation to prefer a `wsl.exe` wrapper that starts WSL Node, avoiding Windows Node direct access to WSL repo-local SQLite indexes.
+
+### Fixed
+
+- Avoid false binary detection when a UTF-8 scan prefix ends in the middle of a multibyte character.
+- Overwrite stale sqlite-vec rows before inserting embeddings so incremental reindexing cannot fail when embedding ids are reused.
+
 ## [0.1.2] - 2026-06-13
 
 ### Fixed

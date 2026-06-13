@@ -42,22 +42,23 @@ Codex's official MCP configuration model is platform-neutral: a stdio server has
 
 - Native Windows: use Windows `node.exe` and npm's `npx-cli.js`, or the short binary command only when Codex can reliably see the npm global binary on PATH.
 - WSL/Linux/macOS: use `npx -y scythe-context-mcp` or `node dist/index.js` from a build produced in that same environment.
-- Windows Codex App with WSL workspaces: use Windows `node.exe` and Windows npm package dependencies, but pass the current WSL workspace through `PWD` and `WSLENV`. Use `SCYTHE_CONTEXT_DEFAULT_PROJECT` only when intentionally pinning one fixed default project.
+- Windows Codex App with WSL workspaces: prefer Windows `wsl.exe` as a wrapper that starts WSL Node and WSL npm package dependencies. This keeps the repo-local SQLite index on the WSL filesystem. Use `SCYTHE_CONTEXT_DEFAULT_PROJECT` only when intentionally pinning one fixed default project.
 
 Do not mix a Node runtime from one OS with `node_modules` installed by another OS. This matters because Scythe Context depends on native SQLite modules.
 
 ### Windows App with WSL workspaces
 
-When Codex App runs a WSL project but MCP servers need to use Windows Node, prefer launching Scythe Context through Windows `node.exe` and npm's `npx-cli.js`:
+When Codex App runs a WSL project, prefer launching Scythe Context through Windows `wsl.exe` and a WSL-installed `scythe-context-mcp` binary:
 
-- Current Codex App on Windows may not reliably start WSL-side stdio MCP servers while using WSL agent mode. If MCP tools are missing, handshakes time out, or config paths cross Windows/WSL boundaries, use the Windows Node workaround.
-- Use `command = "/mnt/c/.../node.exe"` with the Windows npm `npx-cli.js` path as the first arg.
-- Keep `cwd` on a Windows-accessible directory such as `/mnt/c/Users/you`; do not use a WSL repo UNC path as `cwd` because npm/npx may invoke CMD and CMD does not support UNC current directories.
-- Forward `PWD` with `PWD/p` in `WSLENV` so WSL converts the current workspace to a UNC path for the Windows process.
-- Include provider variables in `WSLENV` with `/w` only when those values exist in WSL and must be forwarded to Windows Node.
+- Current Codex App on Windows may not reliably start WSL-side stdio MCP servers directly while using WSL agent mode. If MCP tools are missing, handshakes time out, or config paths cross Windows/WSL boundaries, use `wsl.exe` as a wrapper.
+- Install the package inside WSL, then point the wrapper command at the WSL global binary, for example `/home/you/.nvm/current/bin/scythe-context-mcp`.
+- Keep the WSL Node path at the front of `PATH` inside the wrapper command. This avoids accidentally resolving a Windows npm global shim from the inherited Windows PATH.
+- Do not pin `cwd` in global config. Let Codex's current workspace and `PWD` decide the target repo.
+- Use `WSLENV = "PWD:GEMINI_API_KEY:GEMINI_BASE_URL:GEMINI_MODEL:GEMINI_AUTH_MODE:GEMINI_OUTPUT_DIMENSIONALITY"` when config env variables must survive the WSL -> Windows `wsl.exe` -> WSL round trip.
+- Do not use Windows Node to directly read or write `.scythe-context/index.sqlite` inside a WSL repo. In live testing this can fail with `database is locked` across the UNC / WSL filesystem boundary.
 - Do not point Windows `node.exe` at a WSL checkout's `dist/index.js` unless dependencies were installed by Windows npm in that checkout.
 
-The reason is native dependency compatibility. `better-sqlite3` and `sqlite-vec` load platform-specific binaries. Windows Node should load Windows-installed package dependencies, while WSL Node should load WSL-installed package dependencies.
+The reason is both filesystem and native dependency compatibility. `better-sqlite3` and `sqlite-vec` load platform-specific binaries, and SQLite locking is more predictable when the Node process and index database live in the same OS filesystem.
 
 ### AGENTS.md
 
@@ -90,7 +91,7 @@ Recommended config should expose all tools by default during development, but `e
 - Valid Codex TOML examples using `[mcp_servers.scythe_context.env]`.
 - Secret-safe config examples using `env_vars` for `GEMINI_API_KEY`.
 - `cwd` in MCP config so relative `.env` loading is predictable.
-- Windows App + WSL setup guidance using Windows `node.exe`, npm `npx-cli.js`, `PWD`, and `WSLENV`.
+- Windows App + WSL setup guidance using Windows `wsl.exe`, WSL Node, npm package dependencies installed in WSL, `PWD`, and `WSLENV`.
 - `startup_timeout_sec` and `tool_timeout_sec` tuned above defaults.
 - Bounded context output for primary and related snippets.
 - Explicit opt-in embedding and opt-in related snippet packing.
@@ -114,12 +115,13 @@ Recommended config should expose all tools by default during development, but `e
 
 ### Windows App starts but WSL repo indexing fails
 
-1. Prefer the npm package path through Windows `node.exe` plus npm `npx-cli.js`.
-2. Keep `cwd` on `/mnt/c/...`, not the WSL repo.
-3. Forward the current workspace with `env_vars = ["PWD", ...]` and `WSLENV = "PWD/p:..."`.
-4. Forward provider environment variables with `WSLENV` only when they exist in WSL but the MCP server runs through Windows Node.
-5. Avoid mixing Windows Node with Linux-installed `node_modules`.
-6. Run the same Windows Node + `npx-cli.js` command from a WSL shell with `cwd` under `/mnt/c/Users/...` to verify the launch path before configuring Codex.
+1. Prefer the `wsl.exe` wrapper that starts WSL Node and a WSL-installed `scythe-context-mcp` binary.
+2. Confirm WSL has its own install: `npm install -g scythe-context-mcp`, then `command -v scythe-context-mcp`.
+3. Keep WSL Node's bin directory before Windows paths in the wrapper command's `PATH`.
+4. Do not set global `cwd` or `SCYTHE_CONTEXT_DEFAULT_PROJECT` unless you intentionally want one fixed repo.
+5. Use `WSLENV` without suffixes for the wrapper mode, for example `PWD:GEMINI_API_KEY:GEMINI_BASE_URL:GEMINI_MODEL:GEMINI_AUTH_MODE:GEMINI_OUTPUT_DIMENSIONALITY`.
+6. If you see `invalid ELF header`, the process probably loaded a Windows npm package or shim from WSL; fix `PATH` or reinstall inside WSL.
+7. If you see `database is locked` while using Windows Node against a WSL repo, switch to the `wsl.exe` wrapper so SQLite is opened by WSL Node on the WSL filesystem.
 
 ### Tool starts but embedding fails
 

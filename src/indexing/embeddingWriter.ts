@@ -113,9 +113,12 @@ export async function indexMissingEmbeddings(options: EmbeddingIndexOptions): Pr
       `)
       .all({ embeddingSetId, maxChunks: options.maxChunks }) as PendingChunk[];
 
-    const insertVector = db.prepare(`insert or replace into ${vectorTableName(options.dimensions)}(rowid, embedding) values (?, ?)`);
+    const vectorTable = vectorTableName(options.dimensions);
+    const deleteVector = db.prepare(`delete from ${vectorTable} where rowid = ?`);
+    const insertVector = db.prepare(`insert into ${vectorTable}(rowid, embedding) values (?, ?)`);
     const writeEmbedding = db.transaction((chunkId: number, vector: number[]) => {
       const embeddingId = getOrCreateEmbeddingRecord(db, { chunkId, embeddingSetId });
+      deleteVector.run(BigInt(embeddingId));
       insertVector.run(BigInt(embeddingId), vectorToFloat32Buffer(vector, options.dimensions));
     });
 

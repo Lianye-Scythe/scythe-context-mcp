@@ -6,6 +6,7 @@ import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import { indexMissingEmbeddings } from "./embeddingWriter.js";
 import { persistentReindexMetadata } from "./indexWriter.js";
 import type { EmbeddingProvider, EmbeddingRequest, EmbeddingResult } from "../providers/types.js";
+import { initializeStorageSchema, vectorTableName } from "../storage/schema.js";
 
 class FakeEmbeddingProvider implements EmbeddingProvider {
   batchCalls = 0;
@@ -143,6 +144,48 @@ describe("indexMissingEmbeddings", () => {
 
     expect(result.stats.pendingChunks).toBe(1);
     expect(result.stats.embeddedChunks).toBe(1);
+  });
+
+  it("overwrites a stale vector row when an embedding id is reused", async () => {
+    const metadata = await createMetadataIndex();
+    const provider = new FakeEmbeddingProvider(1536);
+
+    const first = await indexMissingEmbeddings({
+      dbPath: metadata.dbPath,
+      providerName: "fake",
+      providerBaseUrl: "memory://fake",
+      model: "fake-embedding",
+      dimensions: 1536,
+      batchSize: 2,
+      maxChunks: 1,
+      provider,
+    });
+
+    const db = new Database(metadata.dbPath);
+    try {
+      initializeStorageSchema(db, { vectorDimensions: 1536 });
+      const row = db.prepare("select id from embeddings order by id limit 1").get() as { id: number };
+      db.prepare("delete from embeddings where id = ?").run(row.id);
+      expect(
+        (db.prepare(`select count(*) as count from ${vectorTableName(1536)} where rowid = ?`).get(row.id) as { count: number }).count,
+      ).toBe(1);
+    } finally {
+      db.close();
+    }
+
+    const second = await indexMissingEmbeddings({
+      dbPath: metadata.dbPath,
+      providerName: "fake",
+      providerBaseUrl: "memory://fake",
+      model: "fake-embedding",
+      dimensions: 1536,
+      batchSize: 2,
+      maxChunks: 1,
+      provider,
+    });
+
+    expect(first.stats.embeddedChunks).toBe(1);
+    expect(second.stats.embeddedChunks).toBe(1);
   });
 
   it("fails fast when provider dimensions do not match the embedding set", async () => {

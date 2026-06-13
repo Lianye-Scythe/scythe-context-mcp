@@ -34,4 +34,13 @@ describe("scanProject", () => {
       ]),
     );
   });
+
+  it("does not treat a UTF-8 file as binary when the scan prefix ends mid-character", async () => {
+    await fs.writeFile(path.join(tempDir, "README.zh-CN.md"), `${"简体中文说明".repeat(900)}\n`);
+
+    const result = await scanProject(tempDir, { maxFileBytes: 64 * 1024 });
+
+    expect(result.files.map((file) => file.relativePath)).toContain("README.zh-CN.md");
+    expect(result.skipped).not.toContainEqual(expect.objectContaining({ relativePath: "README.zh-CN.md", reason: "binary" }));
+  });
 });
