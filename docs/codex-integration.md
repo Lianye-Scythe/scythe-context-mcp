@@ -54,7 +54,7 @@ When Codex App runs a WSL project but MCP servers need to use Windows Node, pref
 - Use `command = "/mnt/c/.../node.exe"` with the Windows npm `npx-cli.js` path as the first arg.
 - Keep `cwd` on a Windows-accessible directory such as `/mnt/c/Users/you`; do not use a WSL repo UNC path as `cwd` because npm/npx may invoke CMD and CMD does not support UNC current directories.
 - Forward `PWD` with `PWD/p` in `WSLENV` so WSL converts the current workspace to a UNC path for the Windows process.
-- Include forwarded provider variables in `WSLENV` with `/w`, for example `GEMINI_API_KEY/w` and `GEMINI_OUTPUT_DIMENSIONALITY/w`.
+- Include provider variables in `WSLENV` with `/w` only when those values exist in WSL and must be forwarded to Windows Node.
 - Do not point Windows `node.exe` at a WSL checkout's `dist/index.js` unless dependencies were installed by Windows npm in that checkout.
 
 The reason is native dependency compatibility. `better-sqlite3` and `sqlite-vec` load platform-specific binaries. Windows Node should load Windows-installed package dependencies, while WSL Node should load WSL-installed package dependencies.
@@ -117,7 +117,7 @@ Recommended config should expose all tools by default during development, but `e
 1. Prefer the npm package path through Windows `node.exe` plus npm `npx-cli.js`.
 2. Keep `cwd` on `/mnt/c/...`, not the WSL repo.
 3. Forward the current workspace with `env_vars = ["PWD", ...]` and `WSLENV = "PWD/p:..."`.
-4. Forward provider environment variables with `WSLENV`, especially `GEMINI_API_KEY/w`.
+4. Forward provider environment variables with `WSLENV` only when they exist in WSL but the MCP server runs through Windows Node.
 5. Avoid mixing Windows Node with Linux-installed `node_modules`.
 6. Run the same Windows Node + `npx-cli.js` command from a WSL shell with `cwd` under `/mnt/c/Users/...` to verify the launch path before configuring Codex.
 

@@ -109,13 +109,14 @@ cwd = "/mnt/c/Users/you"
 env_vars = ["GEMINI_API_KEY", "PWD"]
 
 [mcp_servers.scythe_context.env]
-WSLENV = "PWD/p:GEMINI_API_KEY/w"
+WSLENV = "PWD/p"
 ```
 
 注意：
 
 - `cwd` 放 Windows 可用目录，例如 `/mnt/c/Users/you`。不要把 `cwd` 设成 WSL repo 的 UNC 目录，因为 npm/npx 可能经过 CMD，而 CMD 不支持 UNC current directory。
 - `PWD/p` 会让 WSL 把当前 workspace 路径转成 Windows process 可读的 UNC path；所以不需要每换一个 repo 就改配置。
+- 如果 `GEMINI_API_KEY` 已存在 Windows 用户环境或由 Codex `env_vars` 直接转发，就不需要把 key 放进 `WSLENV`。
 - 不要用 Windows `node.exe` 直接执行 WSL checkout 里的 `dist/index.js`，除非该 checkout 的 dependencies 是用 Windows npm 安装的。`better-sqlite3` 和 `sqlite-vec` 都包含 native module，Windows Node 不能加载 Linux npm 安装出的 native binary。
 
 ### 可选强化配置
@@ -142,7 +143,14 @@ enabled_tools = [
 
 ### Gemini / v1beta proxy
 
-非秘密配置可以放在 `[mcp_servers.scythe_context.env]`：
+如果不填 URL/model/auth，默认会使用官方 Gemini 兼容配置：
+
+- `GEMINI_BASE_URL`: `https://generativelanguage.googleapis.com/v1beta`
+- `GEMINI_MODEL`: `gemini-embedding-2`
+- `GEMINI_AUTH_MODE`: `x-goog-api-key`
+- `GEMINI_OUTPUT_DIMENSIONALITY`: `1536`
+
+因此官方 Gemini 用户通常只需要提供 `GEMINI_API_KEY`。第三方中转站或自定义模型才需要覆盖下面这些非秘密配置：
 
 ```toml
 [mcp_servers.scythe_context.env]
@@ -162,7 +170,7 @@ GEMINI_OUTPUT_DIMENSIONALITY = "1536"
 
 官方 Gemini 通常使用 `x-goog-api-key`；很多第三方中转站使用 `bearer`。如果中转站要求 query string key，可以使用 `query`，必要时再设置 `GEMINI_API_KEY_QUERY_PARAM`。
 
-`WSLENV` 是 WSL interop 规则，不是 Codex 专用字段。只有在 Windows Codex App + WSL repo 模式需要让 WSL 把变量转交给 Windows Node 时才需要。若设置了额外 Gemini 变量，记得把它们加进 `WSLENV`：
+`WSLENV` 是 WSL interop 规则，不是 Codex 专用字段。只有在 Windows Codex App + WSL repo 模式需要让 WSL 把变量转交给 Windows Node 时才需要。若 `GEMINI_API_KEY`、URL 或 model 只存在 WSL 环境变量，才把它们加进 `WSLENV`：
 
 ```toml
 [mcp_servers.scythe_context.env]

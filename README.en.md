@@ -109,13 +109,14 @@ cwd = "/mnt/c/Users/you"
 env_vars = ["GEMINI_API_KEY", "PWD"]
 
 [mcp_servers.scythe_context.env]
-WSLENV = "PWD/p:GEMINI_API_KEY/w"
+WSLENV = "PWD/p"
 ```
 
 Notes:
 
 - Keep `cwd` on a Windows-accessible directory such as `/mnt/c/Users/you`. Do not use the WSL repo's UNC directory as `cwd`, because npm/npx may go through CMD, and CMD does not support UNC current directories.
 - `PWD/p` lets WSL convert the current workspace path into a UNC path readable by the Windows process, so you do not need to edit config for every repo.
+- If `GEMINI_API_KEY` already exists in the Windows user environment or is forwarded by Codex `env_vars`, you do not need to put the key in `WSLENV`.
 - Do not point Windows `node.exe` at `dist/index.js` inside a WSL checkout unless that checkout's dependencies were installed by Windows npm. `better-sqlite3` and `sqlite-vec` include native modules, and Windows Node cannot load native binaries installed by Linux npm.
 
 ### Optional hardening
@@ -142,7 +143,14 @@ If you really want to pin one default project, set `SCYTHE_CONTEXT_DEFAULT_PROJE
 
 ### Gemini / v1beta proxy
 
-Non-secret settings can go under `[mcp_servers.scythe_context.env]`:
+If URL/model/auth are not set, Scythe uses the official Gemini-compatible defaults:
+
+- `GEMINI_BASE_URL`: `https://generativelanguage.googleapis.com/v1beta`
+- `GEMINI_MODEL`: `gemini-embedding-2`
+- `GEMINI_AUTH_MODE`: `x-goog-api-key`
+- `GEMINI_OUTPUT_DIMENSIONALITY`: `1536`
+
+Official Gemini users usually only need to provide `GEMINI_API_KEY`. Third-party proxies or custom models can override these non-secret settings:
 
 ```toml
 [mcp_servers.scythe_context.env]
@@ -162,7 +170,7 @@ Supported auth modes:
 
 Official Gemini usually uses `x-goog-api-key`; many third-party proxies use `bearer`. If a proxy requires a query-string key, use `query` and set `GEMINI_API_KEY_QUERY_PARAM` if needed.
 
-`WSLENV` is a WSL interop rule, not a Codex-specific field. You only need it when the Windows Codex App opens a WSL repo and the MCP server is launched through Windows Node. If you set extra Gemini variables, include them in `WSLENV`:
+`WSLENV` is a WSL interop rule, not a Codex-specific field. You only need it when the Windows Codex App opens a WSL repo and the MCP server is launched through Windows Node. Add `GEMINI_API_KEY`, URL, or model variables to `WSLENV` only when they exist only in the WSL environment:
 
 ```toml
 [mcp_servers.scythe_context.env]
