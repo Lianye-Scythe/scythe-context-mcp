@@ -9,48 +9,26 @@
 
 Scythe Context MCP 是給 Codex App / Codex CLI 使用的本機程式碼上下文引擎。它在 repo 內建立 SQLite/sqlite-vec 索引，結合語義搜尋、關鍵字搜尋、符號/依賴關係與 context packing，讓 Codex 更快拿到可操作的檔案、行號、片段與相關路徑。
 
-## 為什麼用它
+## 核心特性
 
-- **本機優先**：metadata、FTS 與向量索引都存在 repo 內的 `.scythe-context/`。
-- **混合搜尋**：結合 Gemini embeddings、SQLite FTS5、path/symbol ranking，避免只靠單一召回方式。
-- **Codex 友善輸出**：回傳 line ranges、snippets、match reasons、grep keywords、related files 與 suggested paths。
-- **可接自己的 provider**：支援官方 Gemini API，也支援第三方 Gemini-compatible v1beta proxy。
-- **可診斷**：內建 provider probe、index freshness、embedding coverage 與可修復建議。
+- 本機優先：metadata、FTS 與向量索引都存在 repo 內的 `.scythe-context/`。
+- 混合搜尋：結合 Gemini embeddings、SQLite FTS5、path/symbol ranking，避免只靠單一召回方式。
+- Codex 友善輸出：回傳 line ranges、snippets、match reasons、grep keywords、related files 與 suggested paths。
+- Gemini-compatible：支援官方 Gemini API，也支援第三方 v1beta proxy。
+- 可診斷：內建 provider probe、index freshness、embedding coverage 與可修復建議。
 
 隱私提醒：只有在執行 embedding 相關功能時，query 或 chunk text 才會送到你設定的 Gemini-compatible endpoint。第三方 proxy 應視為可看到這些文字。
 
-## 功能狀態
-
-已完成：
-
-- repo 掃描、binary/large-file skip、chunking
-- SQLite metadata、SQLite FTS5、sqlite-vec 向量索引
-- Gemini Embedding 2 provider 與 batch fallback
-- semantic / keyword / hybrid search
-- 輕量 symbol/dependency graph
-- related-file lookup、bounded multi-hop traversal
-- `repo_context_pack` context budgeting 與 related snippet packing
-- provider diagnostics 與 index freshness diagnostics
-
-下一步：
-
-- provider capability cache
-- 更完整的安裝/原生依賴 doctor
-- embedding 失敗時的 keyword-only fallback
-- 必要時加入 tree-sitter symbol extraction
-
-## 安裝
-
-### 從 npm 安裝
-
-使用 npm 安裝全域指令：
+## 快速開始
 
 ```bash
 npm install -g scythe-context-mcp
 scythe-context-mcp --version
 ```
 
-### 從原始碼安裝
+Runtime 目標是 Node.js 24 LTS。Node 26 可能可用，但在進入 LTS 前不作為主要驗收基準。
+
+從原始碼執行：
 
 ```bash
 git clone https://github.com/Lianye-Scythe/scythe-context-mcp.git
@@ -60,23 +38,27 @@ cp .env.example .env
 npm run build
 ```
 
-Runtime 目標是 Node.js 24 LTS。Node 26 可能可用，但在進入 LTS 前不作為主要驗收基準。
-
 舊專案名 `repo-beacon-mcp` 已改為 `scythe-context-mcp`。舊的 `REPO_BEACON_*` 環境變數仍作為 fallback 相容，但新設定應改用 `SCYTHE_CONTEXT_*`。
 
 ## Codex 設定
 
 Codex MCP 設定使用 `command`、`args`、`cwd`、`env` 與 `env_vars` 等欄位；可參考官方文件：[Model Context Protocol](https://developers.openai.com/codex/mcp) 與 [Configuration Reference](https://developers.openai.com/codex/config-reference)。
 
-### Native Windows
+### 先選執行環境
 
-如果 Codex 和 MCP server 都在 Windows 端執行，建議用 Windows Node/npm 的明確路徑。這能避開 Windows 上 `npx`/PATH 解析不一致的問題：
+| 情境 | 建議 |
+| --- | --- |
+| Codex 和 MCP 都在 Windows | 用 Windows `node.exe` + Windows npm `npx-cli.js`。 |
+| Codex CLI 在 WSL/Linux/macOS | 用同一個環境內的 `npx` 或 `node dist/index.js`。 |
+| Codex App on Windows 開 WSL repo | 目前 App 的 WSL MCP bridge 仍可能不穩；建議 MCP 跑 Windows Node，再用 `SCYTHE_CONTEXT_DEFAULT_PROJECT` + `WSLENV` 指向 WSL repo。 |
+
+### Native Windows
 
 ```toml
 [mcp_servers.scythe_context]
-command = "C:\\nvm4w\\nodejs\\node.exe"
-args = ["C:\\nvm4w\\nodejs\\node_modules\\npm\\bin\\npx-cli.js", "-y", "scythe-context-mcp"]
-cwd = "C:\\Users\\you"
+command = 'C:\nvm4w\nodejs\node.exe'
+args = ['C:\nvm4w\nodejs\node_modules\npm\bin\npx-cli.js', '-y', 'scythe-context-mcp']
+cwd = 'C:\Users\you'
 enabled = true
 required = false
 startup_timeout_sec = 40
@@ -92,7 +74,7 @@ enabled_tools = [
 ]
 
 [mcp_servers.scythe_context.env]
-SCYTHE_CONTEXT_DEFAULT_PROJECT = "C:\\Users\\you\\Git\\your-repo"
+SCYTHE_CONTEXT_DEFAULT_PROJECT = 'C:\Users\you\Git\your-repo'
 GEMINI_OUTPUT_DIMENSIONALITY = "1536"
 ```
 
@@ -106,14 +88,6 @@ required = false
 startup_timeout_sec = 20
 tool_timeout_sec = 120
 env_vars = ["GEMINI_API_KEY"]
-enabled_tools = [
-  "repo_index_status",
-  "repo_reindex",
-  "repo_context_pack",
-  "repo_semantic_search",
-  "repo_related_files",
-  "gemini_embedding_probe"
-]
 
 [mcp_servers.scythe_context.env]
 GEMINI_OUTPUT_DIMENSIONALITY = "1536"
@@ -121,7 +95,7 @@ GEMINI_OUTPUT_DIMENSIONALITY = "1536"
 
 ### WSL/Linux/macOS
 
-如果 Codex 和 MCP server 都在同一個 Unix-like 環境中執行，直接用 npm package 即可：
+Codex 和 MCP server 都在同一個 Unix-like 環境中執行時：
 
 ```toml
 [mcp_servers.scythe_context]
@@ -138,7 +112,7 @@ env_vars = ["GEMINI_API_KEY"]
 GEMINI_OUTPUT_DIMENSIONALITY = "1536"
 ```
 
-如果從原始碼執行，則改用本機 build 後的入口：
+從原始碼執行時：
 
 ```toml
 [mcp_servers.scythe_context]
@@ -157,7 +131,7 @@ GEMINI_OUTPUT_DIMENSIONALITY = "1536"
 
 ### Windows Codex App + WSL repo
 
-如果 Codex App 在 WSL 專案中啟動 MCP，但 MCP 實際要用 Windows Node，建議沿用 Windows `node.exe` + npm `npx-cli.js` 的寫法，並把 `cwd` 放在 Windows 可用目錄。WSL repo 路徑用 `SCYTHE_CONTEXT_DEFAULT_PROJECT` 指定，再透過 `WSLENV` 的 `/p` 轉成 Windows process 可讀的 UNC path：
+目前 Codex App on Windows 的 WSL agent mode 可能無法可靠啟動 WSL-side stdio MCP server。若你遇到 App 裡看不到 MCP tools、MCP handshake timeout、或 config path 混到 Windows/WSL 的問題，建議使用 Windows Node 啟動 MCP，並讓 Scythe Context 透過 WSL path 索引 repo。
 
 ```toml
 [mcp_servers.scythe_context]
@@ -166,7 +140,7 @@ args = ['C:\nvm4w\nodejs\node_modules\npm\bin\npx-cli.js', "-y", "scythe-context
 cwd = "/mnt/c/Users/you"
 enabled = true
 required = false
-startup_timeout_sec = 20
+startup_timeout_sec = 40
 tool_timeout_sec = 120
 env_vars = ["GEMINI_API_KEY"]
 enabled_tools = [
@@ -184,9 +158,13 @@ GEMINI_OUTPUT_DIMENSIONALITY = "1536"
 WSLENV = "SCYTHE_CONTEXT_DEFAULT_PROJECT/p:GEMINI_API_KEY/w:GEMINI_OUTPUT_DIMENSIONALITY/w:GEMINI_BASE_URL/w:GEMINI_MODEL/w:GEMINI_AUTH_MODE/w:GEMINI_API_KEY_HEADER/w:GEMINI_API_KEY_QUERY_PARAM/w"
 ```
 
-不要把 `cwd` 設成 WSL repo 的 UNC 目錄，因為 npm/npx 可能經過 CMD，而 CMD 不支援 UNC current directory。也不要直接用 Windows `node.exe` 執行 WSL checkout 裡的 `dist/index.js`，除非該 checkout 的 dependencies 是用 Windows npm 安裝的。`better-sqlite3` 和 `sqlite-vec` 都包含 native module，Windows Node 不能載入 Linux npm 安裝出的 native binary。
+注意：
 
-### 第三方 v1beta proxy
+- `cwd` 放 Windows 可用目錄，例如 `/mnt/c/Users/you`。不要把 `cwd` 設成 WSL repo 的 UNC 目錄，因為 npm/npx 可能經過 CMD，而 CMD 不支援 UNC current directory。
+- `SCYTHE_CONTEXT_DEFAULT_PROJECT/p` 會讓 WSL 把 `/home/...` 轉成 Windows process 可讀的 UNC path。
+- 不要用 Windows `node.exe` 直接執行 WSL checkout 裡的 `dist/index.js`，除非該 checkout 的 dependencies 是用 Windows npm 安裝的。`better-sqlite3` 和 `sqlite-vec` 都包含 native module，Windows Node 不能載入 Linux npm 安裝出的 native binary。
+
+### Gemini / v1beta proxy
 
 ```toml
 [mcp_servers.scythe_context.env]
@@ -245,6 +223,12 @@ GEMINI_OUTPUT_DIMENSIONALITY = "1536"
 | `repo_semantic_search` | 對已索引 chunks 做 hybrid 或 semantic search，適合排查 ranking。 |
 | `repo_related_files` | 查看單一檔案的 symbols、imports、importedBy。 |
 | `gemini_embedding_probe` | 測試 Gemini 或 proxy 相容性，回傳 endpoint、latency、錯誤分類與可修復建議。 |
+
+## 功能狀態
+
+已完成：repo 掃描、chunking、SQLite metadata、SQLite FTS5、sqlite-vec、Gemini Embedding 2 provider、semantic/keyword/hybrid search、輕量 symbol/dependency graph、related-file lookup、`repo_context_pack`、provider diagnostics、index freshness diagnostics。
+
+下一步：provider capability cache、安裝/原生依賴 doctor、embedding 失敗時的 keyword-only fallback、必要時加入 tree-sitter symbol extraction。
 
 ## 隱私與本機檔案
 

@@ -50,6 +50,7 @@ Do not mix a Node runtime from one OS with `node_modules` installed by another O
 
 When Codex App runs a WSL project but MCP servers need to use Windows Node, prefer launching Scythe Context through Windows `node.exe` and npm's `npx-cli.js`:
 
+- Current Codex App on Windows may not reliably start WSL-side stdio MCP servers while using WSL agent mode. If MCP tools are missing, handshakes time out, or config paths cross Windows/WSL boundaries, use the Windows Node workaround.
 - Use `command = "/mnt/c/.../node.exe"` with the Windows npm `npx-cli.js` path as the first arg.
 - Keep `cwd` on a Windows-accessible directory such as `/mnt/c/Users/you`; do not use a WSL repo UNC path as `cwd` because npm/npx may invoke CMD and CMD does not support UNC current directories.
 - Set `SCYTHE_CONTEXT_DEFAULT_PROJECT` to the WSL repo path and include `SCYTHE_CONTEXT_DEFAULT_PROJECT/p` in `WSLENV` so WSL converts it to a UNC path for the Windows process.
