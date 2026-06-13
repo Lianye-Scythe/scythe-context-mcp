@@ -6,11 +6,49 @@
 
 [繁體中文](README.md) | [English](README.en.md) | [简体中文](README.zh-CN.md)
 
-Scythe Context MCP is a local code-context engine for Codex App / Codex CLI. It uses local indexing, hybrid search, and a configurable embedding provider to help Codex find relevant files, line ranges, symbol relationships, and actionable context faster.
+Scythe Context MCP is a local code-context engine for Codex App / Codex CLI. It builds a SQLite/sqlite-vec index inside the repo and combines semantic search, keyword search, symbol/dependency metadata, and context packing so Codex can retrieve actionable files, line ranges, snippets, and related paths faster.
 
-Current status: repo scanning, chunking, SQLite/sqlite-vec metadata and embedding index, semantic search, FTS keyword search, hybrid ranking, lightweight symbol/dependency graph, related-file lookup, context budgeting, context packer, bounded multi-hop related-file traversal, opt-in related snippet packing, provider diagnostics, and index freshness diagnostics are implemented. Next priorities are provider capability caching, more actionable remediation messages, and tree-sitter symbols if needed.
+## Why Use It
 
-## Quick Start
+- **Local-first**: metadata, FTS, and vector indexes live under `.scythe-context/`.
+- **Hybrid retrieval**: combines Gemini embeddings, SQLite FTS5, path boosts, and symbol-aware ranking instead of relying on one retrieval path.
+- **Codex-oriented output**: returns line ranges, snippets, match reasons, grep keywords, related files, and suggested paths.
+- **Bring your own provider**: supports the official Gemini API and third-party Gemini-compatible v1beta proxies.
+- **Diagnosable**: includes provider probe, index freshness, embedding coverage, and actionable remediation hints.
+
+Privacy note: query or chunk text is sent to the configured Gemini-compatible endpoint only when embedding features are used. Treat third-party proxies as services that can see that text.
+
+## Feature Status
+
+Implemented:
+
+- repo scanning, binary/large-file skipping, and chunking
+- SQLite metadata, SQLite FTS5, and sqlite-vec vector indexes
+- Gemini Embedding 2 provider and batch fallback
+- semantic / keyword / hybrid search
+- lightweight symbol/dependency graph
+- related-file lookup and bounded multi-hop traversal
+- `repo_context_pack` context budgeting and related snippet packing
+- provider diagnostics and index freshness diagnostics
+
+Next:
+
+- provider capability cache
+- fuller install/native dependency doctor
+- keyword-only fallback when embeddings fail
+- tree-sitter symbol extraction if needed
+
+## Installation
+
+### From npm
+
+After the package is published:
+
+```bash
+npm install -g scythe-context-mcp
+```
+
+### From source
 
 ```bash
 git clone https://github.com/Lianye-Scythe/scythe-context-mcp.git
@@ -22,17 +60,17 @@ npm run build
 
 Runtime target: Node.js 24 LTS. Node 26 may work, but it is not the baseline until it enters LTS.
 
-The old project name `repo-beacon-mcp` has been renamed to `scythe-context-mcp`. Existing local Codex threads can temporarily keep using the old path symlink; new MCP configuration should use the new path and `[mcp_servers.scythe_context]`. Legacy `REPO_BEACON_*` environment variables are still accepted as fallback, but new setups should use `SCYTHE_CONTEXT_*`.
+The old project name `repo-beacon-mcp` has been renamed to `scythe-context-mcp`. Legacy `REPO_BEACON_*` environment variables are still accepted as fallback, but new setups should use `SCYTHE_CONTEXT_*`.
 
 ## Codex Setup
 
-Add this to Codex `~/.codex/config.toml` or to a trusted project's `.codex/config.toml`:
+### npm binary
+
+If installed globally from npm:
 
 ```toml
 [mcp_servers.scythe_context]
-command = "node"
-args = ["/path/to/scythe-context-mcp/dist/index.js"]
-cwd = "/path/to/scythe-context-mcp"
+command = "scythe-context-mcp"
 enabled = true
 required = false
 startup_timeout_sec = 20
@@ -51,43 +89,93 @@ enabled_tools = [
 GEMINI_OUTPUT_DIMENSIONALITY = "1536"
 ```
 
-For a third-party v1beta proxy:
+### Local checkout
+
+If running from source:
 
 ```toml
 [mcp_servers.scythe_context]
 command = "node"
 args = ["/path/to/scythe-context-mcp/dist/index.js"]
 cwd = "/path/to/scythe-context-mcp"
+enabled = true
+required = false
 startup_timeout_sec = 20
 tool_timeout_sec = 120
 env_vars = ["GEMINI_API_KEY"]
 
+[mcp_servers.scythe_context.env]
+GEMINI_OUTPUT_DIMENSIONALITY = "1536"
+```
+
+### Third-party v1beta proxy
+
+```toml
 [mcp_servers.scythe_context.env]
 GEMINI_BASE_URL = "https://your-proxy.example.com/v1beta"
 GEMINI_AUTH_MODE = "bearer"
 GEMINI_OUTPUT_DIMENSIONALITY = "1536"
 ```
 
+Supported auth modes:
+
+- `x-goog-api-key`
+- `bearer`
+- `query`
+
 Set `GEMINI_API_KEY` in the shell or system environment before starting Codex. Do not write API keys into synced or committed config files.
 
-If installed from npm later, the command can use the package binary:
+## Typical Workflow
 
-```toml
-[mcp_servers.scythe_context]
-command = "scythe-context-mcp"
-startup_timeout_sec = 20
-tool_timeout_sec = 120
-env_vars = ["GEMINI_API_KEY"]
-```
+1. Check index status first:
+
+   ```text
+   repo_index_status
+   ```
+
+2. If metadata is missing or freshness is stale:
+
+   ```text
+   repo_reindex({ "dry_run": false })
+   ```
+
+3. Build embeddings only when semantic search or context packs need vectors:
+
+   ```text
+   repo_reindex({ "dry_run": false, "index_embeddings": true })
+   ```
+
+4. Ask Codex for task-oriented context:
+
+   ```text
+   repo_context_pack({ "query": "where is auth token validation handled?" })
+   ```
+
+5. Expand imports / reverse imports for a matched file:
+
+   ```text
+   repo_related_files({ "path": "src/server/auth.ts" })
+   ```
 
 ## MCP Tools
 
-- `repo_index_status`: Shows project path, index path, provider config, metadata/embedding coverage, and freshness diagnostics with stale reason samples for new/modified/missing/metadata_changed files.
-- `gemini_embedding_probe`: Sends one embedding request to verify official Gemini or proxy compatibility. Success and failure responses include endpoint, latency, and remediation hints without returning the API key.
-- `repo_reindex`: Scans a project. `dry_run=true` reports the plan; `dry_run=false` writes file/chunk metadata to `.scythe-context/index.sqlite`. Gemini embeddings are only created when `index_embeddings=true`, and are limited by `max_embedding_chunks`.
-- `repo_semantic_search`: Runs hybrid search over indexed embeddings and keyword rows, returning paths, line ranges, score/distance, snippets, and grep keywords. `mode=semantic` is useful for debugging pure vector ranking. `max_context_chars` controls the total returned snippet budget, defaulting to 12000.
-- `repo_related_files`: Returns symbols, imports, and reverse imports for one indexed file. Use it after search finds a candidate file and you need focused graph context.
-- `repo_context_pack`: Packs primary snippets, match reasons, grep keywords, symbols, imports, importedBy, and suggested paths for a task query. It supports bounded multi-hop traversal with `max_seed_files`, `max_related_files`, and `related_depth`. Related traversal prefers source files and marks each `role`. `include_related_snippets=true` adds small related snippets under a separate `max_related_context_chars` budget.
+| Tool | Purpose |
+| --- | --- |
+| `repo_index_status` | Shows index path, metadata/embedding coverage, freshness diagnostics, and recommended actions. |
+| `repo_reindex` | Scans the project and writes metadata; calls the embedding provider only when `index_embeddings=true`. |
+| `repo_context_pack` | Packs primary snippets, match reasons, related files, and suggested paths for a task query. |
+| `repo_semantic_search` | Runs hybrid or semantic search over indexed chunks; useful for ranking diagnostics. |
+| `repo_related_files` | Shows symbols, imports, and importedBy for one file. |
+| `gemini_embedding_probe` | Tests Gemini or proxy compatibility and returns endpoint, latency, error classification, and remediation hints. |
+
+## Privacy and Local Files
+
+- `.scythe-context/`: default index directory, not committed.
+- `.repo-beacon/`: legacy index directory name, still ignored.
+- `local/`: private API test files, reference HTML, screenshots, and other local-only material.
+- `.env`: local configuration, not committed.
+
+Do not include API keys, proxy tokens, private source snippets, or index databases in issues, PRs, or public logs.
 
 ## Documentation
 
@@ -97,18 +185,7 @@ env_vars = ["GEMINI_API_KEY"]
 - [Tech Stack](docs/TECH_STACK.md)
 - [Codex Integration Review](docs/CODEX_INTEGRATION.md)
 
-## Local-only Files
-
-Put local references and private API files under `local/`. This directory is ignored by `.gitignore` and is not committed.
-
-- `local/references/`: Manually saved articles, HTML, screenshots, and other reference material.
-- `local/secrets/`: API keys, proxy test files, and private configuration.
-
-The default index directory is `.scythe-context/`; legacy `.repo-beacon/` is also ignored to avoid accidental commits during migration.
-
-## Publishing Checklist
-
-Before publishing or pushing publicly:
+## Development and Publishing Checks
 
 ```bash
 npm test
