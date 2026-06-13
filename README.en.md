@@ -93,12 +93,13 @@ GEMINI_OUTPUT_DIMENSIONALITY = "1536"
 
 ### Codex App on Windows + WSL repo
 
-If Codex App starts MCP servers from Windows while the repo lives in WSL, use Windows Node/npm to start the npm package and point Scythe Context at the WSL repo through a UNC path:
+If Codex App starts MCP servers from a WSL project but the MCP server should run on Windows Node, use Windows `node.exe` plus npm's `npx-cli.js`, and keep `cwd` on a Windows-accessible directory. Set the WSL repo through `SCYTHE_CONTEXT_DEFAULT_PROJECT`; `WSLENV` with `/p` converts it into a UNC path that the Windows process can read:
 
 ```toml
 [mcp_servers.scythe_context]
-command = "npx.cmd"
-args = ["-y", "scythe-context-mcp"]
+command = "/mnt/c/nvm4w/nodejs/node.exe"
+args = ['C:\nvm4w\nodejs\node_modules\npm\bin\npx-cli.js', "-y", "scythe-context-mcp"]
+cwd = "/mnt/c/Users/you"
 enabled = true
 required = false
 startup_timeout_sec = 20
@@ -114,11 +115,12 @@ enabled_tools = [
 ]
 
 [mcp_servers.scythe_context.env]
-SCYTHE_CONTEXT_DEFAULT_PROJECT = "\\\\wsl.localhost\\Ubuntu\\home\\you\\Git\\your-repo"
+SCYTHE_CONTEXT_DEFAULT_PROJECT = "/home/you/Git/your-repo"
 GEMINI_OUTPUT_DIMENSIONALITY = "1536"
+WSLENV = "SCYTHE_CONTEXT_DEFAULT_PROJECT/p:GEMINI_API_KEY/w:GEMINI_OUTPUT_DIMENSIONALITY/w:GEMINI_BASE_URL/w:GEMINI_MODEL/w:GEMINI_AUTH_MODE/w:GEMINI_API_KEY_HEADER/w:GEMINI_API_KEY_QUERY_PARAM/w"
 ```
 
-Do not point Windows `node.exe` at `dist/index.js` inside a WSL checkout unless that checkout's dependencies were installed by Windows npm. `better-sqlite3` and `sqlite-vec` include native modules, and Windows Node cannot load native binaries installed by Linux npm.
+Do not set `cwd` to the WSL repo's UNC directory, because npm/npx may go through CMD, and CMD does not support UNC current directories. Also do not point Windows `node.exe` at `dist/index.js` inside a WSL checkout unless that checkout's dependencies were installed by Windows npm. `better-sqlite3` and `sqlite-vec` include native modules, and Windows Node cannot load native binaries installed by Linux npm.
 
 ### Local checkout
 

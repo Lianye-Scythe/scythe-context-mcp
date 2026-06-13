@@ -93,12 +93,13 @@ GEMINI_OUTPUT_DIMENSIONALITY = "1536"
 
 ### Codex App on Windows + WSL repo
 
-如果 Codex App 在 Windows 端啟動 MCP，而 repo 放在 WSL，建議用 Windows 的 Node/npm 啟動 npm package，並用 UNC 路徑指定要索引的 WSL repo：
+如果 Codex App 在 WSL 專案中啟動 MCP，但 MCP 實際要用 Windows Node，建議沿用 Windows `node.exe` + npm `npx-cli.js` 的寫法，並把 `cwd` 放在 Windows 可用目錄。WSL repo 路徑用 `SCYTHE_CONTEXT_DEFAULT_PROJECT` 指定，再透過 `WSLENV` 的 `/p` 轉成 Windows process 可讀的 UNC path：
 
 ```toml
 [mcp_servers.scythe_context]
-command = "npx.cmd"
-args = ["-y", "scythe-context-mcp"]
+command = "/mnt/c/nvm4w/nodejs/node.exe"
+args = ['C:\nvm4w\nodejs\node_modules\npm\bin\npx-cli.js', "-y", "scythe-context-mcp"]
+cwd = "/mnt/c/Users/you"
 enabled = true
 required = false
 startup_timeout_sec = 20
@@ -114,11 +115,12 @@ enabled_tools = [
 ]
 
 [mcp_servers.scythe_context.env]
-SCYTHE_CONTEXT_DEFAULT_PROJECT = "\\\\wsl.localhost\\Ubuntu\\home\\you\\Git\\your-repo"
+SCYTHE_CONTEXT_DEFAULT_PROJECT = "/home/you/Git/your-repo"
 GEMINI_OUTPUT_DIMENSIONALITY = "1536"
+WSLENV = "SCYTHE_CONTEXT_DEFAULT_PROJECT/p:GEMINI_API_KEY/w:GEMINI_OUTPUT_DIMENSIONALITY/w:GEMINI_BASE_URL/w:GEMINI_MODEL/w:GEMINI_AUTH_MODE/w:GEMINI_API_KEY_HEADER/w:GEMINI_API_KEY_QUERY_PARAM/w"
 ```
 
-不要直接用 Windows `node.exe` 執行 WSL checkout 裡的 `dist/index.js`，除非該 checkout 的 dependencies 是用 Windows npm 安裝的。`better-sqlite3` 和 `sqlite-vec` 都包含 native module，Windows Node 不能載入 Linux npm 安裝出的 native binary。
+不要把 `cwd` 設成 WSL repo 的 UNC 目錄，因為 npm/npx 可能經過 CMD，而 CMD 不支援 UNC current directory。也不要直接用 Windows `node.exe` 執行 WSL checkout 裡的 `dist/index.js`，除非該 checkout 的 dependencies 是用 Windows npm 安裝的。`better-sqlite3` 和 `sqlite-vec` 都包含 native module，Windows Node 不能載入 Linux npm 安裝出的 native binary。
 
 ### 本機 checkout
 
