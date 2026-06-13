@@ -22,6 +22,8 @@
   "files": [
     "dist",
     "README.md",
+    "README.en.md",
+    "README.zh-CN.md",
     "LICENSE",
     "docs",
     ".env.example"
