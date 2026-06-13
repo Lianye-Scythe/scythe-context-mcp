@@ -13,6 +13,7 @@ This project follows semantic versioning before npm publication where practical.
 - Windows Codex App + WSL workspace setup guidance using Windows `npx.cmd`.
 - CI coverage for CLI smoke tests.
 - `PWD` fallback for default project detection, reducing the need for fixed per-repo MCP configuration.
+- README clarification for WSL `PWD/p` forwarding versus direct Gemini proxy configuration.
 
 ## [0.1.0] - 2026-06-13
 

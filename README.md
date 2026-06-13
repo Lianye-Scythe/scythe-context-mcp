@@ -119,6 +119,17 @@ WSLENV = "PWD/p"
 - 如果 `GEMINI_API_KEY` 已存在 Windows 使用者環境或由 Codex `env_vars` 直接轉發，就不需要把 key 放進 `WSLENV`。
 - 不要用 Windows `node.exe` 直接執行 WSL checkout 裡的 `dist/index.js`，除非該 checkout 的 dependencies 是用 Windows npm 安裝的。`better-sqlite3` 和 `sqlite-vec` 都包含 native module，Windows Node 不能載入 Linux npm 安裝出的 native binary。
 
+中轉站 URL、model、auth mode 可以直接寫在 Codex config 裡，不需要透過 `WSLENV`：
+
+```toml
+[mcp_servers.scythe_context.env]
+WSLENV = "PWD/p"
+GEMINI_BASE_URL = "https://your-proxy.example.com/v1beta"
+GEMINI_MODEL = "gemini-embedding-2"
+GEMINI_AUTH_MODE = "bearer"
+GEMINI_OUTPUT_DIMENSIONALITY = "1536"
+```
+
 ### 可選強化設定
 
 以下設定不是最小啟動必需，但在大型 repo、首次 `npx` 下載或想固定工具面時有用：
@@ -151,6 +162,8 @@ enabled_tools = [
 - `GEMINI_OUTPUT_DIMENSIONALITY`: `1536`
 
 因此官方 Gemini 使用者通常只需要提供 `GEMINI_API_KEY`。第三方中轉站或自訂模型才需要覆蓋下面這些非秘密設定：
+
+模型與 REST endpoint 可對照 Google 官方 [Gemini embeddings 文件](https://ai.google.dev/gemini-api/docs/embeddings)。
 
 ```toml
 [mcp_servers.scythe_context.env]

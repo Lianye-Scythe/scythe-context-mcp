@@ -119,6 +119,17 @@ Notes:
 - If `GEMINI_API_KEY` already exists in the Windows user environment or is forwarded by Codex `env_vars`, you do not need to put the key in `WSLENV`.
 - Do not point Windows `node.exe` at `dist/index.js` inside a WSL checkout unless that checkout's dependencies were installed by Windows npm. `better-sqlite3` and `sqlite-vec` include native modules, and Windows Node cannot load native binaries installed by Linux npm.
 
+Proxy URL, model, and auth mode can be written directly in Codex config; they do not need to go through `WSLENV`:
+
+```toml
+[mcp_servers.scythe_context.env]
+WSLENV = "PWD/p"
+GEMINI_BASE_URL = "https://your-proxy.example.com/v1beta"
+GEMINI_MODEL = "gemini-embedding-2"
+GEMINI_AUTH_MODE = "bearer"
+GEMINI_OUTPUT_DIMENSIONALITY = "1536"
+```
+
 ### Optional hardening
 
 These settings are not required for a minimal launch, but they help for large repos, first-time `npx` downloads, or a fixed tool surface:
@@ -151,6 +162,8 @@ If URL/model/auth are not set, Scythe uses the official Gemini-compatible defaul
 - `GEMINI_OUTPUT_DIMENSIONALITY`: `1536`
 
 Official Gemini users usually only need to provide `GEMINI_API_KEY`. Third-party proxies or custom models can override these non-secret settings:
+
+For model names and REST endpoint behavior, see Google's official [Gemini embeddings docs](https://ai.google.dev/gemini-api/docs/embeddings).
 
 ```toml
 [mcp_servers.scythe_context.env]
