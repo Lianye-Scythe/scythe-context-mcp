@@ -6,6 +6,12 @@ This project follows semantic versioning before npm publication where practical.
 
 ## [Unreleased]
 
+## [0.1.4] - 2026-06-14
+
+### Added
+
+- Add keyword-only fallback for hybrid search/context-pack calls when query embedding is unavailable, while preserving explicit `embedding_unavailable` diagnostics for semantic-only mode.
+
 ## [0.1.3] - 2026-06-14
 
 ### Changed

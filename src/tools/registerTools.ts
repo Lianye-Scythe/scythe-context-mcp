@@ -6,7 +6,7 @@ import type { AppConfig } from "../config.js";
 import { buildContextPack } from "../indexing/contextPack.js";
 import { reindexDryRun } from "../indexing/dryRun.js";
 import { indexMissingEmbeddings } from "../indexing/embeddingWriter.js";
-import { searchHybrid } from "../indexing/hybridSearch.js";
+import { searchHybrid, searchKeywordOnly } from "../indexing/hybridSearch.js";
 import { readDetailedIndexStatus, readIndexFreshness, recommendedNextActions } from "../indexing/indexStatus.js";
 import { persistentReindexMetadata } from "../indexing/indexWriter.js";
 import { readRelatedFileGraph, readRelatedFiles } from "../indexing/relatedFiles.js";
@@ -22,6 +22,15 @@ function asJsonText(value: unknown) {
 }
 
 type SearchMode = "hybrid" | "semantic";
+type EffectiveSearchMode = SearchMode | "keyword";
+
+interface EmbeddingFailureDetails {
+  type: string;
+  message: string;
+  httpStatus?: number;
+  retryable: boolean;
+  bodySnippet?: string;
+}
 
 function searchIndexedChunks(options: {
   dbPath: string;
@@ -48,6 +57,45 @@ function searchIndexedChunks(options: {
         maxResults: options.maxResults,
         maxSnippetChars: options.maxSnippetChars,
       });
+}
+
+function searchKeywordOnlyChunks(options: {
+  dbPath: string;
+  query: string;
+  maxResults: number;
+  maxSnippetChars: number;
+}): FormattableSearchResult[] {
+  return searchKeywordOnly({
+    dbPath: options.dbPath,
+    query: options.query,
+    maxResults: options.maxResults,
+    maxSnippetChars: options.maxSnippetChars,
+  });
+}
+
+function embeddingFailureDetails(error: unknown): EmbeddingFailureDetails {
+  const geminiError = error instanceof GeminiEmbeddingError ? error : undefined;
+  return {
+    type: error instanceof Error ? error.name : "UnknownError",
+    message: error instanceof Error ? error.message : String(error),
+    httpStatus: geminiError?.status,
+    retryable: geminiError?.retryable ?? false,
+    bodySnippet: geminiError?.bodySnippet,
+  };
+}
+
+function embeddingUnavailablePayload(error: unknown) {
+  return {
+    status: "embedding_unavailable",
+    fallbackAvailable: "Use mode=hybrid to allow keyword-only fallback, or use rg/direct file reads for exact strings and known paths.",
+    error: embeddingFailureDetails(error),
+    recommendedNextActions: [
+      "Run gemini_embedding_probe with a short test string.",
+      "Verify GEMINI_API_KEY, GEMINI_BASE_URL, GEMINI_AUTH_MODE, and GEMINI_OUTPUT_DIMENSIONALITY.",
+      "Use repo_context_pack with mode=hybrid for keyword-only degraded results while embeddings are unavailable.",
+      "Use rg/direct file reads for exact strings, known paths, or small targeted checks.",
+    ],
+  };
 }
 
 function buildGeminiDiagnostics(config: AppConfig["gemini"], expectedDimensions: number) {
@@ -284,21 +332,58 @@ export function registerTools(server: McpServer, config: AppConfig): void {
         });
       }
 
-      const queryEmbedding = await embeddingProvider.embed({ kind: "query", text: query });
       const dimensions = expectedDimensions;
-      if (queryEmbedding.dimensions !== dimensions) {
-        throw new Error(`Query embedding dimensions mismatch: expected ${dimensions}, got ${queryEmbedding.dimensions}`);
-      }
+      let effectiveMode: EffectiveSearchMode = mode;
+      let fallback:
+        | {
+            reason: "embedding_unavailable";
+            fromMode: SearchMode;
+            toMode: "keyword";
+            error: EmbeddingFailureDetails;
+          }
+        | undefined;
+      let rawResults: FormattableSearchResult[];
 
-      const rawResults = searchIndexedChunks({
-        dbPath,
-        query,
-        dimensions,
-        queryVector: queryEmbedding.vector,
-        maxResults: max_results,
-        maxSnippetChars: max_snippet_chars,
-        mode,
-      });
+      try {
+        const queryEmbedding = await embeddingProvider.embed({ kind: "query", text: query });
+        if (queryEmbedding.dimensions !== dimensions) {
+          throw new Error(`Query embedding dimensions mismatch: expected ${dimensions}, got ${queryEmbedding.dimensions}`);
+        }
+        rawResults = searchIndexedChunks({
+          dbPath,
+          query,
+          dimensions,
+          queryVector: queryEmbedding.vector,
+          maxResults: max_results,
+          maxSnippetChars: max_snippet_chars,
+          mode,
+        });
+      } catch (error) {
+        if (mode === "semantic") {
+          return asJsonText({
+            query,
+            projectPath,
+            dbPath,
+            dimensions,
+            mode,
+            ...embeddingUnavailablePayload(error),
+          });
+        }
+
+        effectiveMode = "keyword";
+        fallback = {
+          reason: "embedding_unavailable",
+          fromMode: mode,
+          toMode: "keyword",
+          error: embeddingFailureDetails(error),
+        };
+        rawResults = searchKeywordOnlyChunks({
+          dbPath,
+          query,
+          maxResults: max_results,
+          maxSnippetChars: max_snippet_chars,
+        });
+      }
 
       const formatted = formatSearchResults(query, rawResults, { maxContextChars: max_context_chars });
 
@@ -308,6 +393,8 @@ export function registerTools(server: McpServer, config: AppConfig): void {
         dbPath,
         dimensions,
         mode,
+        effectiveMode,
+        fallback,
         results: formatted.results,
         context: formatted.summary,
         resultCount: rawResults.length,
@@ -399,21 +486,58 @@ export function registerTools(server: McpServer, config: AppConfig): void {
         });
       }
 
-      const queryEmbedding = await embeddingProvider.embed({ kind: "query", text: query });
       const dimensions = expectedDimensions;
-      if (queryEmbedding.dimensions !== dimensions) {
-        throw new Error(`Query embedding dimensions mismatch: expected ${dimensions}, got ${queryEmbedding.dimensions}`);
-      }
+      let effectiveMode: EffectiveSearchMode = mode;
+      let fallback:
+        | {
+            reason: "embedding_unavailable";
+            fromMode: SearchMode;
+            toMode: "keyword";
+            error: EmbeddingFailureDetails;
+          }
+        | undefined;
+      let rawResults: FormattableSearchResult[];
 
-      const rawResults = searchIndexedChunks({
-        dbPath,
-        query,
-        dimensions,
-        queryVector: queryEmbedding.vector,
-        maxResults: max_results,
-        maxSnippetChars: max_snippet_chars,
-        mode,
-      });
+      try {
+        const queryEmbedding = await embeddingProvider.embed({ kind: "query", text: query });
+        if (queryEmbedding.dimensions !== dimensions) {
+          throw new Error(`Query embedding dimensions mismatch: expected ${dimensions}, got ${queryEmbedding.dimensions}`);
+        }
+        rawResults = searchIndexedChunks({
+          dbPath,
+          query,
+          dimensions,
+          queryVector: queryEmbedding.vector,
+          maxResults: max_results,
+          maxSnippetChars: max_snippet_chars,
+          mode,
+        });
+      } catch (error) {
+        if (mode === "semantic") {
+          return asJsonText({
+            query,
+            projectPath,
+            dbPath,
+            dimensions,
+            mode,
+            ...embeddingUnavailablePayload(error),
+          });
+        }
+
+        effectiveMode = "keyword";
+        fallback = {
+          reason: "embedding_unavailable",
+          fromMode: mode,
+          toMode: "keyword",
+          error: embeddingFailureDetails(error),
+        };
+        rawResults = searchKeywordOnlyChunks({
+          dbPath,
+          query,
+          maxResults: max_results,
+          maxSnippetChars: max_snippet_chars,
+        });
+      }
       const relatedPaths = Array.from(new Set(rawResults.map((result) => result.path))).slice(
         0,
         Math.min(max_seed_files, max_related_files),
@@ -452,6 +576,8 @@ export function registerTools(server: McpServer, config: AppConfig): void {
         dbPath,
         dimensions,
         mode,
+        effectiveMode,
+        fallback,
         relatedDepth: related_depth,
         relatedSeedCount: relatedPaths.length,
         includeRelatedSnippets: include_related_snippets,

@@ -244,6 +244,8 @@ Use `PWD/p` only if you intentionally run a Windows Node process and need WSL to
 | `repo_related_files` | Shows symbols, imports, and importedBy for one file. |
 | `gemini_embedding_probe` | Tests Gemini or proxy compatibility and returns endpoint, latency, error classification, and remediation hints. |
 
+`repo_context_pack(mode="hybrid")` and `repo_semantic_search(mode="hybrid")` degrade to keyword-only results when query embedding is unavailable, returning `effectiveMode: "keyword"` and `fallback.reason: "embedding_unavailable"`. `mode="semantic"` does not degrade and returns `status: "embedding_unavailable"` because pure semantic search requires query embedding. Use `rg` / direct file reads for exact strings, known paths, or small targeted checks.
+
 ## Feature Status
 
 Implemented: repo scanning, chunking, SQLite metadata, SQLite FTS5, sqlite-vec, Gemini Embedding 2 provider, semantic/keyword/hybrid search, lightweight symbol/dependency graph, related-file lookup, `repo_context_pack`, provider diagnostics, and index freshness diagnostics.

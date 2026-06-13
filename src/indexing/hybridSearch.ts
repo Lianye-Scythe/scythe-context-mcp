@@ -98,3 +98,13 @@ export function searchHybrid(options: HybridSearchOptions): HybridSearchResult[]
   return mergeHybridResults(semanticResults, keywordResults, options.maxResults);
 }
 
+export function searchKeywordOnly(options: Omit<HybridSearchOptions, "dimensions" | "queryVector">): HybridSearchResult[] {
+  const keywordResults = searchByKeyword({
+    dbPath: options.dbPath,
+    query: options.query,
+    maxResults: Math.max(options.maxResults * 2, options.maxResults),
+    maxSnippetChars: options.maxSnippetChars,
+  });
+
+  return mergeHybridResults([], keywordResults, options.maxResults);
+}
