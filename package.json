@@ -17,7 +17,7 @@
     "sqlite-vec"
   ],
   "bin": {
-    "scythe-context-mcp": "./dist/index.js"
+    "scythe-context-mcp": "dist/index.js"
   },
   "files": [
     "dist",

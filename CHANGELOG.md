@@ -4,7 +4,7 @@ All notable changes to this project will be documented in this file.
 
 This project follows semantic versioning before npm publication where practical.
 
-## [0.1.0] - Unreleased
+## [0.1.0] - 2026-06-13
 
 ### Added
 

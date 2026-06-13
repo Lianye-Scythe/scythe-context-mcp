@@ -42,7 +42,7 @@ Next:
 
 ### From npm
 
-After the package is published:
+Install the CLI globally from npm:
 
 ```bash
 npm install -g scythe-context-mcp
