@@ -1,6 +1,8 @@
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import { loadConfig } from "./config.js";
 
+const ORIGINAL_PWD = process.env.PWD;
+
 const MANAGED_ENV = [
   "SCYTHE_CONTEXT_DEFAULT_PROJECT",
   "SCYTHE_CONTEXT_INDEX_DIR",
@@ -18,11 +20,15 @@ const MANAGED_ENV = [
   "REPO_BEACON_MAX_CHUNKS_PER_FILE",
   "REPO_BEACON_EMBEDDING_BATCH_SIZE",
   "REPO_BEACON_MAX_EMBEDDING_CHUNKS",
+  "PWD",
 ] as const;
 
 function clearManagedEnv() {
   for (const key of MANAGED_ENV) {
     delete process.env[key];
+  }
+  if (ORIGINAL_PWD) {
+    process.env.PWD = ORIGINAL_PWD;
   }
 }
 
@@ -52,6 +58,16 @@ describe("loadConfig", () => {
       embeddingBatchSize: 9,
       maxEmbeddingChunks: 10,
     });
+  });
+
+  it("uses PWD as the default project when no explicit project is configured", () => {
+    delete process.env.SCYTHE_CONTEXT_DEFAULT_PROJECT;
+    delete process.env.REPO_BEACON_DEFAULT_PROJECT;
+    process.env.PWD = "/tmp";
+
+    const config = loadConfig();
+
+    expect(config.defaultProjectPath).toBe("/tmp");
   });
 
   it("falls back to legacy Repo Beacon environment variables during migration", () => {

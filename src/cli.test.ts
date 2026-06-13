@@ -22,6 +22,7 @@ describe("CLI helpers", () => {
 
     expect(help).toContain(`Scythe Context MCP ${PACKAGE_VERSION}`);
     expect(help).toContain("scythe-context-mcp --version");
+    expect(help).toContain("PWD");
     expect(help).toContain("SCYTHE_CONTEXT_DEFAULT_PROJECT");
   });
 });

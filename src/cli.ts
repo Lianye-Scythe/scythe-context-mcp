@@ -33,7 +33,8 @@ Common Codex MCP config:
   env_vars = ["GEMINI_API_KEY"]
 
 Environment:
-  SCYTHE_CONTEXT_DEFAULT_PROJECT  Repository path to index when cwd is not the target repo
+  PWD                             Workspace path used when no explicit project is configured
+  SCYTHE_CONTEXT_DEFAULT_PROJECT  Optional fixed default project override
   GEMINI_API_KEY                  Gemini or Gemini-compatible API key
   GEMINI_BASE_URL                 Gemini-compatible base URL, default https://generativelanguage.googleapis.com/v1beta
   GEMINI_OUTPUT_DIMENSIONALITY    Embedding dimensions, default 1536

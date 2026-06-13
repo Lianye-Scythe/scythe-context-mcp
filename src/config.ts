@@ -1,3 +1,4 @@
+import fs from "node:fs";
 import path from "node:path";
 import process from "node:process";
 import { DEFAULT_INDEXING_LIMITS } from "./indexing/defaults.js";
@@ -58,11 +59,23 @@ function authModeFromEnv(value: string | undefined): GeminiAuthMode {
   throw new Error("GEMINI_AUTH_MODE must be one of: x-goog-api-key, bearer, query");
 }
 
+function defaultProjectPathFromEnv(): string {
+  const explicitProject = envValue("SCYTHE_CONTEXT_DEFAULT_PROJECT", "REPO_BEACON_DEFAULT_PROJECT");
+  if (explicitProject) return explicitProject;
+
+  // Codex App on Windows may launch this server through Windows Node while the
+  // active workspace is in WSL. In that setup, cwd often has to stay on a
+  // Windows directory for npm/npx, while PWD can still carry the workspace path.
+  if (process.env.PWD && fs.existsSync(process.env.PWD)) {
+    return process.env.PWD;
+  }
+
+  return process.cwd();
+}
+
 export function loadConfig(): AppConfig {
   return {
-    defaultProjectPath: path.resolve(
-      envValue("SCYTHE_CONTEXT_DEFAULT_PROJECT", "REPO_BEACON_DEFAULT_PROJECT") || process.cwd(),
-    ),
+    defaultProjectPath: path.resolve(defaultProjectPathFromEnv()),
     indexDirName: envValue("SCYTHE_CONTEXT_INDEX_DIR", "REPO_BEACON_INDEX_DIR") || ".scythe-context",
     indexing: {
       maxFileBytes:

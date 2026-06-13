@@ -50,7 +50,7 @@ Codex MCP configuration uses fields such as `command`, `args`, `cwd`, `env`, and
 | --- | --- |
 | Codex and MCP both run on Windows | Use Windows `node.exe` plus Windows npm `npx-cli.js`. |
 | Codex CLI runs inside WSL/Linux/macOS | Use `npx` or `node dist/index.js` from the same environment. |
-| Codex App on Windows opens a WSL repo | The App's WSL MCP bridge may still be unreliable; run MCP on Windows Node and point at the WSL repo with `SCYTHE_CONTEXT_DEFAULT_PROJECT` + `WSLENV`. |
+| Codex App on Windows opens a WSL repo | The App's WSL MCP bridge may still be unreliable; run MCP on Windows Node and pass the current WSL workspace to the Windows process with `PWD` + `WSLENV`. |
 
 ### Native Windows
 
@@ -60,11 +60,8 @@ Minimum config:
 [mcp_servers.scythe_context]
 command = 'C:\nvm4w\nodejs\node.exe'
 args = ['C:\nvm4w\nodejs\node_modules\npm\bin\npx-cli.js', '-y', 'scythe-context-mcp']
-cwd = 'C:\Users\you'
+cwd = 'C:\Users\you\Git\your-repo'
 env_vars = ["GEMINI_API_KEY"]
-
-[mcp_servers.scythe_context.env]
-SCYTHE_CONTEXT_DEFAULT_PROJECT = 'C:\Users\you\Git\your-repo'
 ```
 
 If `scythe-context-mcp` is installed globally and Codex can see it on PATH, it can be shorter:
@@ -72,6 +69,7 @@ If `scythe-context-mcp` is installed globally and Codex can see it on PATH, it c
 ```toml
 [mcp_servers.scythe_context]
 command = "scythe-context-mcp"
+cwd = 'C:\Users\you\Git\your-repo'
 env_vars = ["GEMINI_API_KEY"]
 ```
 
@@ -108,17 +106,16 @@ Minimum config:
 command = "/mnt/c/nvm4w/nodejs/node.exe"
 args = ['C:\nvm4w\nodejs\node_modules\npm\bin\npx-cli.js', "-y", "scythe-context-mcp"]
 cwd = "/mnt/c/Users/you"
-env_vars = ["GEMINI_API_KEY"]
+env_vars = ["GEMINI_API_KEY", "PWD"]
 
 [mcp_servers.scythe_context.env]
-SCYTHE_CONTEXT_DEFAULT_PROJECT = "/home/you/Git/your-repo"
-WSLENV = "SCYTHE_CONTEXT_DEFAULT_PROJECT/p:GEMINI_API_KEY/w"
+WSLENV = "PWD/p:GEMINI_API_KEY/w"
 ```
 
 Notes:
 
 - Keep `cwd` on a Windows-accessible directory such as `/mnt/c/Users/you`. Do not use the WSL repo's UNC directory as `cwd`, because npm/npx may go through CMD, and CMD does not support UNC current directories.
-- `SCYTHE_CONTEXT_DEFAULT_PROJECT/p` lets WSL convert `/home/...` into a UNC path readable by the Windows process.
+- `PWD/p` lets WSL convert the current workspace path into a UNC path readable by the Windows process, so you do not need to edit config for every repo.
 - Do not point Windows `node.exe` at `dist/index.js` inside a WSL checkout unless that checkout's dependencies were installed by Windows npm. `better-sqlite3` and `sqlite-vec` include native modules, and Windows Node cannot load native binaries installed by Linux npm.
 
 ### Optional hardening
@@ -141,6 +138,8 @@ enabled_tools = [
 
 `enabled = true` and `required = false` are usually the default behavior and do not need to be written explicitly.
 
+If you really want to pin one default project, set `SCYTHE_CONTEXT_DEFAULT_PROJECT` under `[mcp_servers.scythe_context.env]`. Normal multi-repo usage should not need this; Scythe prefers a tool call's `project_path`, then `PWD`, then the MCP process `cwd`.
+
 ### Gemini / v1beta proxy
 
 ```toml
@@ -158,7 +157,7 @@ Supported auth modes:
 
 Set `GEMINI_API_KEY` in the shell or system environment before starting Codex. Do not write API keys into synced or committed config files.
 
-When using the Windows Codex App + WSL repo mode, add any extra Gemini variables to `WSLENV`, for example `GEMINI_BASE_URL/w:GEMINI_AUTH_MODE/w:GEMINI_OUTPUT_DIMENSIONALITY/w`.
+When using the Windows Codex App + WSL repo mode, add any extra Gemini variables to `WSLENV`, for example `PWD/p:GEMINI_API_KEY/w:GEMINI_BASE_URL/w:GEMINI_AUTH_MODE/w:GEMINI_OUTPUT_DIMENSIONALITY/w`.
 
 ## Typical Workflow
 

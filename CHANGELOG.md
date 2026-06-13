@@ -12,6 +12,7 @@ This project follows semantic versioning before npm publication where practical.
 - npm and GitHub package metadata for homepage and issue links.
 - Windows Codex App + WSL workspace setup guidance using Windows `npx.cmd`.
 - CI coverage for CLI smoke tests.
+- `PWD` fallback for default project detection, reducing the need for fixed per-repo MCP configuration.
 
 ## [0.1.0] - 2026-06-13
 

@@ -42,7 +42,7 @@ Codex's official MCP configuration model is platform-neutral: a stdio server has
 
 - Native Windows: use Windows `node.exe` and npm's `npx-cli.js`, or the short binary command only when Codex can reliably see the npm global binary on PATH.
 - WSL/Linux/macOS: use `npx -y scythe-context-mcp` or `node dist/index.js` from a build produced in that same environment.
-- Windows Codex App with WSL workspaces: use Windows `node.exe` and Windows npm package dependencies, but pass the WSL repo path through `SCYTHE_CONTEXT_DEFAULT_PROJECT` and `WSLENV`.
+- Windows Codex App with WSL workspaces: use Windows `node.exe` and Windows npm package dependencies, but pass the current WSL workspace through `PWD` and `WSLENV`. Use `SCYTHE_CONTEXT_DEFAULT_PROJECT` only when intentionally pinning one fixed default project.
 
 Do not mix a Node runtime from one OS with `node_modules` installed by another OS. This matters because Scythe Context depends on native SQLite modules.
 
@@ -53,7 +53,7 @@ When Codex App runs a WSL project but MCP servers need to use Windows Node, pref
 - Current Codex App on Windows may not reliably start WSL-side stdio MCP servers while using WSL agent mode. If MCP tools are missing, handshakes time out, or config paths cross Windows/WSL boundaries, use the Windows Node workaround.
 - Use `command = "/mnt/c/.../node.exe"` with the Windows npm `npx-cli.js` path as the first arg.
 - Keep `cwd` on a Windows-accessible directory such as `/mnt/c/Users/you`; do not use a WSL repo UNC path as `cwd` because npm/npx may invoke CMD and CMD does not support UNC current directories.
-- Set `SCYTHE_CONTEXT_DEFAULT_PROJECT` to the WSL repo path and include `SCYTHE_CONTEXT_DEFAULT_PROJECT/p` in `WSLENV` so WSL converts it to a UNC path for the Windows process.
+- Forward `PWD` with `PWD/p` in `WSLENV` so WSL converts the current workspace to a UNC path for the Windows process.
 - Include forwarded provider variables in `WSLENV` with `/w`, for example `GEMINI_API_KEY/w` and `GEMINI_OUTPUT_DIMENSIONALITY/w`.
 - Do not point Windows `node.exe` at a WSL checkout's `dist/index.js` unless dependencies were installed by Windows npm in that checkout.
 
@@ -90,7 +90,7 @@ Recommended config should expose all tools by default during development, but `e
 - Valid Codex TOML examples using `[mcp_servers.scythe_context.env]`.
 - Secret-safe config examples using `env_vars` for `GEMINI_API_KEY`.
 - `cwd` in MCP config so relative `.env` loading is predictable.
-- Windows App + WSL setup guidance using Windows `node.exe`, npm `npx-cli.js`, `SCYTHE_CONTEXT_DEFAULT_PROJECT`, and `WSLENV`.
+- Windows App + WSL setup guidance using Windows `node.exe`, npm `npx-cli.js`, `PWD`, and `WSLENV`.
 - `startup_timeout_sec` and `tool_timeout_sec` tuned above defaults.
 - Bounded context output for primary and related snippets.
 - Explicit opt-in embedding and opt-in related snippet packing.
@@ -116,7 +116,7 @@ Recommended config should expose all tools by default during development, but `e
 
 1. Prefer the npm package path through Windows `node.exe` plus npm `npx-cli.js`.
 2. Keep `cwd` on `/mnt/c/...`, not the WSL repo.
-3. Set `SCYTHE_CONTEXT_DEFAULT_PROJECT` to the WSL repo path and forward it with `WSLENV = "SCYTHE_CONTEXT_DEFAULT_PROJECT/p:..."`.
+3. Forward the current workspace with `env_vars = ["PWD", ...]` and `WSLENV = "PWD/p:..."`.
 4. Forward provider environment variables with `WSLENV`, especially `GEMINI_API_KEY/w`.
 5. Avoid mixing Windows Node with Linux-installed `node_modules`.
 6. Run the same Windows Node + `npx-cli.js` command from a WSL shell with `cwd` under `/mnt/c/Users/...` to verify the launch path before configuring Codex.
