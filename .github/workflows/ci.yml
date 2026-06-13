@@ -29,6 +29,9 @@ jobs:
       - name: Build
         run: npm run build
 
+      - name: Smoke CLI
+        run: npm run smoke
+
       - name: Audit production dependencies
         run: npm audit --omit=dev
 

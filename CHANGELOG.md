@@ -4,6 +4,15 @@ All notable changes to this project will be documented in this file.
 
 This project follows semantic versioning before npm publication where practical.
 
+## [Unreleased]
+
+### Added
+
+- CLI smoke-test flags: `--help` and `--version`.
+- npm and GitHub package metadata for homepage and issue links.
+- Windows Codex App + WSL workspace setup guidance using Windows `npx.cmd`.
+- CI coverage for CLI smoke tests.
+
 ## [0.1.0] - 2026-06-13
 
 ### Added

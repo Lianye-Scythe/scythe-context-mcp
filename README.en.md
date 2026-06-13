@@ -1,6 +1,7 @@
 # Scythe Context MCP
 
 [![CI](https://github.com/Lianye-Scythe/scythe-context-mcp/actions/workflows/ci.yml/badge.svg)](https://github.com/Lianye-Scythe/scythe-context-mcp/actions/workflows/ci.yml)
+[![npm version](https://img.shields.io/npm/v/scythe-context-mcp.svg)](https://www.npmjs.com/package/scythe-context-mcp)
 [![License: Apache-2.0](https://img.shields.io/badge/License-Apache--2.0-blue.svg)](LICENSE)
 [![Node.js >=24.11](https://img.shields.io/badge/Node.js-%3E%3D24.11-339933.svg)](package.json)
 
@@ -46,6 +47,7 @@ Install the CLI globally from npm:
 
 ```bash
 npm install -g scythe-context-mcp
+scythe-context-mcp --version
 ```
 
 ### From source
@@ -88,6 +90,35 @@ enabled_tools = [
 [mcp_servers.scythe_context.env]
 GEMINI_OUTPUT_DIMENSIONALITY = "1536"
 ```
+
+### Codex App on Windows + WSL repo
+
+If Codex App starts MCP servers from Windows while the repo lives in WSL, use Windows Node/npm to start the npm package and point Scythe Context at the WSL repo through a UNC path:
+
+```toml
+[mcp_servers.scythe_context]
+command = "npx.cmd"
+args = ["-y", "scythe-context-mcp"]
+enabled = true
+required = false
+startup_timeout_sec = 20
+tool_timeout_sec = 120
+env_vars = ["GEMINI_API_KEY"]
+enabled_tools = [
+  "repo_index_status",
+  "repo_reindex",
+  "repo_context_pack",
+  "repo_semantic_search",
+  "repo_related_files",
+  "gemini_embedding_probe"
+]
+
+[mcp_servers.scythe_context.env]
+SCYTHE_CONTEXT_DEFAULT_PROJECT = "\\\\wsl.localhost\\Ubuntu\\home\\you\\Git\\your-repo"
+GEMINI_OUTPUT_DIMENSIONALITY = "1536"
+```
+
+Do not point Windows `node.exe` at `dist/index.js` inside a WSL checkout unless that checkout's dependencies were installed by Windows npm. `better-sqlite3` and `sqlite-vec` include native modules, and Windows Node cannot load native binaries installed by Linux npm.
 
 ### Local checkout
 

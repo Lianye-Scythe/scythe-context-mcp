@@ -1,6 +1,7 @@
 # Scythe Context MCP
 
 [![CI](https://github.com/Lianye-Scythe/scythe-context-mcp/actions/workflows/ci.yml/badge.svg)](https://github.com/Lianye-Scythe/scythe-context-mcp/actions/workflows/ci.yml)
+[![npm version](https://img.shields.io/npm/v/scythe-context-mcp.svg)](https://www.npmjs.com/package/scythe-context-mcp)
 [![License: Apache-2.0](https://img.shields.io/badge/License-Apache--2.0-blue.svg)](LICENSE)
 [![Node.js >=24.11](https://img.shields.io/badge/Node.js-%3E%3D24.11-339933.svg)](package.json)
 
@@ -46,6 +47,7 @@ Scythe Context MCP 是给 Codex App / Codex CLI 使用的本地代码上下文�
 
 ```bash
 npm install -g scythe-context-mcp
+scythe-context-mcp --version
 ```
 
 ### 从源码安装
@@ -88,6 +90,35 @@ enabled_tools = [
 [mcp_servers.scythe_context.env]
 GEMINI_OUTPUT_DIMENSIONALITY = "1536"
 ```
+
+### Codex App on Windows + WSL repo
+
+如果 Codex App 在 Windows 端启动 MCP，而 repo 放在 WSL，建议用 Windows 的 Node/npm 启动 npm package，并用 UNC 路径指定要索引的 WSL repo：
+
+```toml
+[mcp_servers.scythe_context]
+command = "npx.cmd"
+args = ["-y", "scythe-context-mcp"]
+enabled = true
+required = false
+startup_timeout_sec = 20
+tool_timeout_sec = 120
+env_vars = ["GEMINI_API_KEY"]
+enabled_tools = [
+  "repo_index_status",
+  "repo_reindex",
+  "repo_context_pack",
+  "repo_semantic_search",
+  "repo_related_files",
+  "gemini_embedding_probe"
+]
+
+[mcp_servers.scythe_context.env]
+SCYTHE_CONTEXT_DEFAULT_PROJECT = "\\\\wsl.localhost\\Ubuntu\\home\\you\\Git\\your-repo"
+GEMINI_OUTPUT_DIMENSIONALITY = "1536"
+```
+
+不要直接用 Windows `node.exe` 执行 WSL checkout 里的 `dist/index.js`，除非该 checkout 的 dependencies 是用 Windows npm 安装的。`better-sqlite3` 和 `sqlite-vec` 都包含 native module，Windows Node 不能加载 Linux npm 安装出的 native binary。
 
 ### 本地 checkout
 

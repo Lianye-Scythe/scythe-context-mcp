@@ -36,6 +36,16 @@ Scythe Context's server instructions now put the key workflow first:
 
 Codex CLI and the IDE extension share MCP configuration through `config.toml`. The Codex app also exposes plugins/MCP-related extension points, but local setup behavior can vary by App settings and installed plugins. For direct reproducible setup, document CLI/IDE `config.toml` first and keep App usage phrased as "Codex local MCP compatible" rather than assuming every App install auto-loads a project config.
 
+### Windows App with WSL workspaces
+
+When Codex App runs on Windows and the target repository lives in WSL, prefer launching Scythe Context through Windows Node/npm:
+
+- Use `command = "npx.cmd"` with `args = ["-y", "scythe-context-mcp"]`.
+- Point `SCYTHE_CONTEXT_DEFAULT_PROJECT` at the WSL repo through a UNC path such as `\\\\wsl.localhost\\Ubuntu\\home\\you\\Git\\your-repo`.
+- Do not point Windows `node.exe` at a WSL checkout's `dist/index.js` unless dependencies were installed by Windows npm in that checkout.
+
+The reason is native dependency compatibility. `better-sqlite3` and `sqlite-vec` load platform-specific binaries. Windows Node should load Windows-installed package dependencies, while WSL Node should load WSL-installed package dependencies.
+
 ### AGENTS.md
 
 Codex reads `AGENTS.md` before work and layers global plus project guidance. Scythe Context's `AGENTS.md` is intentionally short enough to fit comfortably under the default project instruction limit and focuses on:
@@ -67,6 +77,7 @@ Recommended config should expose all tools by default during development, but `e
 - Valid Codex TOML examples using `[mcp_servers.scythe_context.env]`.
 - Secret-safe config examples using `env_vars` for `GEMINI_API_KEY`.
 - `cwd` in MCP config so relative `.env` loading is predictable.
+- Windows App + WSL setup guidance using Windows `npx.cmd` plus `SCYTHE_CONTEXT_DEFAULT_PROJECT`.
 - `startup_timeout_sec` and `tool_timeout_sec` tuned above defaults.
 - Bounded context output for primary and related snippets.
 - Explicit opt-in embedding and opt-in related snippet packing.
@@ -87,6 +98,13 @@ Recommended config should expose all tools by default during development, but `e
 3. Restart Codex after changing config. Codex reads MCP config at session startup.
 4. Check that `command`, `args`, and `cwd` point to the built repo and that `npm run build` has produced `dist/index.js`.
 5. If startup is slow on WSL or a cold Node install, raise `startup_timeout_sec`.
+
+### Windows App starts but WSL repo indexing fails
+
+1. Prefer the npm package path: `command = "npx.cmd"` and `args = ["-y", "scythe-context-mcp"]`.
+2. Set `SCYTHE_CONTEXT_DEFAULT_PROJECT` to the repo's UNC path instead of relying on `cwd`.
+3. Avoid mixing Windows Node with Linux-installed `node_modules`.
+4. Run `npx.cmd -y scythe-context-mcp --version` from Windows PowerShell to verify the Windows Node path before configuring Codex.
 
 ### Tool starts but embedding fails
 
