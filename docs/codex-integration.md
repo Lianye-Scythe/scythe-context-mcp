@@ -36,6 +36,16 @@ Scythe Context's server instructions now put the key workflow first:
 
 Codex CLI and the IDE extension share MCP configuration through `config.toml`. The Codex app also exposes plugins/MCP-related extension points, but local setup behavior can vary by App settings and installed plugins. For direct reproducible setup, document CLI/IDE `config.toml` first and keep App usage phrased as "Codex local MCP compatible" rather than assuming every App install auto-loads a project config.
 
+### Platform setup paths
+
+Codex's official MCP configuration model is platform-neutral: a stdio server has `command`, optional `args`, optional `cwd`, `env`, and `env_vars`. The practical launch command should still match the OS that runs Node:
+
+- Native Windows: use Windows `node.exe` and npm's `npx-cli.js`, or the short binary command only when Codex can reliably see the npm global binary on PATH.
+- WSL/Linux/macOS: use `npx -y scythe-context-mcp` or `node dist/index.js` from a build produced in that same environment.
+- Windows Codex App with WSL workspaces: use Windows `node.exe` and Windows npm package dependencies, but pass the WSL repo path through `SCYTHE_CONTEXT_DEFAULT_PROJECT` and `WSLENV`.
+
+Do not mix a Node runtime from one OS with `node_modules` installed by another OS. This matters because Scythe Context depends on native SQLite modules.
+
 ### Windows App with WSL workspaces
 
 When Codex App runs a WSL project but MCP servers need to use Windows Node, prefer launching Scythe Context through Windows `node.exe` and npm's `npx-cli.js`:

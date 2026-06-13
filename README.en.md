@@ -66,9 +66,37 @@ The old project name `repo-beacon-mcp` has been renamed to `scythe-context-mcp`.
 
 ## Codex Setup
 
-### npm binary
+Codex MCP configuration uses fields such as `command`, `args`, `cwd`, `env`, and `env_vars`; see the official [Model Context Protocol](https://developers.openai.com/codex/mcp) and [Configuration Reference](https://developers.openai.com/codex/config-reference) docs.
 
-If installed globally from npm:
+### Native Windows
+
+If Codex and the MCP server both run on Windows, prefer explicit Windows Node/npm paths. This avoids inconsistent `npx` and PATH resolution on Windows:
+
+```toml
+[mcp_servers.scythe_context]
+command = "C:\\nvm4w\\nodejs\\node.exe"
+args = ["C:\\nvm4w\\nodejs\\node_modules\\npm\\bin\\npx-cli.js", "-y", "scythe-context-mcp"]
+cwd = "C:\\Users\\you"
+enabled = true
+required = false
+startup_timeout_sec = 40
+tool_timeout_sec = 120
+env_vars = ["GEMINI_API_KEY"]
+enabled_tools = [
+  "repo_index_status",
+  "repo_reindex",
+  "repo_context_pack",
+  "repo_semantic_search",
+  "repo_related_files",
+  "gemini_embedding_probe"
+]
+
+[mcp_servers.scythe_context.env]
+SCYTHE_CONTEXT_DEFAULT_PROJECT = "C:\\Users\\you\\Git\\your-repo"
+GEMINI_OUTPUT_DIMENSIONALITY = "1536"
+```
+
+If `scythe-context-mcp` is installed globally and Codex can see it on PATH, the shorter form also works:
 
 ```toml
 [mcp_servers.scythe_context]
@@ -91,7 +119,43 @@ enabled_tools = [
 GEMINI_OUTPUT_DIMENSIONALITY = "1536"
 ```
 
-### Codex App on Windows + WSL repo
+### WSL/Linux/macOS
+
+If Codex and the MCP server both run in the same Unix-like environment, use the npm package directly:
+
+```toml
+[mcp_servers.scythe_context]
+command = "npx"
+args = ["-y", "scythe-context-mcp"]
+cwd = "/home/you/Git/your-repo"
+enabled = true
+required = false
+startup_timeout_sec = 20
+tool_timeout_sec = 120
+env_vars = ["GEMINI_API_KEY"]
+
+[mcp_servers.scythe_context.env]
+GEMINI_OUTPUT_DIMENSIONALITY = "1536"
+```
+
+If running from source, point Codex at the built entry point:
+
+```toml
+[mcp_servers.scythe_context]
+command = "node"
+args = ["/path/to/scythe-context-mcp/dist/index.js"]
+cwd = "/path/to/scythe-context-mcp"
+enabled = true
+required = false
+startup_timeout_sec = 20
+tool_timeout_sec = 120
+env_vars = ["GEMINI_API_KEY"]
+
+[mcp_servers.scythe_context.env]
+GEMINI_OUTPUT_DIMENSIONALITY = "1536"
+```
+
+### Windows Codex App + WSL repo
 
 If Codex App starts MCP servers from a WSL project but the MCP server should run on Windows Node, use Windows `node.exe` plus npm's `npx-cli.js`, and keep `cwd` on a Windows-accessible directory. Set the WSL repo through `SCYTHE_CONTEXT_DEFAULT_PROJECT`; `WSLENV` with `/p` converts it into a UNC path that the Windows process can read:
 
@@ -121,25 +185,6 @@ WSLENV = "SCYTHE_CONTEXT_DEFAULT_PROJECT/p:GEMINI_API_KEY/w:GEMINI_OUTPUT_DIMENS
 ```
 
 Do not set `cwd` to the WSL repo's UNC directory, because npm/npx may go through CMD, and CMD does not support UNC current directories. Also do not point Windows `node.exe` at `dist/index.js` inside a WSL checkout unless that checkout's dependencies were installed by Windows npm. `better-sqlite3` and `sqlite-vec` include native modules, and Windows Node cannot load native binaries installed by Linux npm.
-
-### Local checkout
-
-If running from source:
-
-```toml
-[mcp_servers.scythe_context]
-command = "node"
-args = ["/path/to/scythe-context-mcp/dist/index.js"]
-cwd = "/path/to/scythe-context-mcp"
-enabled = true
-required = false
-startup_timeout_sec = 20
-tool_timeout_sec = 120
-env_vars = ["GEMINI_API_KEY"]
-
-[mcp_servers.scythe_context.env]
-GEMINI_OUTPUT_DIMENSIONALITY = "1536"
-```
 
 ### Third-party v1beta proxy
 
