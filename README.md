@@ -1,5 +1,9 @@
 # Scythe Context MCP
 
+[![CI](https://github.com/Lianye-Scythe/scythe-context-mcp/actions/workflows/ci.yml/badge.svg)](https://github.com/Lianye-Scythe/scythe-context-mcp/actions/workflows/ci.yml)
+[![License: Apache-2.0](https://img.shields.io/badge/License-Apache--2.0-blue.svg)](LICENSE)
+[![Node.js >=24.11](https://img.shields.io/badge/Node.js-%3E%3D24.11-339933.svg)](package.json)
+
 [繁體中文](README.md) | [English](README.en.md) | [简体中文](README.zh-CN.md)
 
 Scythe Context MCP 是給 Codex App / Codex CLI 使用的本機程式碼上下文引擎。目標是用本機索引、混合搜尋與可配置 embedding provider，幫 Codex 更快定位相關檔案、行號、符號關係與可操作上下文。

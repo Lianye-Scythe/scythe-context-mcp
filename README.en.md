@@ -1,5 +1,9 @@
 # Scythe Context MCP
 
+[![CI](https://github.com/Lianye-Scythe/scythe-context-mcp/actions/workflows/ci.yml/badge.svg)](https://github.com/Lianye-Scythe/scythe-context-mcp/actions/workflows/ci.yml)
+[![License: Apache-2.0](https://img.shields.io/badge/License-Apache--2.0-blue.svg)](LICENSE)
+[![Node.js >=24.11](https://img.shields.io/badge/Node.js-%3E%3D24.11-339933.svg)](package.json)
+
 [繁體中文](README.md) | [English](README.en.md) | [简体中文](README.zh-CN.md)
 
 Scythe Context MCP is a local code-context engine for Codex App / Codex CLI. It uses local indexing, hybrid search, and a configurable embedding provider to help Codex find relevant files, line ranges, symbol relationships, and actionable context faster.

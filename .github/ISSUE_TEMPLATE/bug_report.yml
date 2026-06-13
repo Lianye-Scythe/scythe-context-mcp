@@ -1,0 +1,64 @@
+name: Bug report
+description: Report a reproducible problem with Scythe Context MCP.
+title: "[Bug]: "
+labels: ["bug"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for reporting a problem. Do not include API keys, proxy tokens, private code snippets, or local index databases.
+  - type: textarea
+    id: summary
+    attributes:
+      label: Summary
+      description: What went wrong?
+    validations:
+      required: true
+  - type: textarea
+    id: steps
+    attributes:
+      label: Reproduction steps
+      description: Provide the smallest sequence of steps that reproduces the issue.
+      placeholder: |
+        1. Configure MCP with ...
+        2. Run repo_index_status ...
+        3. See ...
+    validations:
+      required: true
+  - type: textarea
+    id: expected
+    attributes:
+      label: Expected behavior
+    validations:
+      required: true
+  - type: textarea
+    id: actual
+    attributes:
+      label: Actual behavior
+    validations:
+      required: true
+  - type: input
+    id: version
+    attributes:
+      label: Version or commit
+      placeholder: "0.1.0 or commit hash"
+  - type: input
+    id: node
+    attributes:
+      label: Node.js version
+      placeholder: "node -v"
+  - type: dropdown
+    id: surface
+    attributes:
+      label: Codex surface
+      options:
+        - Codex App
+        - Codex CLI
+        - Codex IDE extension
+        - Other
+  - type: textarea
+    id: logs
+    attributes:
+      label: Relevant diagnostics
+      description: Paste redacted `repo_index_status`, `gemini_embedding_probe`, or terminal output.
+      render: text
