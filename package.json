@@ -3,7 +3,7 @@
   "version": "0.1.0",
   "description": "Local MCP context engine for Codex with Gemini Embedding 2 support.",
   "type": "module",
-  "license": "MIT",
+  "license": "Apache-2.0",
   "repository": {
     "type": "git",
     "url": "git+https://github.com/Lianye-Scythe/scythe-context-mcp.git"
