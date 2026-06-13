@@ -14,6 +14,7 @@ import { readRelatedSnippets } from "../indexing/relatedSnippets.js";
 import { formatSearchResults, type FormattableSearchResult } from "../indexing/resultFormat.js";
 import { searchByVector } from "../indexing/semanticSearch.js";
 import { buildGeminiEndpoint, GeminiEmbeddingError, GeminiEmbeddingProvider, normalizeGeminiBaseUrl } from "../providers/gemini.js";
+import { runRepoDoctor } from "./doctor.js";
 
 function asJsonText(value: unknown) {
   return {
@@ -131,6 +132,27 @@ export function registerTools(server: McpServer, config: AppConfig): void {
   const expectedDimensions = config.gemini.outputDimensionality ?? 1536;
 
   server.registerTool(
+    "repo_doctor",
+    {
+      title: "Repo Doctor",
+      description: "Run local diagnostics for runtime, native modules, config, WSL interop, and index health without calling embedding APIs.",
+      inputSchema: {
+        project_path: z.string().optional(),
+      },
+    },
+    async ({ project_path }) => {
+      const projectPath = path.resolve(project_path || config.defaultProjectPath);
+      return asJsonText(
+        await runRepoDoctor({
+          config,
+          projectPath,
+          expectedDimensions,
+        }),
+      );
+    },
+  );
+
+  server.registerTool(
     "repo_index_status",
     {
       title: "Repo Index Status",
@@ -175,6 +197,8 @@ export function registerTools(server: McpServer, config: AppConfig): void {
           "context_packer",
           "multi_hop_related_files",
           "related_snippet_packing",
+          "local_code_aware_reranker",
+          "repo_doctor",
         ],
         pending: ["tree_sitter_symbols"],
         indexing: config.indexing,

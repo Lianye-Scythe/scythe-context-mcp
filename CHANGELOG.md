@@ -6,6 +6,10 @@ This project follows semantic versioning before npm publication where practical.
 
 ## [Unreleased]
 
+### Added
+
+- Add `repo_doctor` local diagnostics for runtime, native modules, Gemini env, WSL interop, and index health without external API calls.
+
 ## [0.1.5] - 2026-06-14
 
 ### Added

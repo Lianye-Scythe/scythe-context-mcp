@@ -243,14 +243,15 @@ GEMINI_OUTPUT_DIMENSIONALITY = "1536"
 | `repo_semantic_search` | 對已索引 chunks 做 hybrid 或 semantic search，適合排查 ranking。 |
 | `repo_related_files` | 查看單一檔案的 symbols、imports、importedBy。 |
 | `gemini_embedding_probe` | 測試 Gemini 或 proxy 相容性，回傳 endpoint、latency、錯誤分類與可修復建議。 |
+| `repo_doctor` | 不呼叫外部 API，檢查 Node runtime、native modules、Gemini env、WSL interop 與 index health。 |
 
 `repo_context_pack(mode="hybrid")` 和 `repo_semantic_search(mode="hybrid")` 在 query embedding 不可用時會降級成 keyword-only 結果，並回傳 `effectiveMode: "keyword"` 與 `fallback.reason: "embedding_unavailable"`。`mode="semantic"` 不會降級，會回傳 `status: "embedding_unavailable"`，因為純 semantic search 必須有 query embedding。精確字串、已知路徑或小範圍檢查仍建議直接用 `rg` / 直接讀檔。
 
 ## 功能狀態
 
-已完成：repo 掃描、chunking、SQLite metadata、SQLite FTS5、sqlite-vec、Gemini Embedding 2 provider、semantic/keyword/hybrid search、embedding 失敗時的 keyword-only fallback、local code-aware reranker、輕量 symbol/dependency graph、related-file lookup、`repo_context_pack`、provider diagnostics、index freshness diagnostics。
+已完成：repo 掃描、chunking、SQLite metadata、SQLite FTS5、sqlite-vec、Gemini Embedding 2 provider、semantic/keyword/hybrid search、embedding 失敗時的 keyword-only fallback、local code-aware reranker、輕量 symbol/dependency graph、related-file lookup、`repo_context_pack`、provider diagnostics、index freshness diagnostics、`repo_doctor`。
 
-下一步：provider capability cache、安裝/原生依賴 doctor、必要時加入 tree-sitter symbol extraction。
+下一步：provider capability cache、擴充 benchmark cases、必要時加入 tree-sitter symbol extraction。
 
 ## 隱私與本機檔案
 
