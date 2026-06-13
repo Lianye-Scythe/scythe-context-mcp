@@ -1,0 +1,50 @@
+name: Publish
+
+on:
+  push:
+    tags:
+      - "v*"
+
+permissions:
+  contents: read
+  id-token: write
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v5
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v5
+        with:
+          node-version: 24
+          registry-url: https://registry.npmjs.org
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Check tag matches package version
+        run: |
+          tag_version="${GITHUB_REF_NAME#v}"
+          package_version="$(node -p "require('./package.json').version")"
+          if [ "$tag_version" != "$package_version" ]; then
+            echo "Tag version $tag_version does not match package.json version $package_version"
+            exit 1
+          fi
+
+      - name: Check version is not already published
+        run: |
+          package_version="$(node -p "require('./package.json').version")"
+          if npm view "scythe-context-mcp@$package_version" version >/dev/null 2>&1; then
+            echo "scythe-context-mcp@$package_version is already published"
+            exit 1
+          fi
+
+      - name: Verify
+        run: npm run verify
+
+      - name: Publish to npm
+        run: npm publish --access public

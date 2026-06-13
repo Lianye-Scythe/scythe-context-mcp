@@ -136,13 +136,14 @@ POST /v1beta/models/gemini-embedding-2:batchEmbedContents
 
 ## Codex MCP 設定範例
 
+以下範例只示範 Gemini provider 參數。全域 MCP config 不要把 `cwd` 固定到某個 repo；只有 project-scoped `.codex/config.toml` 或刻意 pin 單一 repo 時才需要設定 `cwd` 或 `SCYTHE_CONTEXT_DEFAULT_PROJECT`。
+
 官方 Gemini：
 
 ```toml
 [mcp_servers.scythe_context]
 command = "node"
 args = ["/path/to/scythe-context-mcp/dist/index.js"]
-cwd = "/path/to/scythe-context-mcp"
 env_vars = ["GEMINI_API_KEY"]
 
 [mcp_servers.scythe_context.env]
@@ -157,7 +158,6 @@ Bearer 中轉站：
 [mcp_servers.scythe_context]
 command = "node"
 args = ["/path/to/scythe-context-mcp/dist/index.js"]
-cwd = "/path/to/scythe-context-mcp"
 env_vars = ["GEMINI_API_KEY"]
 
 [mcp_servers.scythe_context.env]
@@ -172,7 +172,6 @@ Query key 中轉站：
 [mcp_servers.scythe_context]
 command = "node"
 args = ["/path/to/scythe-context-mcp/dist/index.js"]
-cwd = "/path/to/scythe-context-mcp"
 env_vars = ["GEMINI_API_KEY"]
 
 [mcp_servers.scythe_context.env]

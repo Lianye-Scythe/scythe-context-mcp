@@ -39,7 +39,8 @@
     "prepack": "npm run build",
     "smoke": "node dist/index.js --version && node dist/index.js --help",
     "test": "vitest run",
-    "typecheck": "tsc -p tsconfig.json --noEmit"
+    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "verify": "npm test && npm run build && npm run smoke && npm audit --omit=dev && npm pack --dry-run"
   },
   "engines": {
     "node": ">=24.11.0 <27"
