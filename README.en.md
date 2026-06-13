@@ -64,7 +64,6 @@ Minimum config:
 [mcp_servers.scythe_context]
 command = 'C:\nvm4w\nodejs\node.exe'
 args = ['C:\nvm4w\nodejs\node_modules\npm\bin\npx-cli.js', '-y', 'scythe-context-mcp']
-cwd = 'C:\Users\you\Git\your-repo'
 env_vars = ["GEMINI_API_KEY"]
 ```
 
@@ -73,7 +72,6 @@ If `scythe-context-mcp` is installed globally and Codex can see it on PATH, it c
 ```toml
 [mcp_servers.scythe_context]
 command = "scythe-context-mcp"
-cwd = 'C:\Users\you\Git\your-repo'
 env_vars = ["GEMINI_API_KEY"]
 ```
 
@@ -85,7 +83,6 @@ When Codex and the MCP server both run in the same Unix-like environment, the mi
 [mcp_servers.scythe_context]
 command = "npx"
 args = ["-y", "scythe-context-mcp"]
-cwd = "/home/you/Git/your-repo"
 env_vars = ["GEMINI_API_KEY"]
 ```
 
@@ -95,11 +92,10 @@ When running from source:
 [mcp_servers.scythe_context]
 command = "node"
 args = ["/path/to/scythe-context-mcp/dist/index.js"]
-cwd = "/home/you/Git/your-repo"
 env_vars = ["GEMINI_API_KEY"]
 ```
 
-Here `args` points to the built Scythe Context MCP entrypoint, while `cwd` points to the target repo you want to index.
+Here `args` points to the built Scythe Context MCP entrypoint; do not pin `cwd` to one repo in global config. Scythe prefers a tool call's `project_path`, then the workspace `PWD` / process `cwd` used when Codex starts the MCP server. Set `cwd` or `SCYTHE_CONTEXT_DEFAULT_PROJECT` only in project-scoped `.codex/config.toml`, or when you intentionally want to pin one repo.
 
 ### Windows Codex App + WSL repo
 
@@ -121,6 +117,7 @@ WSLENV = "PWD/p"
 Notes:
 
 - Keep `cwd` on a Windows-accessible directory such as `/mnt/c/Users/you`. Do not use the WSL repo's UNC directory as `cwd`, because npm/npx may go through CMD, and CMD does not support UNC current directories.
+- This `cwd` is not the repo to index; it is only a safe startup directory for the Windows process. The real WSL repo is passed through `PWD/p`.
 - `PWD/p` lets WSL convert the current workspace path into a UNC path readable by the Windows process, so you do not need to edit config for every repo.
 - If `GEMINI_API_KEY` already exists in the Windows user environment or is forwarded by Codex `env_vars`, you do not need to put the key in `WSLENV`.
 - Do not point Windows `node.exe` at `dist/index.js` inside a WSL checkout unless that checkout's dependencies were installed by Windows npm. `better-sqlite3` and `sqlite-vec` include native modules, and Windows Node cannot load native binaries installed by Linux npm.
