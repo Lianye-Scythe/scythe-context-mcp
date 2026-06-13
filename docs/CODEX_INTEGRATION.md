@@ -75,7 +75,7 @@ Recommended config should expose all tools by default during development, but `e
 
 - Consider a plugin package later if Codex App plugin distribution becomes the preferred installation route.
 - Add tree-sitter symbol extraction only if regex extraction becomes a retrieval-quality bottleneck.
-- Add optional diagnostics for provider latency and embedding/index freshness.
+- Continue expanding diagnostics for index freshness and provider capability caching.
 
 ## Troubleshooting
 

@@ -13,7 +13,7 @@ import { readRelatedFileGraph, readRelatedFiles } from "../indexing/relatedFiles
 import { readRelatedSnippets } from "../indexing/relatedSnippets.js";
 import { formatSearchResults, type FormattableSearchResult } from "../indexing/resultFormat.js";
 import { searchByVector } from "../indexing/semanticSearch.js";
-import { GeminiEmbeddingProvider } from "../providers/gemini.js";
+import { buildGeminiEndpoint, GeminiEmbeddingError, GeminiEmbeddingProvider, normalizeGeminiBaseUrl } from "../providers/gemini.js";
 
 function asJsonText(value: unknown) {
   return {
@@ -50,8 +50,37 @@ function searchIndexedChunks(options: {
       });
 }
 
+function buildGeminiDiagnostics(config: AppConfig["gemini"], expectedDimensions: number) {
+  const diagnostics: {
+    baseUrl: string;
+    normalizedBaseUrl?: string;
+    endpoint?: string;
+    model: string;
+    expectedDimensions: number;
+    authMode: AppConfig["gemini"]["authMode"];
+    hasApiKey: boolean;
+    configError?: string;
+  } = {
+    baseUrl: config.baseUrl,
+    model: config.model,
+    expectedDimensions,
+    authMode: config.authMode,
+    hasApiKey: Boolean(config.apiKey),
+  };
+
+  try {
+    diagnostics.normalizedBaseUrl = normalizeGeminiBaseUrl(config.baseUrl);
+    diagnostics.endpoint = buildGeminiEndpoint(config.baseUrl, config.model, "embedContent").toString();
+  } catch (error) {
+    diagnostics.configError = error instanceof Error ? error.message : String(error);
+  }
+
+  return diagnostics;
+}
+
 export function registerTools(server: McpServer, config: AppConfig): void {
   const embeddingProvider = new GeminiEmbeddingProvider(config.gemini);
+  const expectedDimensions = config.gemini.outputDimensionality ?? 1536;
 
   server.registerTool(
     "repo_index_status",
@@ -71,7 +100,7 @@ export function registerTools(server: McpServer, config: AppConfig): void {
         indexPath: path.join(projectPath, config.indexDirName),
         index,
         recommendedNextActions: recommendedNextActions(index, {
-          desiredDimensions: config.gemini.outputDimensionality ?? 1536,
+          desiredDimensions: expectedDimensions,
         }),
         status: "usable_mvp",
         implemented: [
@@ -109,18 +138,47 @@ export function registerTools(server: McpServer, config: AppConfig): void {
     "gemini_embedding_probe",
     {
       title: "Gemini Embedding Probe",
-      description: "Send one embedding request to verify official Gemini or proxy compatibility.",
+      description: "Send one embedding request and return diagnostics for official Gemini or proxy compatibility.",
       inputSchema: {
         text: z.string().min(1),
       },
     },
     async ({ text }) => {
-      const result = await embeddingProvider.embed({ kind: "query", text });
-      return asJsonText({
-        model: result.model,
-        dimensions: result.dimensions,
-        sample: result.vector.slice(0, 8),
-      });
+      const startedAt = Date.now();
+      const diagnostics = buildGeminiDiagnostics(config.gemini, expectedDimensions);
+
+      try {
+        const result = await embeddingProvider.embed({ kind: "query", text });
+        return asJsonText({
+          status: "ok",
+          latencyMs: Date.now() - startedAt,
+          diagnostics,
+          model: result.model,
+          dimensions: result.dimensions,
+          dimensionsMatchExpected: result.dimensions === expectedDimensions,
+          sample: result.vector.slice(0, 8),
+        });
+      } catch (error) {
+        const geminiError = error instanceof GeminiEmbeddingError ? error : undefined;
+        return asJsonText({
+          status: "embedding_probe_failed",
+          latencyMs: Date.now() - startedAt,
+          diagnostics,
+          error: {
+            type: error instanceof Error ? error.name : "UnknownError",
+            message: error instanceof Error ? error.message : String(error),
+            httpStatus: geminiError?.status,
+            retryable: geminiError?.retryable ?? false,
+            bodySnippet: geminiError?.bodySnippet,
+          },
+          recommendedNextActions: [
+            "Verify GEMINI_API_KEY is present in the environment Codex launches from.",
+            "Verify GEMINI_BASE_URL points to the provider root and can include or omit /v1beta.",
+            "Verify GEMINI_AUTH_MODE matches the proxy requirement: x-goog-api-key, bearer, or query.",
+            "Verify the provider supports models/{model}:embedContent and the requested output dimensionality.",
+          ],
+        });
+      }
     },
   );
 
@@ -167,7 +225,7 @@ export function registerTools(server: McpServer, config: AppConfig): void {
       const metadataResult = await persistentReindexMetadata({
         ...commonOptions,
         indexDirName: config.indexDirName,
-        vectorDimensions: config.gemini.outputDimensionality ?? 1536,
+        vectorDimensions: expectedDimensions,
       });
 
       if (!index_embeddings) {
@@ -179,7 +237,7 @@ export function registerTools(server: McpServer, config: AppConfig): void {
         providerName: "gemini",
         providerBaseUrl: config.gemini.baseUrl,
         model: config.gemini.model,
-        dimensions: config.gemini.outputDimensionality ?? 1536,
+        dimensions: expectedDimensions,
         batchSize: embedding_batch_size ?? config.indexing.embeddingBatchSize,
         maxChunks: max_embedding_chunks ?? config.indexing.maxEmbeddingChunks,
         provider: embeddingProvider,
@@ -220,7 +278,7 @@ export function registerTools(server: McpServer, config: AppConfig): void {
       }
 
       const queryEmbedding = await embeddingProvider.embed({ kind: "query", text: query });
-      const dimensions = config.gemini.outputDimensionality ?? 1536;
+      const dimensions = expectedDimensions;
       if (queryEmbedding.dimensions !== dimensions) {
         throw new Error(`Query embedding dimensions mismatch: expected ${dimensions}, got ${queryEmbedding.dimensions}`);
       }
@@ -335,7 +393,7 @@ export function registerTools(server: McpServer, config: AppConfig): void {
       }
 
       const queryEmbedding = await embeddingProvider.embed({ kind: "query", text: query });
-      const dimensions = config.gemini.outputDimensionality ?? 1536;
+      const dimensions = expectedDimensions;
       if (queryEmbedding.dimensions !== dimensions) {
         throw new Error(`Query embedding dimensions mismatch: expected ${dimensions}, got ${queryEmbedding.dimensions}`);
       }

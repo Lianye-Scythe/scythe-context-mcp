@@ -6,6 +6,20 @@ interface GeminiEmbeddingResponse {
   embeddings?: Array<{ values?: number[] }>;
 }
 
+export class GeminiEmbeddingError extends Error {
+  readonly status?: number;
+  readonly bodySnippet?: string;
+  readonly retryable: boolean;
+
+  constructor(message: string, options: { status?: number; bodySnippet?: string; retryable?: boolean } = {}) {
+    super(message);
+    this.name = "GeminiEmbeddingError";
+    this.status = options.status;
+    this.bodySnippet = options.bodySnippet;
+    this.retryable = options.retryable ?? false;
+  }
+}
+
 function trimTrailingSlash(value: string): string {
   return value.replace(/\/+$/, "");
 }
@@ -36,6 +50,16 @@ function formatEmbeddingText(input: EmbeddingRequest): string {
     return `task: code retrieval | query: ${input.text}`;
   }
   return `title: ${input.title || "none"} | text: ${input.text}`;
+}
+
+function isRetryableStatus(status: number): boolean {
+  return status === 408 || status === 409 || status === 425 || status === 429 || status >= 500;
+}
+
+function safeSnippet(text: string, secret?: string): string {
+  const collapsed = text.replace(/\s+/g, " ").trim();
+  const redacted = secret ? collapsed.split(secret).join("[REDACTED]") : collapsed;
+  return redacted.length > 1000 ? `${redacted.slice(0, 1000)}...` : redacted;
 }
 
 export class GeminiEmbeddingProvider implements EmbeddingProvider {
@@ -89,10 +113,17 @@ export class GeminiEmbeddingProvider implements EmbeddingProvider {
 
   private async post(method: "embedContent" | "batchEmbedContents", body: unknown): Promise<GeminiEmbeddingResponse> {
     if (!this.config.apiKey) {
-      throw new Error("GEMINI_API_KEY is required for embedding calls");
+      throw new GeminiEmbeddingError("GEMINI_API_KEY is required for embedding calls");
     }
 
-    const url = buildGeminiEndpoint(this.config.baseUrl, this.config.model, method);
+    let url: URL;
+    try {
+      url = buildGeminiEndpoint(this.config.baseUrl, this.config.model, method);
+    } catch (error) {
+      throw new GeminiEmbeddingError(
+        `Invalid GEMINI_BASE_URL: ${error instanceof Error ? error.message : String(error)}`,
+      );
+    }
     const headers: Record<string, string> = {
       "content-type": "application/json",
     };
@@ -113,10 +144,20 @@ export class GeminiEmbeddingProvider implements EmbeddingProvider {
 
     const text = await response.text();
     if (!response.ok) {
-      throw new Error(`Gemini embedding request failed: ${response.status} ${text}`);
+      throw new GeminiEmbeddingError(`Gemini embedding request failed with HTTP ${response.status}`, {
+        status: response.status,
+        bodySnippet: safeSnippet(text, this.config.apiKey),
+        retryable: isRetryableStatus(response.status),
+      });
     }
 
-    return JSON.parse(text) as GeminiEmbeddingResponse;
+    try {
+      return JSON.parse(text) as GeminiEmbeddingResponse;
+    } catch {
+      throw new GeminiEmbeddingError("Gemini embedding response was not valid JSON", {
+        bodySnippet: safeSnippet(text, this.config.apiKey),
+      });
+    }
   }
 
   private extractSingleVector(response: GeminiEmbeddingResponse): number[] {

@@ -194,11 +194,16 @@ gemini_embedding_probe({ "text": "find code that handles payment logging" })
 
 ```json
 {
+  "status": "ok",
+  "latencyMs": 123,
   "model": "gemini-embedding-2",
   "dimensions": 1536,
+  "dimensionsMatchExpected": true,
   "sample": [0.01, -0.02]
 }
 ```
+
+失敗時會回傳 `status: "embedding_probe_failed"`、HTTP status、retryable 判斷、截斷後的 response snippet 與可修復建議；不會回傳 API key。
 
 如果失敗，優先檢查：
 
