@@ -179,11 +179,11 @@ GEMINI_OUTPUT_DIMENSIONALITY = "1536"
 
 ## 文件
 
-- [架構設計](docs/ARCHITECTURE.md)
-- [開發計畫](docs/DEVELOPMENT_PLAN.md)
-- [Gemini 相容性](docs/GEMINI_COMPATIBILITY.md)
-- [技術棧](docs/TECH_STACK.md)
-- [Codex 整合審查](docs/CODEX_INTEGRATION.md)
+- [架構設計](docs/architecture.md)
+- [開發計畫](docs/development-plan.md)
+- [Gemini 相容性](docs/gemini-compatibility.md)
+- [技術棧](docs/tech-stack.md)
+- [Codex 整合審查](docs/codex-integration.md)
 
 ## 開發與發佈檢查
 

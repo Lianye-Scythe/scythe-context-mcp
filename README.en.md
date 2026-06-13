@@ -179,11 +179,11 @@ Do not include API keys, proxy tokens, private source snippets, or index databas
 
 ## Documentation
 
-- [Architecture](docs/ARCHITECTURE.md)
-- [Development Plan](docs/DEVELOPMENT_PLAN.md)
-- [Gemini Compatibility](docs/GEMINI_COMPATIBILITY.md)
-- [Tech Stack](docs/TECH_STACK.md)
-- [Codex Integration Review](docs/CODEX_INTEGRATION.md)
+- [Architecture](docs/architecture.md)
+- [Development Plan](docs/development-plan.md)
+- [Gemini Compatibility](docs/gemini-compatibility.md)
+- [Tech Stack](docs/tech-stack.md)
+- [Codex Integration Review](docs/codex-integration.md)
 
 ## Development and Publishing Checks
 

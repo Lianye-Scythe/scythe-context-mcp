@@ -179,11 +179,11 @@ GEMINI_OUTPUT_DIMENSIONALITY = "1536"
 
 ## 文档
 
-- [架构设计](docs/ARCHITECTURE.md)
-- [开发计划](docs/DEVELOPMENT_PLAN.md)
-- [Gemini 兼容性](docs/GEMINI_COMPATIBILITY.md)
-- [技术栈](docs/TECH_STACK.md)
-- [Codex 集成审查](docs/CODEX_INTEGRATION.md)
+- [架构设计](docs/architecture.md)
+- [开发计划](docs/development-plan.md)
+- [Gemini 兼容性](docs/gemini-compatibility.md)
+- [技术栈](docs/tech-stack.md)
+- [Codex 集成审查](docs/codex-integration.md)
 
 ## 开发与发布检查
 
