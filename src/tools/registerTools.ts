@@ -13,6 +13,7 @@ import { readRelatedFileGraph, readRelatedFiles } from "../indexing/relatedFiles
 import { readRelatedSnippets } from "../indexing/relatedSnippets.js";
 import { formatSearchResults, type FormattableSearchResult } from "../indexing/resultFormat.js";
 import { searchByVector } from "../indexing/semanticSearch.js";
+import { createConfiguredStructureExtractor } from "../indexing/structureExtractorFactory.js";
 import {
   findProviderCapability,
   providerCapabilityInput,
@@ -399,6 +400,7 @@ export function registerTools(server: McpServer, config: AppConfig): void {
         ...commonOptions,
         indexDirName: config.indexDirName,
         vectorDimensions: expectedDimensions,
+        structureExtractor: await createConfiguredStructureExtractor(config.structure),
       });
 
       if (!index_embeddings) {

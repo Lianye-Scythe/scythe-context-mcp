@@ -39,5 +39,7 @@ Environment:
   GEMINI_BASE_URL                 Gemini-compatible base URL, default https://generativelanguage.googleapis.com/v1beta
   GEMINI_OUTPUT_DIMENSIONALITY    Embedding dimensions, default 1536
   SCYTHE_CONTEXT_RERANK_MODE      auto or off, default auto
+  SCYTHE_CONTEXT_STRUCTURE_EXTRACTOR  regex or tree-sitter, default regex
+  SCYTHE_CONTEXT_TREE_SITTER_GRAMMAR_DIR  Optional directory containing grammar .wasm files
 `;
 }

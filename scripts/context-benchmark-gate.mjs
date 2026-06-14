@@ -102,9 +102,10 @@ function providerCapabilityKeyInput(config, dimensions) {
 }
 
 async function refreshIndex({ repoRoot, projectPath, includeHybrid }) {
-  const [{ loadConfig }, { persistentReindexMetadata }] = await Promise.all([
+  const [{ loadConfig }, { persistentReindexMetadata }, { createConfiguredStructureExtractor }] = await Promise.all([
     import(path.join(repoRoot, "dist/config.js")),
     import(path.join(repoRoot, "dist/indexing/indexWriter.js")),
+    import(path.join(repoRoot, "dist/indexing/structureExtractorFactory.js")),
   ]);
   const config = loadConfig();
   const dimensions = config.gemini.outputDimensionality ?? 1536;
@@ -116,6 +117,7 @@ async function refreshIndex({ repoRoot, projectPath, includeHybrid }) {
     targetChunkChars: config.indexing.targetChunkChars,
     chunkOverlapChars: config.indexing.chunkOverlapChars,
     maxChunksPerFile: config.indexing.maxChunksPerFile,
+    structureExtractor: await createConfiguredStructureExtractor(config.structure),
   });
 
   if (!includeHybrid) return metadata;

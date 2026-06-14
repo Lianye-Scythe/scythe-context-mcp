@@ -13,6 +13,8 @@ const MANAGED_ENV = [
   "SCYTHE_CONTEXT_EMBEDDING_BATCH_SIZE",
   "SCYTHE_CONTEXT_MAX_EMBEDDING_CHUNKS",
   "SCYTHE_CONTEXT_RERANK_MODE",
+  "SCYTHE_CONTEXT_STRUCTURE_EXTRACTOR",
+  "SCYTHE_CONTEXT_TREE_SITTER_GRAMMAR_DIR",
   "REPO_BEACON_DEFAULT_PROJECT",
   "REPO_BEACON_INDEX_DIR",
   "REPO_BEACON_MAX_FILE_BYTES",
@@ -48,6 +50,8 @@ describe("loadConfig", () => {
     process.env.SCYTHE_CONTEXT_EMBEDDING_BATCH_SIZE = "9";
     process.env.SCYTHE_CONTEXT_MAX_EMBEDDING_CHUNKS = "10";
     process.env.SCYTHE_CONTEXT_RERANK_MODE = "off";
+    process.env.SCYTHE_CONTEXT_STRUCTURE_EXTRACTOR = "tree-sitter";
+    process.env.SCYTHE_CONTEXT_TREE_SITTER_GRAMMAR_DIR = "/tmp/grammars";
 
     const config = loadConfig();
 
@@ -62,6 +66,10 @@ describe("loadConfig", () => {
       maxEmbeddingChunks: 10,
     });
     expect(config.search.rerankMode).toBe("off");
+    expect(config.structure).toMatchObject({
+      extractorMode: "tree-sitter",
+      treeSitterGrammarDir: "/tmp/grammars",
+    });
   });
 
   it("uses PWD as the default project when no explicit project is configured", () => {
@@ -105,11 +113,18 @@ describe("loadConfig", () => {
     const config = loadConfig();
 
     expect(config.search.rerankMode).toBe("auto");
+    expect(config.structure.extractorMode).toBe("regex");
   });
 
   it("rejects invalid rerank mode values", () => {
     process.env.SCYTHE_CONTEXT_RERANK_MODE = "aggressive";
 
     expect(() => loadConfig()).toThrow("SCYTHE_CONTEXT_RERANK_MODE must be one of: auto, off");
+  });
+
+  it("rejects invalid structure extractor values", () => {
+    process.env.SCYTHE_CONTEXT_STRUCTURE_EXTRACTOR = "native";
+
+    expect(() => loadConfig()).toThrow("SCYTHE_CONTEXT_STRUCTURE_EXTRACTOR must be one of: regex, tree-sitter");
   });
 });

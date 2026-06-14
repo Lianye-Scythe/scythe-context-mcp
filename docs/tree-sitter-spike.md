@@ -21,8 +21,9 @@ The spike should answer one question:
 
 Current npm versions checked on 2026-06-14:
 
-- `tree-sitter`: `0.25.0`
+- `tree-sitter-cli`: `0.26.9`
 - `web-tree-sitter`: `0.26.9`
+- `tree-sitter`: `0.25.0` Node native binding package
 - `tree-sitter-javascript`: `0.25.0`
 - `tree-sitter-typescript`: `0.23.2`
 
@@ -116,7 +117,27 @@ Run the current skeleton with:
 npm run spike:tree-sitter
 ```
 
-The initial skeleton intentionally reports `Parser wired: no`. It exists to keep the extractor interface, fixture cases, and measurement output stable before adding a parser dependency.
+Without grammar assets, the script reports `Parser wired: no` and falls back to regex extraction. To test the WASM extractor, provide a directory containing:
+
+- `tree-sitter-javascript.wasm`
+- `tree-sitter-typescript.wasm`
+- `tree-sitter-tsx.wasm`
+
+Then run:
+
+```bash
+npm run spike:tree-sitter -- --grammar-dir /path/to/tree-sitter-wasm
+```
+
+Runtime indexing remains opt-in:
+
+```bash
+SCYTHE_CONTEXT_STRUCTURE_EXTRACTOR=tree-sitter \
+SCYTHE_CONTEXT_TREE_SITTER_GRAMMAR_DIR=/path/to/tree-sitter-wasm \
+npx -y scythe-context-mcp
+```
+
+See [Tree-sitter Dependency Experiment](./tree-sitter-dependency-experiment.md) for the first dependency comparison. The current recommendation is to prefer a WASM-first optional extractor and avoid required native parser dependencies.
 
 ## Default Decision
 
