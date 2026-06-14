@@ -16,6 +16,7 @@ This project follows semantic versioning before npm publication where practical.
 
 - Make the default benchmark report state that `scythe-hybrid` was intentionally omitted unless `--include-hybrid` is set.
 - Make rerank comparison benchmarks print one auto/off delta report instead of two separate tables.
+- Tune code-aware reranking for security/privacy documentation queries and broaden the UTF-8 scanner benchmark expectation to include the scanner decision point.
 
 ## [0.1.6] - 2026-06-14
 

@@ -161,4 +161,34 @@ describe("searchKeywordOnly", () => {
     expect(paths).toContain("src/indexWriter.test.ts");
     expect(paths.indexOf("src/indexWriter.test.ts")).toBeLessThan(paths.indexOf("src/indexWriter.ts"));
   });
+
+  it("does not let source-role boosts outrank documentation for security policy queries", async () => {
+    await fs.mkdir(path.join(tempDir, "src", "tools"), { recursive: true });
+    await fs.writeFile(
+      path.join(tempDir, "SECURITY.md"),
+      "Security policy: embedding text goes to the configured remote provider and local indexes are not committed.\n",
+    );
+    await fs.writeFile(
+      path.join(tempDir, "src", "tools", "registerTools.ts"),
+      "export const message = 'embedding provider remote configured local index text';\n",
+    );
+    const metadata = await persistentReindexMetadata({
+      projectPath: tempDir,
+      indexDirName: ".scythe-context",
+      vectorDimensions: 1536,
+      maxFileBytes: 4096,
+      targetChunkChars: 200,
+      chunkOverlapChars: 0,
+      maxChunksPerFile: 10,
+    });
+
+    const results = searchKeywordOnly({
+      dbPath: metadata.dbPath,
+      query: "security policy should explain embedding text goes to configured remote provider and local indexes are not committed",
+      maxResults: 5,
+      maxSnippetChars: 160,
+    });
+
+    expect(results[0].path).toBe("SECURITY.md");
+  });
 });

@@ -75,7 +75,24 @@ function isCodeIntent(terms: readonly string[]): boolean {
 
 function isDocsIntent(terms: readonly string[]): boolean {
   return terms.some((term) =>
-    ["readme", "docs", "documentation", "codex", "wsl", "windows", "setup", "config", "npm", "publish"].includes(term),
+    [
+      "readme",
+      "docs",
+      "documentation",
+      "codex",
+      "wsl",
+      "windows",
+      "setup",
+      "config",
+      "npm",
+      "publish",
+      "security",
+      "privacy",
+      "policy",
+      "remote",
+      "committed",
+      "commit",
+    ].includes(term),
   );
 }
 
@@ -198,8 +215,8 @@ function roleScore(path: string, terms: readonly string[]): number {
 
   if (role === "generated") return -2;
   if (role === "test") return testIntent ? 0.4 : codeIntent ? -0.85 : -0.25;
-  if (role === "docs") return docsIntent ? 0.45 : codeIntent ? -0.8 : -0.15;
-  if (role === "source") return codeIntent ? 0.65 : 0.15;
+  if (role === "docs") return docsIntent ? 0.65 : codeIntent ? -0.8 : -0.15;
+  if (role === "source") return docsIntent ? 0.05 : codeIntent ? 0.65 : 0.15;
   return -0.25;
 }
 

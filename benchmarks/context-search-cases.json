@@ -22,6 +22,7 @@
     "id": "utf8-binary-detection",
     "query": "UTF-8 scanner should not treat a file as binary when prefix ends in multibyte character",
     "expectedPaths": [
+      "src/indexing/scanner.ts",
       "src/indexing/binary.ts",
       "src/indexing/scanner.test.ts"
     ],
