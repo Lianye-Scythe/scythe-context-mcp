@@ -76,7 +76,7 @@ Reasons:
 - Parser startup and grammar load are small enough for index-time use.
 - It keeps the current regex extractor as an automatic fallback.
 
-Do not add tree-sitter packages as required runtime dependencies yet.
+Do not add the Node native `tree-sitter` binding or npm grammar packages as required runtime dependencies. The pure WASM `web-tree-sitter` runtime is acceptable behind explicit opt-in configuration.
 
 ## Open Packaging Question
 

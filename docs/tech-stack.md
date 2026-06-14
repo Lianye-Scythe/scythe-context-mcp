@@ -28,13 +28,15 @@
 | `vitest` | unit tests | Phase 1 開始加入 |
 | `better-sqlite3` | SQLite native driver | 同步 API 簡單、效能好，適合本機 MCP |
 | `sqlite-vec` | SQLite vector extension | `vec0(embedding float[1536])` |
+| `web-tree-sitter` | Experimental WASM parser runtime | 只在 `SCYTHE_CONTEXT_STRUCTURE_EXTRACTOR=tree-sitter` 且 grammar `.wasm` 存在時使用 |
 
 暫不引入：
 
 - ORM：schema 很小，直接 SQL 更可控。
 - LangChain/LlamaIndex：抽象太厚，對本機 code search 反而增加不可控成本。
 - 外部向量 DB：MVP 不需要啟動 Qdrant/Weaviate 這類服務。
-- tree-sitter：目前先用輕量 regex symbol graph；只有當 retrieval 品質瓶頸明確時才引入。
+- tree-sitter native binding：不作為 runtime dependency；Node 24 下 native build / peer dependency 風險較高。
+- tree-sitter grammar packages：暫不直接依賴，因為 npm grammar packages 會帶 native prebuilds / install scripts；目前由使用者提供 grammar `.wasm` 目錄。
 
 ## Storage Choice
 

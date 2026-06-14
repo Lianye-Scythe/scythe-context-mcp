@@ -10,6 +10,7 @@ This project follows semantic versioning before npm publication where practical.
 
 - Add a tree-sitter spike skeleton with a structure-extractor interface, fixture coverage, and local comparison script.
 - Document tree-sitter dependency experiment results and prefer a WASM-first optional extractor path.
+- Add an experimental `web-tree-sitter` WASM structure extractor behind explicit opt-in env configuration, with regex fallback.
 
 ## [0.1.9] - 2026-06-14
 

@@ -11,7 +11,7 @@ import {
 } from "../dist/indexing/experimental/treeSitterStructure.js";
 
 function printHelp() {
-  console.log(`Usage: node scripts/tree-sitter-spike.mjs [--project <path>]
+  console.log(`Usage: node scripts/tree-sitter-spike.mjs [--project <path>] [--grammar-dir <path>]
 
 Runs the current experimental tree-sitter structure extractor skeleton against a
 project and prints comparison metrics. This does not call embedding APIs.
@@ -19,7 +19,7 @@ project and prints comparison metrics. This does not call embedding APIs.
 }
 
 function parseArgs(argv) {
-  const args = { project: process.cwd() };
+  const args = { project: process.cwd(), grammarDir: process.env.SCYTHE_CONTEXT_TREE_SITTER_GRAMMAR_DIR };
   for (let index = 0; index < argv.length; index += 1) {
     const arg = argv[index];
     if (arg === "--help" || arg === "-h") {
@@ -30,6 +30,12 @@ function parseArgs(argv) {
       index += 1;
       if (index >= argv.length) throw new Error("--project requires a value");
       args.project = argv[index];
+      continue;
+    }
+    if (arg === "--grammar-dir") {
+      index += 1;
+      if (index >= argv.length) throw new Error("--grammar-dir requires a value");
+      args.grammarDir = argv[index];
       continue;
     }
     throw new Error(`Unknown argument: ${arg}`);
@@ -56,7 +62,9 @@ async function main() {
     maxChunksPerFile: 200,
   };
   const scan = await scanProject(projectPath, limits);
-  const extractor = createExperimentalTreeSitterStructureExtractor();
+  const extractor = await createExperimentalTreeSitterStructureExtractor({
+    grammarDir: args.grammarDir ? path.resolve(args.grammarDir) : undefined,
+  });
   let candidateFiles = 0;
   let changedFiles = 0;
   let regexSymbols = 0;
@@ -86,6 +94,8 @@ async function main() {
   console.log(`Project: ${projectPath}`);
   console.log(`Repo root: ${repoRoot}`);
   console.log(`Parser wired: ${extractor.parserAvailable ? "yes" : "no"}`);
+  if (extractor.fallbackReason) console.log(`Fallback reason: ${extractor.fallbackReason}`);
+  if (extractor.loadedLanguages.length > 0) console.log(`Loaded languages: ${extractor.loadedLanguages.join(", ")}`);
   console.log(`Candidate TS/JS files: ${candidateFiles}`);
   console.log(`Changed files: ${changedFiles}`);
   console.log(`Regex symbols/dependencies: ${regexSymbols}/${regexDependencies}`);

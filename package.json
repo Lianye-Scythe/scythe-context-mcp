@@ -69,6 +69,7 @@
     "fast-glob": "^3.3.3",
     "ignore": "^7.0.5",
     "sqlite-vec": "^0.1.9",
+    "web-tree-sitter": "^0.26.9",
     "zod": "^4.4.3"
   },
   "devDependencies": {

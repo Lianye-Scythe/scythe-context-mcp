@@ -5,6 +5,7 @@ import { DEFAULT_INDEXING_LIMITS } from "./indexing/defaults.js";
 import type { RerankMode } from "./indexing/hybridSearch.js";
 
 export type GeminiAuthMode = "x-goog-api-key" | "bearer" | "query";
+export type StructureExtractorMode = "regex" | "tree-sitter";
 
 export interface AppConfig {
   defaultProjectPath: string;
@@ -19,6 +20,10 @@ export interface AppConfig {
   };
   search: {
     rerankMode: RerankMode;
+  };
+  structure: {
+    extractorMode: StructureExtractorMode;
+    treeSitterGrammarDir?: string;
   };
   gemini: {
     apiKey?: string;
@@ -69,6 +74,12 @@ function rerankModeFromEnv(value: string | undefined): RerankMode {
   throw new Error("SCYTHE_CONTEXT_RERANK_MODE must be one of: auto, off");
 }
 
+function structureExtractorModeFromEnv(value: string | undefined): StructureExtractorMode {
+  if (!value) return "regex";
+  if (value === "regex" || value === "tree-sitter") return value;
+  throw new Error("SCYTHE_CONTEXT_STRUCTURE_EXTRACTOR must be one of: regex, tree-sitter");
+}
+
 function defaultProjectPathFromEnv(): string {
   const explicitProject = envValue("SCYTHE_CONTEXT_DEFAULT_PROJECT", "REPO_BEACON_DEFAULT_PROJECT");
   if (explicitProject) return explicitProject;
@@ -105,6 +116,12 @@ export function loadConfig(): AppConfig {
     },
     search: {
       rerankMode: rerankModeFromEnv(envValue("SCYTHE_CONTEXT_RERANK_MODE", "REPO_BEACON_RERANK_MODE")),
+    },
+    structure: {
+      extractorMode: structureExtractorModeFromEnv(process.env.SCYTHE_CONTEXT_STRUCTURE_EXTRACTOR),
+      treeSitterGrammarDir: process.env.SCYTHE_CONTEXT_TREE_SITTER_GRAMMAR_DIR
+        ? path.resolve(process.env.SCYTHE_CONTEXT_TREE_SITTER_GRAMMAR_DIR)
+        : undefined,
     },
     gemini: {
       apiKey: process.env.GEMINI_API_KEY,
