@@ -34,6 +34,7 @@
     "docs",
     "scripts/context-benchmark.mjs",
     "scripts/prepare-release.mjs",
+    "scripts/release-notes.mjs",
     ".env.example"
   ],
   "scripts": {

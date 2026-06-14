@@ -63,8 +63,10 @@ jobs:
           if gh release view "$GITHUB_REF_NAME" >/dev/null 2>&1; then
             echo "GitHub Release $GITHUB_REF_NAME already exists; skipping creation."
           else
+            package_version="$(node -p "require('./package.json').version")"
+            node scripts/release-notes.mjs "$package_version" > release-notes.md
             gh release create "$GITHUB_REF_NAME" \
               --title "$GITHUB_REF_NAME" \
-              --generate-notes \
+              --notes-file release-notes.md \
               --verify-tag
           fi
