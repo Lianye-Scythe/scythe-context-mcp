@@ -85,6 +85,17 @@ npm run bench:context -- --suite core --compare-response-modes
 
 This keeps the same Scythe keyword results and estimates the JSON output size for `paths_only`, `compact`, and `snippets`. Hit metrics should normally stay the same across those three methods; the useful comparison is `out tok` and `h5/1k tok`.
 
+When response-mode comparison is enabled, the text and JSON reports also include a mean output-token breakdown by top-level response section:
+
+- `metadata`: query, project path, mode, rerank, fallback, and other control fields.
+- `primaryResults`: ranked search results.
+- `relatedFiles`: import/reverse-import and symbol metadata.
+- `relatedSnippets`: extra related snippets, when the response mode includes them.
+- `suggestedPaths`: paths Codex should inspect next.
+- `context`: compact context-pack summary text.
+
+Use this breakdown to identify which response sections are driving Codex token cost before changing default response modes or context-pack budgets.
+
 Include Gemini-backed hybrid search in the same response-mode comparison when you explicitly want to call the configured embedding API:
 
 ```bash

@@ -347,6 +347,31 @@ function estimatedTokensFromJson(value) {
   return Math.ceil(JSON.stringify(value).length / 4);
 }
 
+function estimatedSectionTokens(value) {
+  if (Array.isArray(value) && value.length === 0) return 0;
+  return estimatedTokensFromJson(value);
+}
+
+function responseTokenBreakdown(payload) {
+  const sectionKeys = ["primaryResults", "relatedFiles", "relatedSnippets", "suggestedPaths", "context"];
+  const breakdown = {};
+  let sectionTokens = 0;
+  for (const key of sectionKeys) {
+    const tokens = payload[key] === undefined ? 0 : estimatedSectionTokens(payload[key]);
+    breakdown[key] = tokens;
+    sectionTokens += tokens;
+  }
+
+  const metadata = { ...payload };
+  for (const key of sectionKeys) delete metadata[key];
+  delete metadata.responseStats;
+  breakdown.metadata = estimatedTokensFromJson(metadata);
+  sectionTokens += breakdown.metadata;
+  breakdown.sectionTotal = sectionTokens;
+  breakdown.total = payload.responseStats?.estimatedOutputTokens ?? estimatedTokensFromJson(payload);
+  return breakdown;
+}
+
 function mean(values) {
   if (values.length === 0) return 0;
   return values.reduce((sum, value) => sum + value, 0) / values.length;
@@ -388,6 +413,7 @@ function benchmarkMethod(name, cases, runCase, options = {}) {
         paths,
         contextPaths,
         estimatedOutputTokens,
+        outputTokenBreakdown: result.outputTokenBreakdown,
         error: result.error,
         ...metricsFor(paths, testCase.expectedPaths),
         context: contextPaths ? metricsFor(contextPaths, testCase.expectedPaths) : undefined,
@@ -420,7 +446,24 @@ function benchmarkMethod(name, cases, runCase, options = {}) {
 }
 
 function summarizeCases(caseResults) {
-  return {
+  const breakdownCases = caseResults.filter((item) => item.outputTokenBreakdown);
+  const breakdownKeys = new Set();
+  for (const item of breakdownCases) {
+    for (const key of Object.keys(item.outputTokenBreakdown)) breakdownKeys.add(key);
+  }
+  const meanOutputTokenBreakdown =
+    breakdownKeys.size === 0
+      ? undefined
+      : Object.fromEntries(
+          Array.from(breakdownKeys)
+            .sort()
+            .map((key) => [
+              key,
+              mean(breakdownCases.map((item) => Number(item.outputTokenBreakdown[key] ?? 0))),
+            ]),
+        );
+
+  const summary = {
     cases: caseResults.length,
     ok: caseResults.filter((item) => item.status === "ok").length,
     skipped: caseResults.filter((item) => item.status === "skipped").length,
@@ -435,6 +478,8 @@ function summarizeCases(caseResults) {
     meanLatencyMs: mean(caseResults.map((item) => item.latencyMs)),
     p95LatencyMs: percentile(caseResults.map((item) => item.latencyMs), 95),
   };
+  if (meanOutputTokenBreakdown) summary.meanOutputTokenBreakdown = meanOutputTokenBreakdown;
+  return summary;
 }
 
 function rgAvailable() {
@@ -570,6 +615,7 @@ function contextPackResponseEstimate(rawResults, options, responseMode) {
   return {
     contextPaths: pack.suggestedPaths,
     estimatedOutputTokens: payload.responseStats?.estimatedOutputTokens ?? estimatedTokensFromJson(payload),
+    outputTokenBreakdown: responseTokenBreakdown(payload),
   };
 }
 
@@ -613,6 +659,7 @@ async function runBenchmarkPass(options) {
               paths: rawResults,
               contextPaths: estimate.contextPaths,
               estimatedOutputTokens: estimate.estimatedOutputTokens,
+              outputTokenBreakdown: estimate.outputTokenBreakdown,
             };
           }
           return {
@@ -716,6 +763,7 @@ async function runBenchmarkPass(options) {
                   paths,
                   contextPaths: filteredContextPaths,
                 }),
+              outputTokenBreakdown: estimate.outputTokenBreakdown,
               ...metricsFor(paths, testCase.expectedPaths),
               context: metricsFor(filteredContextPaths, testCase.expectedPaths),
             });
@@ -944,6 +992,23 @@ async function main() {
     console.log(
       `${method.method.padEnd(28)}  ${String(`${summary.ok}/${summary.skipped}/${summary.errors}`).padStart(10)}  ${summary.hitAt1.toFixed(2).padStart(5)}  ${summary.hitAt3.toFixed(2).padStart(5)}  ${summary.hitAt5.toFixed(2).padStart(5)}  ${summary.mrr.toFixed(2).padStart(5)}  ${summary.meanOutputTokens.toFixed(0).padStart(7)}  ${summary.hitAt5Per1kTokens.toFixed(2).padStart(9)}  ${summary.meanLatencyMs.toFixed(1).padStart(7)}  ${summary.p95LatencyMs.toFixed(1).padStart(6)}`,
     );
+  }
+
+  if (args.compareResponseModes) {
+    const methodsWithBreakdown = primaryRun.methods.filter((method) => method.summary.meanOutputTokenBreakdown);
+    if (methodsWithBreakdown.length > 0) {
+      console.log("");
+      console.log("Output token breakdown (mean estimated tokens; section totals omit JSON wrapper overhead):");
+      console.log("method                        meta  primary  related  snippets  paths  context  total");
+      console.log("----------------------------  ----  -------  -------  --------  -----  -------  -----");
+      for (const method of methodsWithBreakdown) {
+        const breakdown = method.summary.meanOutputTokenBreakdown;
+        const value = (key) => Number(breakdown[key] ?? 0).toFixed(0);
+        console.log(
+          `${method.method.padEnd(28)}  ${value("metadata").padStart(4)}  ${value("primaryResults").padStart(7)}  ${value("relatedFiles").padStart(7)}  ${value("relatedSnippets").padStart(8)}  ${value("suggestedPaths").padStart(5)}  ${value("context").padStart(7)}  ${value("total").padStart(5)}`,
+        );
+      }
+    }
   }
 
   console.log("");
