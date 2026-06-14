@@ -30,6 +30,137 @@ function asJsonText(value: unknown) {
 
 type SearchMode = "hybrid" | "semantic";
 type EffectiveSearchMode = SearchMode | "keyword";
+type ResponseMode = "paths_only" | "compact" | "snippets";
+
+const responseModeSchema = z.enum(["paths_only", "compact", "snippets"]);
+
+function estimateTokensFromJson(value: unknown): { estimatedJsonChars: number; estimatedOutputTokens: number } {
+  const estimatedJsonChars = JSON.stringify(value).length;
+  return {
+    estimatedJsonChars,
+    estimatedOutputTokens: Math.ceil(estimatedJsonChars / 4),
+  };
+}
+
+function compactSnippet(snippet: unknown, maxChars: number): unknown {
+  if (typeof snippet !== "string" || snippet.length <= maxChars) return snippet;
+  return `${snippet.slice(0, Math.max(0, maxChars - 16)).trimEnd()}\n... [truncated]`;
+}
+
+function withResponseStats<T extends Record<string, unknown>>(payload: T): T & {
+  responseStats: { estimatedJsonChars: number; estimatedOutputTokens: number };
+} {
+  return {
+    ...payload,
+    responseStats: estimateTokensFromJson(payload),
+  };
+}
+
+function compactSearchResult(result: Record<string, unknown>, mode: ResponseMode): Record<string, unknown> {
+  const base = {
+    path: result.path,
+    startLine: result.startLine,
+    endLine: result.endLine,
+    matchTypes: result.matchTypes,
+    matchReason: result.matchReason,
+    grepKeywords: result.grepKeywords,
+  };
+
+  if (mode === "paths_only") return base;
+  return {
+    ...base,
+    score: result.score,
+    distance: result.distance,
+    keywordScore: result.keywordScore,
+    snippet: compactSnippet(result.snippet, mode === "compact" ? 360 : 1200),
+    snippetTruncated: result.snippetTruncated,
+  };
+}
+
+function compactRelatedFile(file: Record<string, unknown>, mode: ResponseMode): Record<string, unknown> {
+  const sourcePath = file.sourcePath;
+  const role = file.role;
+  const depth = file.depth;
+  const via = file.via;
+  if (mode === "paths_only") return { sourcePath, role, depth, via };
+
+  const limit = mode === "compact" ? 3 : 12;
+  const symbols = Array.isArray(file.symbols) ? file.symbols.slice(0, limit) : [];
+  const imports = Array.isArray(file.imports) ? file.imports.slice(0, limit) : [];
+  const importedBy = Array.isArray(file.importedBy) ? file.importedBy.slice(0, limit) : [];
+  return {
+    sourcePath,
+    role,
+    depth,
+    via,
+    symbols,
+    imports,
+    importedBy,
+  };
+}
+
+function shapeSemanticPayload(payload: Record<string, unknown>, mode: ResponseMode): Record<string, unknown> {
+  const results = Array.isArray(payload.results)
+    ? payload.results.map((result) => compactSearchResult(result as Record<string, unknown>, mode))
+    : [];
+  const shaped: Record<string, unknown> = {
+    query: payload.query,
+    projectPath: payload.projectPath,
+    mode: payload.mode,
+    effectiveMode: payload.effectiveMode,
+    rerankMode: payload.rerankMode,
+    rerankApplied: payload.rerankApplied,
+    fallback: payload.fallback,
+    resultCount: payload.resultCount,
+    responseMode: mode,
+    results,
+    context: payload.context,
+  };
+  if (mode === "snippets") {
+    shaped.dbPath = payload.dbPath;
+    shaped.dimensions = payload.dimensions;
+  }
+  return withResponseStats(shaped);
+}
+
+function shapeContextPackPayload(payload: Record<string, unknown>, mode: ResponseMode): Record<string, unknown> {
+  const primaryResults = Array.isArray(payload.primaryResults)
+    ? payload.primaryResults.map((result) => compactSearchResult(result as Record<string, unknown>, mode))
+    : [];
+  const relatedFiles = Array.isArray(payload.relatedFiles)
+    ? payload.relatedFiles.map((file) => compactRelatedFile(file as Record<string, unknown>, mode))
+    : [];
+  const relatedSnippets =
+    mode === "paths_only" || !Array.isArray(payload.relatedSnippets)
+      ? []
+      : payload.relatedSnippets.map((snippet) => ({
+          ...(snippet as Record<string, unknown>),
+          snippet: compactSnippet((snippet as Record<string, unknown>).snippet, mode === "compact" ? 240 : 1200),
+        }));
+  const shaped: Record<string, unknown> = {
+    query: payload.query,
+    projectPath: payload.projectPath,
+    mode: payload.mode,
+    effectiveMode: payload.effectiveMode,
+    rerankMode: payload.rerankMode,
+    rerankApplied: payload.rerankApplied,
+    fallback: payload.fallback,
+    relatedDepth: payload.relatedDepth,
+    relatedSeedCount: payload.relatedSeedCount,
+    includeRelatedSnippets: payload.includeRelatedSnippets,
+    responseMode: mode,
+    primaryResults,
+    relatedFiles,
+    relatedSnippets,
+    suggestedPaths: payload.suggestedPaths,
+    context: payload.context,
+  };
+  if (mode === "snippets") {
+    shaped.dbPath = payload.dbPath;
+    shaped.dimensions = payload.dimensions;
+  }
+  return withResponseStats(shaped);
+}
 
 interface EmbeddingFailureDetails {
   type: string;
@@ -414,13 +545,14 @@ export function registerTools(server: McpServer, config: AppConfig): void {
       inputSchema: {
         query: z.string().min(1),
         project_path: z.string().optional(),
-        max_results: z.number().int().positive().max(50).default(8),
-        max_snippet_chars: z.number().int().positive().max(4000).default(1200),
-        max_context_chars: z.number().int().positive().max(100000).default(12000),
+        max_results: z.number().int().positive().max(50).default(6),
+        max_snippet_chars: z.number().int().positive().max(4000).default(800),
+        max_context_chars: z.number().int().positive().max(100000).default(8000),
         mode: z.enum(["hybrid", "semantic"]).default("hybrid"),
+        response_mode: responseModeSchema.default("compact"),
       },
     },
-    async ({ query, project_path, max_results, max_snippet_chars, max_context_chars, mode }) => {
+    async ({ query, project_path, max_results, max_snippet_chars, max_context_chars, mode, response_mode }) => {
       const projectPath = path.resolve(project_path || config.defaultProjectPath);
       const dbPath = path.join(projectPath, config.indexDirName, "index.sqlite");
       if (!fs.existsSync(dbPath)) {
@@ -489,7 +621,7 @@ export function registerTools(server: McpServer, config: AppConfig): void {
 
       const formatted = formatSearchResults(query, rawResults, { maxContextChars: max_context_chars });
 
-      return asJsonText({
+      return asJsonText(shapeSemanticPayload({
         query,
         projectPath,
         dbPath,
@@ -502,7 +634,7 @@ export function registerTools(server: McpServer, config: AppConfig): void {
         results: formatted.results,
         context: formatted.summary,
         resultCount: rawResults.length,
-      });
+      }, response_mode));
     },
   );
 
@@ -514,7 +646,7 @@ export function registerTools(server: McpServer, config: AppConfig): void {
       inputSchema: {
         path: z.string().min(1),
         project_path: z.string().optional(),
-        max_results: z.number().int().positive().max(100).default(24),
+        max_results: z.number().int().positive().max(100).default(16),
       },
     },
     async ({ path: filePath, project_path, max_results }) => {
@@ -549,18 +681,19 @@ export function registerTools(server: McpServer, config: AppConfig): void {
       inputSchema: {
         query: z.string().min(1),
         project_path: z.string().optional(),
-        max_results: z.number().int().positive().max(30).default(6),
-        max_snippet_chars: z.number().int().positive().max(4000).default(1200),
-        max_context_chars: z.number().int().positive().max(100000).default(16000),
+        max_results: z.number().int().positive().max(30).default(5),
+        max_snippet_chars: z.number().int().positive().max(4000).default(800),
+        max_context_chars: z.number().int().positive().max(100000).default(8000),
         max_seed_files: z.number().int().positive().max(10).default(3),
-        max_related_files: z.number().int().nonnegative().max(30).default(10),
-        max_related_items: z.number().int().positive().max(50).default(8),
+        max_related_files: z.number().int().nonnegative().max(30).default(6),
+        max_related_items: z.number().int().positive().max(50).default(5),
         include_related_snippets: z.boolean().default(false),
         max_related_snippets_per_file: z.number().int().positive().max(5).default(1),
-        max_related_snippet_chars: z.number().int().positive().max(2000).default(600),
-        max_related_context_chars: z.number().int().nonnegative().max(50000).default(4000),
+        max_related_snippet_chars: z.number().int().positive().max(2000).default(400),
+        max_related_context_chars: z.number().int().nonnegative().max(50000).default(2500),
         related_depth: z.number().int().nonnegative().max(3).default(1),
         mode: z.enum(["hybrid", "semantic"]).default("hybrid"),
+        response_mode: responseModeSchema.default("compact"),
       },
     },
     async ({
@@ -578,6 +711,7 @@ export function registerTools(server: McpServer, config: AppConfig): void {
       max_related_context_chars,
       related_depth,
       mode,
+      response_mode,
     }) => {
       const projectPath = path.resolve(project_path || config.defaultProjectPath);
       const dbPath = path.join(projectPath, config.indexDirName, "index.sqlite");
@@ -676,7 +810,7 @@ export function registerTools(server: McpServer, config: AppConfig): void {
         relatedSnippets,
       });
 
-      return asJsonText({
+      return asJsonText(shapeContextPackPayload({
         query,
         projectPath,
         dbPath,
@@ -690,7 +824,7 @@ export function registerTools(server: McpServer, config: AppConfig): void {
         relatedSeedCount: relatedPaths.length,
         includeRelatedSnippets: include_related_snippets,
         ...pack,
-      });
+      }, response_mode));
     },
   );
 }

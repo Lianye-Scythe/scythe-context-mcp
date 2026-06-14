@@ -334,6 +334,10 @@ function metricsFor(paths, expectedPaths) {
   };
 }
 
+function estimatedTokensFromJson(value) {
+  return Math.ceil(JSON.stringify(value).length / 4);
+}
+
 function mean(values) {
   if (values.length === 0) return 0;
   return values.reduce((sum, value) => sum + value, 0) / values.length;
@@ -358,6 +362,12 @@ function benchmarkMethod(name, cases, runCase, options = {}) {
       const contextPaths = result.contextPaths
         ? uniquePaths(result.contextPaths).filter((candidate) => !excludedPaths.has(candidate))
         : undefined;
+      const estimatedOutputTokens = estimatedTokensFromJson({
+        status: result.status ?? "ok",
+        paths,
+        contextPaths,
+        error: result.error,
+      });
       caseResults.push({
         id: testCase.id,
         query: testCase.query,
@@ -366,6 +376,7 @@ function benchmarkMethod(name, cases, runCase, options = {}) {
         latencyMs,
         paths,
         contextPaths,
+        estimatedOutputTokens,
         error: result.error,
         ...metricsFor(paths, testCase.expectedPaths),
         context: contextPaths ? metricsFor(contextPaths, testCase.expectedPaths) : undefined,
@@ -379,6 +390,11 @@ function benchmarkMethod(name, cases, runCase, options = {}) {
         status: "error",
         latencyMs,
         paths: [],
+        estimatedOutputTokens: estimatedTokensFromJson({
+          status: "error",
+          paths: [],
+          error: error instanceof Error ? error.message : String(error),
+        }),
         error: error instanceof Error ? error.message : String(error),
         ...metricsFor([], testCase.expectedPaths),
       });
@@ -402,6 +418,9 @@ function summarizeCases(caseResults) {
     hitAt3: mean(caseResults.map((item) => (item.hitAt3 ? 1 : 0))),
     hitAt5: mean(caseResults.map((item) => (item.hitAt5 ? 1 : 0))),
     mrr: mean(caseResults.map((item) => item.reciprocalRank)),
+    meanOutputTokens: mean(caseResults.map((item) => item.estimatedOutputTokens ?? 0)),
+    hitAt5Per1kTokens:
+      mean(caseResults.map((item) => (item.hitAt5 ? 1 : 0))) / Math.max(0.001, mean(caseResults.map((item) => item.estimatedOutputTokens ?? 0)) / 1000),
     meanLatencyMs: mean(caseResults.map((item) => item.latencyMs)),
     p95LatencyMs: percentile(caseResults.map((item) => item.latencyMs), 95),
   };
@@ -549,6 +568,7 @@ async function runBenchmarkPass(options) {
         status: "skipped",
         latencyMs: 0,
         paths: [],
+        estimatedOutputTokens: estimatedTokensFromJson({ status: "skipped", paths: [], error: "GEMINI_API_KEY is not set" }),
         error: "GEMINI_API_KEY is not set",
         ...metricsFor([], testCase.expectedPaths),
       }));
@@ -594,6 +614,11 @@ async function runBenchmarkPass(options) {
             latencyMs: performance.now() - startedAt,
             paths,
             contextPaths: filteredContextPaths,
+            estimatedOutputTokens: estimatedTokensFromJson({
+              status: "ok",
+              paths,
+              contextPaths: filteredContextPaths,
+            }),
             ...metricsFor(paths, testCase.expectedPaths),
             context: metricsFor(filteredContextPaths, testCase.expectedPaths),
           });
@@ -605,6 +630,11 @@ async function runBenchmarkPass(options) {
             status: "error",
             latencyMs: performance.now() - startedAt,
             paths: [],
+            estimatedOutputTokens: estimatedTokensFromJson({
+              status: "error",
+              paths: [],
+              error: error instanceof Error ? error.message : String(error),
+            }),
             error: error instanceof Error ? error.message : String(error),
             ...metricsFor([], testCase.expectedPaths),
           });
@@ -633,6 +663,7 @@ function summaryDelta(autoSummary, offSummary) {
     hitAt3: autoSummary.hitAt3 - offSummary.hitAt3,
     hitAt5: autoSummary.hitAt5 - offSummary.hitAt5,
     mrr: autoSummary.mrr - offSummary.mrr,
+    meanOutputTokens: autoSummary.meanOutputTokens - offSummary.meanOutputTokens,
     meanLatencyMs: autoSummary.meanLatencyMs - offSummary.meanLatencyMs,
     p95LatencyMs: autoSummary.p95LatencyMs - offSummary.p95LatencyMs,
   };
@@ -772,38 +803,38 @@ async function main() {
   }
   console.log("");
   if (rerankProfileConfig) {
-    console.log("method/profile              ok/skp/err  hit@1  hit@3  hit@5  MRR    mean ms  p95 ms");
-    console.log("--------------------------  ----------  -----  -----  -----  -----  -------  ------");
+    console.log("method/profile              ok/skp/err  hit@1  hit@3  hit@5  MRR    out tok  h5/1k tok  mean ms  p95 ms");
+    console.log("--------------------------  ----------  -----  -----  -----  -----  -------  ---------  -------  ------");
     for (const run of runs) {
       for (const method of run.methods) {
         const summary = method.summary;
         const label = `${method.method}/${run.rerankProfile ?? run.rerankMode}`;
         console.log(
-          `${label.padEnd(26)}  ${String(`${summary.ok}/${summary.skipped}/${summary.errors}`).padStart(10)}  ${summary.hitAt1.toFixed(2).padStart(5)}  ${summary.hitAt3.toFixed(2).padStart(5)}  ${summary.hitAt5.toFixed(2).padStart(5)}  ${summary.mrr.toFixed(2).padStart(5)}  ${summary.meanLatencyMs.toFixed(1).padStart(7)}  ${summary.p95LatencyMs.toFixed(1).padStart(6)}`,
+          `${label.padEnd(26)}  ${String(`${summary.ok}/${summary.skipped}/${summary.errors}`).padStart(10)}  ${summary.hitAt1.toFixed(2).padStart(5)}  ${summary.hitAt3.toFixed(2).padStart(5)}  ${summary.hitAt5.toFixed(2).padStart(5)}  ${summary.mrr.toFixed(2).padStart(5)}  ${summary.meanOutputTokens.toFixed(0).padStart(7)}  ${summary.hitAt5Per1kTokens.toFixed(2).padStart(9)}  ${summary.meanLatencyMs.toFixed(1).padStart(7)}  ${summary.p95LatencyMs.toFixed(1).padStart(6)}`,
         );
       }
     }
     return;
   }
   if (args.compareRerank) {
-    console.log("method           hit@1 auto/off/Δ   hit@3 auto/off/Δ   hit@5 auto/off/Δ   MRR auto/off/Δ     mean ms Δ  p95 ms Δ");
-    console.log("---------------  ---------------  ---------------  ---------------  ---------------  ---------  --------");
+    console.log("method           hit@1 auto/off/Δ   hit@3 auto/off/Δ   hit@5 auto/off/Δ   MRR auto/off/Δ     out tok Δ  mean ms Δ  p95 ms Δ");
+    console.log("---------------  ---------------  ---------------  ---------------  ---------------  ---------  ---------  --------");
     for (const comparison of comparisons) {
       const { method, auto, off, delta } = comparison;
       const metric = (name) => `${auto[name].toFixed(2)}/${off[name].toFixed(2)}/${delta[name] >= 0 ? "+" : ""}${delta[name].toFixed(2)}`;
       console.log(
-        `${method.padEnd(15)}  ${metric("hitAt1").padStart(15)}  ${metric("hitAt3").padStart(15)}  ${metric("hitAt5").padStart(15)}  ${metric("mrr").padStart(15)}  ${delta.meanLatencyMs.toFixed(1).padStart(9)}  ${delta.p95LatencyMs.toFixed(1).padStart(8)}`,
+        `${method.padEnd(15)}  ${metric("hitAt1").padStart(15)}  ${metric("hitAt3").padStart(15)}  ${metric("hitAt5").padStart(15)}  ${metric("mrr").padStart(15)}  ${delta.meanOutputTokens.toFixed(0).padStart(9)}  ${delta.meanLatencyMs.toFixed(1).padStart(9)}  ${delta.p95LatencyMs.toFixed(1).padStart(8)}`,
       );
     }
     return;
   }
 
-  console.log("method           ok/skp/err  hit@1  hit@3  hit@5  MRR    mean ms  p95 ms");
-  console.log("---------------  ----------  -----  -----  -----  -----  -------  ------");
+  console.log("method           ok/skp/err  hit@1  hit@3  hit@5  MRR    out tok  h5/1k tok  mean ms  p95 ms");
+  console.log("---------------  ----------  -----  -----  -----  -----  -------  ---------  -------  ------");
   for (const method of primaryRun.methods) {
     const summary = method.summary;
     console.log(
-      `${method.method.padEnd(15)}  ${String(`${summary.ok}/${summary.skipped}/${summary.errors}`).padStart(10)}  ${summary.hitAt1.toFixed(2).padStart(5)}  ${summary.hitAt3.toFixed(2).padStart(5)}  ${summary.hitAt5.toFixed(2).padStart(5)}  ${summary.mrr.toFixed(2).padStart(5)}  ${summary.meanLatencyMs.toFixed(1).padStart(7)}  ${summary.p95LatencyMs.toFixed(1).padStart(6)}`,
+      `${method.method.padEnd(15)}  ${String(`${summary.ok}/${summary.skipped}/${summary.errors}`).padStart(10)}  ${summary.hitAt1.toFixed(2).padStart(5)}  ${summary.hitAt3.toFixed(2).padStart(5)}  ${summary.hitAt5.toFixed(2).padStart(5)}  ${summary.mrr.toFixed(2).padStart(5)}  ${summary.meanOutputTokens.toFixed(0).padStart(7)}  ${summary.hitAt5Per1kTokens.toFixed(2).padStart(9)}  ${summary.meanLatencyMs.toFixed(1).padStart(7)}  ${summary.p95LatencyMs.toFixed(1).padStart(6)}`,
     );
   }
 

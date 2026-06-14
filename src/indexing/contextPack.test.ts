@@ -52,6 +52,8 @@ describe("buildContextPack", () => {
       expect.objectContaining({
         maxContextChars: 80,
         maxRelatedContextChars: 0,
+        estimatedRelatedTokens: 0,
+        estimatedTotalSnippetTokens: expect.any(Number),
         relatedSnippetCount: 0,
         primaryResultCount: 1,
         relatedFileCount: 1,
@@ -130,6 +132,8 @@ describe("buildContextPack", () => {
       expect.objectContaining({
         maxRelatedContextChars: 120,
         usedRelatedContextChars: 32,
+        estimatedRelatedTokens: 8,
+        estimatedTotalSnippetTokens: expect.any(Number),
         relatedSnippetCount: 1,
         truncatedRelatedSnippets: 0,
       }),

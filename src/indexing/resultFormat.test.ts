@@ -33,7 +33,7 @@ describe("result formatting", () => {
         matchReason: "keyword/path match",
       }),
     );
-    expect(formatted.summary).toEqual({ maxContextChars: null, usedContextChars: 0, truncatedResults: 0 });
+    expect(formatted.summary).toEqual({ maxContextChars: null, usedContextChars: 0, estimatedTokens: 0, truncatedResults: 0 });
   });
 
   it("enforces a total snippet character budget", () => {
@@ -51,6 +51,7 @@ describe("result formatting", () => {
     expect(formatted.results[1].snippetTruncated).toBe(true);
     expect(formatted.summary.maxContextChars).toBe(20);
     expect(formatted.summary.usedContextChars).toBeLessThanOrEqual(20);
+    expect(formatted.summary.estimatedTokens).toBeGreaterThan(0);
     expect(formatted.summary.truncatedResults).toBe(1);
   });
 });

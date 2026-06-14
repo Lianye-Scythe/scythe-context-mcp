@@ -252,6 +252,14 @@ Use `PWD/p` only if you intentionally run a Windows Node process and need WSL to
 
 `repo_context_pack(mode="hybrid")` and `repo_semantic_search(mode="hybrid")` degrade to keyword-only results when query embedding is unavailable, returning `effectiveMode: "keyword"` and `fallback.reason: "embedding_unavailable"`. `mode="semantic"` does not degrade and returns `status: "embedding_unavailable"` because pure semantic search requires query embedding. Use `rg` / direct file reads for exact strings, known paths, or small targeted checks.
 
+To control Codex token usage, `repo_context_pack` and `repo_semantic_search` support `response_mode`:
+
+- `compact`: default mode with short snippets, compact related metadata, suggested paths, and estimated output tokens.
+- `paths_only`: first-pass scouting mode with paths, line ranges, and match reasons only.
+- `snippets`: fuller snippets and metadata when more context is needed.
+
+Prefer `response_mode="paths_only"` or the default `compact` mode first, then let Codex read specific files or small ranges directly.
+
 ## Feature Status
 
 Implemented: repo scanning, chunking, SQLite metadata, SQLite FTS5, sqlite-vec, Gemini Embedding 2 provider, semantic/keyword/hybrid search, keyword-only fallback when embeddings fail, local code-aware reranker, lightweight symbol/dependency graph, related-file lookup, `repo_context_pack`, provider diagnostics, provider capability cache, index freshness diagnostics, and `repo_doctor`.

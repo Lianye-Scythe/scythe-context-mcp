@@ -34,6 +34,8 @@ export interface ContextPack<T extends FormattableSearchResult> {
     relatedFileCount: number;
     maxRelatedContextChars: number;
     usedRelatedContextChars: number;
+    estimatedRelatedTokens: number;
+    estimatedTotalSnippetTokens: number;
     relatedSnippetCount: number;
     truncatedRelatedSnippets: number;
   };
@@ -94,6 +96,8 @@ export function buildContextPack<T extends FormattableSearchResult>(
       ...relatedSnippetPack.summary,
       primaryResultCount: formatted.results.length,
       relatedFileCount: related.length,
+      estimatedRelatedTokens: Math.ceil(relatedSnippetPack.summary.usedRelatedContextChars / 4),
+      estimatedTotalSnippetTokens: Math.ceil((formatted.summary.usedContextChars + relatedSnippetPack.summary.usedRelatedContextChars) / 4),
     },
   };
 }

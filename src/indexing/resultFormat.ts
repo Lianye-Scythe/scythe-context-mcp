@@ -18,6 +18,7 @@ export interface FormatSearchResultsOptions {
 export interface FormatSearchResultsSummary {
   maxContextChars: number | null;
   usedContextChars: number;
+  estimatedTokens: number;
   truncatedResults: number;
 }
 
@@ -29,6 +30,10 @@ export interface FormattedSearchResult {
 
 const truncationMarker = "... [truncated]";
 const truncationMarkerWithBreak = `\n${truncationMarker}`;
+
+export function estimateTokensFromChars(chars: number): number {
+  return Math.ceil(Math.max(0, chars) / 4);
+}
 
 export function grepKeywords(query: string, result: Pick<FormattableSearchResult, "path">): string[] {
   const pathParts = result.path
@@ -102,6 +107,7 @@ export function formatSearchResults<T extends FormattableSearchResult>(
     summary: {
       maxContextChars,
       usedContextChars,
+      estimatedTokens: estimateTokensFromChars(usedContextChars),
       truncatedResults,
     },
   };

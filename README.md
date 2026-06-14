@@ -252,6 +252,14 @@ GEMINI_OUTPUT_DIMENSIONALITY = "1536"
 
 `repo_context_pack(mode="hybrid")` 和 `repo_semantic_search(mode="hybrid")` 在 query embedding 不可用時會降級成 keyword-only 結果，並回傳 `effectiveMode: "keyword"` 與 `fallback.reason: "embedding_unavailable"`。`mode="semantic"` 不會降級，會回傳 `status: "embedding_unavailable"`，因為純 semantic search 必須有 query embedding。精確字串、已知路徑或小範圍檢查仍建議直接用 `rg` / 直接讀檔。
 
+為了控制 Codex token 消耗，`repo_context_pack` 與 `repo_semantic_search` 支援 `response_mode`：
+
+- `compact`：預設模式，回傳短 snippets、精簡 related metadata、suggested paths 與估算輸出 token。
+- `paths_only`：第一輪探索用，只回傳路徑、行號與 match reason，適合先找要讀的檔案。
+- `snippets`：需要更多上下文時使用，保留較完整 snippets 與 metadata。
+
+建議先用 `response_mode="paths_only"` 或預設 `compact` 找到候選檔案，再用 Codex 直接讀特定檔案或小範圍片段。
+
 ## 功能狀態
 
 已完成：repo 掃描、chunking、SQLite metadata、SQLite FTS5、sqlite-vec、Gemini Embedding 2 provider、semantic/keyword/hybrid search、embedding 失敗時的 keyword-only fallback、local code-aware reranker、輕量 symbol/dependency graph、related-file lookup、`repo_context_pack`、provider diagnostics、provider capability cache、index freshness diagnostics、`repo_doctor`。

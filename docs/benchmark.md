@@ -103,6 +103,11 @@ npm run bench:context -- --compare-rerank --include-hybrid
 
 The benchmark runner loads `.env` the same way the MCP server does. If `--include-hybrid` is set but `GEMINI_API_KEY` is not available to the benchmark process, `scythe-hybrid` is reported as skipped instead of failed.
 
+The text report includes token-efficiency columns:
+
+- `out tok`: mean estimated JSON output tokens per case.
+- `h5/1k tok`: hit@5 per 1,000 estimated output tokens. Higher is better when comparing retrieval quality against response size.
+
 Write a machine-readable report:
 
 ```bash
