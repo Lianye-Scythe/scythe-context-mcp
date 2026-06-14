@@ -21,6 +21,7 @@ This project follows semantic versioning before npm publication where practical.
 - Add focused response-shaping tests for `paths_only`, `compact`, and `snippets` output modes.
 - Add compact/full `repo_reindex` response modes with skipped-file summaries and output token estimates.
 - Add compact/full `repo_index_status` and `repo_related_files` response modes.
+- Add compact/full `repo_doctor` and `gemini_embedding_probe` response modes.
 
 ### Changed
 
@@ -32,6 +33,7 @@ This project follows semantic versioning before npm publication where practical.
 - Resolve the benchmark script root path with `fileURLToPath` for better Windows compatibility.
 - Make `repo_reindex` default output shorter by hiding raw skipped-file lists and provider cache keys unless `response_mode=full` is requested.
 - Make index status and related-file lookups default to shorter decision-oriented output.
+- Make doctor and embedding probe outputs default to compact diagnostics without vector samples or raw provider cache keys.
 
 ## [0.1.6] - 2026-06-14
 

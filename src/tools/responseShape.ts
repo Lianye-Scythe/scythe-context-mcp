@@ -197,6 +197,81 @@ export function shapeRelatedFilesPayload(payloadInput: object, mode: ToolRespons
   return withResponseStats(shaped);
 }
 
+export function shapeDoctorPayload(payloadInput: object, mode: ToolResponseMode): Record<string, unknown> {
+  const payload = payloadInput as Record<string, unknown>;
+  if (mode === "full") return withResponseStats(payload);
+
+  const checks = Array.isArray(payload.checks) ? (payload.checks as Array<Record<string, unknown>>) : [];
+  const checkSummary = checks.reduce<Record<string, number>>(
+    (summary, check) => {
+      const status = check.status === "error" || check.status === "warn" || check.status === "ok" ? check.status : "unknown";
+      summary[status] = (summary[status] ?? 0) + 1;
+      return summary;
+    },
+    {} as Record<string, number>,
+  );
+
+  const shaped: Record<string, unknown> = {
+    status: payload.status,
+    projectPath: payload.projectPath,
+    indexPath: payload.indexPath,
+    responseMode: mode,
+    checkSummary,
+    checks: checks.map((check) => {
+      const compactCheck: Record<string, unknown> = {
+        name: check.name,
+        status: check.status,
+        summary: check.summary,
+        recommendedActions: check.recommendedActions,
+      };
+      if (check.status === "warn" || check.status === "error") {
+        compactCheck.details = check.details;
+      }
+      return compactCheck;
+    }),
+    recommendedNextActions: payload.recommendedNextActions,
+  };
+  return withResponseStats(shaped);
+}
+
+export function shapeEmbeddingProbePayload(payloadInput: object, mode: ToolResponseMode): Record<string, unknown> {
+  const payload = payloadInput as Record<string, unknown>;
+  if (mode === "full") return withResponseStats(payload);
+
+  const diagnostics = payload.diagnostics as Record<string, unknown> | undefined;
+  const error = payload.error as Record<string, unknown> | undefined;
+  const shaped: Record<string, unknown> = {
+    status: payload.status,
+    latencyMs: payload.latencyMs,
+    projectPath: payload.projectPath,
+    responseMode: mode,
+    diagnostics: diagnostics
+      ? {
+          model: diagnostics.model,
+          expectedDimensions: diagnostics.expectedDimensions,
+          authMode: diagnostics.authMode,
+          hasApiKey: diagnostics.hasApiKey,
+          normalizedBaseUrl: diagnostics.normalizedBaseUrl,
+          configError: diagnostics.configError,
+        }
+      : undefined,
+    providerCapabilities: compactProviderCapabilities(payload.providerCapabilities),
+    model: payload.model,
+    dimensions: payload.dimensions,
+    dimensionsMatchExpected: payload.dimensionsMatchExpected,
+    error: error
+      ? {
+          type: error.type,
+          message: error.message,
+          httpStatus: error.httpStatus,
+          retryable: error.retryable,
+        }
+      : undefined,
+    recommendedNextActions: payload.recommendedNextActions,
+  };
+  return withResponseStats(shaped);
+}
+
 function compactSearchResult(result: Record<string, unknown>, mode: ResponseMode): Record<string, unknown> {
   const base = {
     path: result.path,

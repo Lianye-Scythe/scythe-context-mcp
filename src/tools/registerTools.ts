@@ -23,6 +23,8 @@ import { buildGeminiEndpoint, GeminiEmbeddingError, GeminiEmbeddingProvider, nor
 import { runRepoDoctor } from "./doctor.js";
 import {
   shapeContextPackPayload,
+  shapeDoctorPayload,
+  shapeEmbeddingProbePayload,
   shapeIndexStatusPayload,
   shapeReindexPayload,
   shapeRelatedFilesPayload,
@@ -183,16 +185,20 @@ export function registerTools(server: McpServer, config: AppConfig): void {
       description: "Run local diagnostics for runtime, native modules, config, WSL interop, and index health without calling embedding APIs.",
       inputSchema: {
         project_path: z.string().optional(),
+        response_mode: toolResponseModeSchema.default("compact"),
       },
     },
-    async ({ project_path }) => {
+    async ({ project_path, response_mode }) => {
       const projectPath = path.resolve(project_path || config.defaultProjectPath);
       return asJsonText(
-        await runRepoDoctor({
-          config,
-          projectPath,
-          expectedDimensions,
-        }),
+        shapeDoctorPayload(
+          await runRepoDoctor({
+            config,
+            projectPath,
+            expectedDimensions,
+          }),
+          response_mode,
+        ),
       );
     },
   );
@@ -274,9 +280,10 @@ export function registerTools(server: McpServer, config: AppConfig): void {
       inputSchema: {
         text: z.string().min(1),
         project_path: z.string().optional(),
+        response_mode: toolResponseModeSchema.default("compact"),
       },
     },
-    async ({ text, project_path }) => {
+    async ({ text, project_path, response_mode }) => {
       const startedAt = Date.now();
       const diagnostics = buildGeminiDiagnostics(config.gemini, expectedDimensions);
       const projectPath = path.resolve(project_path || config.defaultProjectPath);
@@ -292,45 +299,55 @@ export function registerTools(server: McpServer, config: AppConfig): void {
           lastProbeAt: now,
           lastSuccessAt: now,
         });
-        return asJsonText({
-          status: "ok",
-          latencyMs: Date.now() - startedAt,
-          projectPath,
-          indexPath,
-          diagnostics,
-          providerCapabilities: capabilities,
-          model: result.model,
-          dimensions: result.dimensions,
-          dimensionsMatchExpected,
-          sample: result.vector.slice(0, 8),
-        });
+        return asJsonText(
+          shapeEmbeddingProbePayload(
+            {
+              status: "ok",
+              latencyMs: Date.now() - startedAt,
+              projectPath,
+              indexPath,
+              diagnostics,
+              providerCapabilities: capabilities,
+              model: result.model,
+              dimensions: result.dimensions,
+              dimensionsMatchExpected,
+              sample: result.vector.slice(0, 8),
+            },
+            response_mode,
+          ),
+        );
       } catch (error) {
         const capabilities = updateProviderCapability(indexPath, capabilityKey, {
           lastProbeAt: now,
           ...embeddingFailureCapabilityUpdate(error, now),
         });
         const geminiError = error instanceof GeminiEmbeddingError ? error : undefined;
-        return asJsonText({
-          status: "embedding_probe_failed",
-          latencyMs: Date.now() - startedAt,
-          projectPath,
-          indexPath,
-          diagnostics,
-          providerCapabilities: capabilities,
-          error: {
-            type: error instanceof Error ? error.name : "UnknownError",
-            message: error instanceof Error ? error.message : String(error),
-            httpStatus: geminiError?.status,
-            retryable: geminiError?.retryable ?? false,
-            bodySnippet: geminiError?.bodySnippet,
-          },
-          recommendedNextActions: [
-            "Verify GEMINI_API_KEY is present in the environment Codex launches from.",
-            "Verify GEMINI_BASE_URL points to the provider root and can include or omit /v1beta.",
-            "Verify GEMINI_AUTH_MODE matches the proxy requirement: x-goog-api-key, bearer, or query.",
-            "Verify the provider supports models/{model}:embedContent and the requested output dimensionality.",
-          ],
-        });
+        return asJsonText(
+          shapeEmbeddingProbePayload(
+            {
+              status: "embedding_probe_failed",
+              latencyMs: Date.now() - startedAt,
+              projectPath,
+              indexPath,
+              diagnostics,
+              providerCapabilities: capabilities,
+              error: {
+                type: error instanceof Error ? error.name : "UnknownError",
+                message: error instanceof Error ? error.message : String(error),
+                httpStatus: geminiError?.status,
+                retryable: geminiError?.retryable ?? false,
+                bodySnippet: geminiError?.bodySnippet,
+              },
+              recommendedNextActions: [
+                "Verify GEMINI_API_KEY is present in the environment Codex launches from.",
+                "Verify GEMINI_BASE_URL points to the provider root and can include or omit /v1beta.",
+                "Verify GEMINI_AUTH_MODE matches the proxy requirement: x-goog-api-key, bearer, or query.",
+                "Verify the provider supports models/{model}:embedContent and the requested output dimensionality.",
+              ],
+            },
+            response_mode,
+          ),
+        );
       }
     },
   );

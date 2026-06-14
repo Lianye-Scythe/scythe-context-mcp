@@ -1,6 +1,8 @@
 import { describe, expect, it } from "vitest";
 import {
   shapeContextPackPayload,
+  shapeDoctorPayload,
+  shapeEmbeddingProbePayload,
   shapeIndexStatusPayload,
   shapeReindexPayload,
   shapeRelatedFilesPayload,
@@ -10,6 +12,172 @@ import {
 const longSnippet = "x".repeat(900);
 
 describe("response shaping", () => {
+  it("compacts doctor output by keeping ok checks summary-only", () => {
+    const shaped = shapeDoctorPayload(
+      {
+        status: "warn",
+        projectPath: "/repo",
+        indexPath: "/repo/.scythe-context",
+        checks: [
+          {
+            name: "node_runtime",
+            status: "ok",
+            summary: "Node is supported.",
+            details: { executable: "/usr/bin/node", node: "24.16.0" },
+          },
+          {
+            name: "gemini_config",
+            status: "warn",
+            summary: "API key is missing.",
+            details: { hasApiKey: false, model: "gemini-embedding-2" },
+            recommendedActions: ["Set GEMINI_API_KEY."],
+          },
+        ],
+        recommendedNextActions: ["Set GEMINI_API_KEY."],
+      },
+      "compact",
+    );
+
+    expect(shaped).toMatchObject({
+      responseMode: "compact",
+      checkSummary: { ok: 1, warn: 1 },
+      checks: [
+        {
+          name: "node_runtime",
+          status: "ok",
+          summary: "Node is supported.",
+        },
+        {
+          name: "gemini_config",
+          status: "warn",
+          details: { hasApiKey: false, model: "gemini-embedding-2" },
+        },
+      ],
+    });
+    expect((shaped.checks as Array<Record<string, unknown>>)[0]).not.toHaveProperty("details");
+    expect(shaped).toHaveProperty("responseStats.estimatedOutputTokens");
+  });
+
+  it("keeps raw doctor output in full mode", () => {
+    const shaped = shapeDoctorPayload(
+      {
+        status: "ok",
+        checks: [{ name: "node_runtime", status: "ok", details: { executable: "/usr/bin/node" } }],
+      },
+      "full",
+    );
+
+    expect(shaped).toMatchObject({
+      checks: [{ details: { executable: "/usr/bin/node" } }],
+    });
+    expect(shaped).toHaveProperty("responseStats.estimatedOutputTokens");
+  });
+
+  it("compacts successful embedding probes without vector samples or raw provider keys", () => {
+    const shaped = shapeEmbeddingProbePayload(
+      {
+        status: "ok",
+        latencyMs: 123,
+        projectPath: "/repo",
+        indexPath: "/repo/.scythe-context",
+        diagnostics: {
+          baseUrl: "https://example.test",
+          normalizedBaseUrl: "https://example.test/v1beta",
+          endpoint: "https://example.test/v1beta/models/gemini-embedding-2:embedContent",
+          model: "gemini-embedding-2",
+          expectedDimensions: 1536,
+          authMode: "bearer",
+          hasApiKey: true,
+        },
+        providerCapabilities: {
+          provider: "gemini",
+          key: "provider-secret-cache-key",
+          baseUrlHash: "hash",
+          model: "gemini-embedding-2",
+          dimensions: 1536,
+          authMode: "bearer",
+          outputDimensionality: "supported",
+        },
+        model: "gemini-embedding-2",
+        dimensions: 1536,
+        dimensionsMatchExpected: true,
+        sample: [0.1, 0.2, 0.3],
+      },
+      "compact",
+    );
+
+    expect(shaped).toMatchObject({
+      status: "ok",
+      responseMode: "compact",
+      diagnostics: {
+        model: "gemini-embedding-2",
+        expectedDimensions: 1536,
+        authMode: "bearer",
+        hasApiKey: true,
+        normalizedBaseUrl: "https://example.test/v1beta",
+      },
+      providerCapabilities: {
+        provider: "gemini",
+        model: "gemini-embedding-2",
+        outputDimensionality: "supported",
+      },
+      dimensionsMatchExpected: true,
+    });
+    expect(shaped).not.toHaveProperty("sample");
+    expect(JSON.stringify(shaped)).not.toContain("provider-secret-cache-key");
+    expect(JSON.stringify(shaped)).not.toContain("baseUrlHash");
+    expect(JSON.stringify(shaped)).not.toContain("embedContent");
+  });
+
+  it("compacts failed embedding probes without response body snippets", () => {
+    const shaped = shapeEmbeddingProbePayload(
+      {
+        status: "embedding_probe_failed",
+        latencyMs: 123,
+        diagnostics: { model: "gemini-embedding-2", expectedDimensions: 1536, authMode: "bearer", hasApiKey: true },
+        error: {
+          type: "GeminiEmbeddingError",
+          message: "HTTP 500",
+          httpStatus: 500,
+          retryable: true,
+          bodySnippet: "long upstream body",
+        },
+        recommendedNextActions: ["Retry later."],
+      },
+      "compact",
+    );
+
+    expect(shaped).toMatchObject({
+      status: "embedding_probe_failed",
+      error: {
+        type: "GeminiEmbeddingError",
+        message: "HTTP 500",
+        httpStatus: 500,
+        retryable: true,
+      },
+      recommendedNextActions: ["Retry later."],
+    });
+    expect(JSON.stringify(shaped)).not.toContain("long upstream body");
+    expect(shaped).toHaveProperty("responseStats.estimatedOutputTokens");
+  });
+
+  it("keeps raw embedding probe details in full mode", () => {
+    const shaped = shapeEmbeddingProbePayload(
+      {
+        status: "ok",
+        sample: [0.1],
+        providerCapabilities: { key: "provider-secret-cache-key" },
+      },
+      "full",
+    );
+
+    expect(shaped).toMatchObject({
+      sample: [0.1],
+      providerCapabilities: { key: "provider-secret-cache-key" },
+    });
+    expect(shaped).toHaveProperty("responseStats.estimatedOutputTokens");
+  });
+
   it("compacts index status output for the default tool entrypoint", () => {
     const shaped = shapeIndexStatusPayload(
       {
