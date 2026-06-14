@@ -6,13 +6,16 @@ on:
       - "v*"
 
 permissions:
-  contents: read
+  contents: write
   id-token: write
 
 jobs:
   publish:
     runs-on: ubuntu-latest
     timeout-minutes: 15
+    concurrency:
+      group: publish-${{ github.ref_name }}
+      cancel-in-progress: false
     steps:
       - name: Checkout
         uses: actions/checkout@v5
@@ -35,16 +38,33 @@ jobs:
             exit 1
           fi
 
-      - name: Check version is not already published
-        run: |
-          package_version="$(node -p "require('./package.json').version")"
-          if npm view "scythe-context-mcp@$package_version" version >/dev/null 2>&1; then
-            echo "scythe-context-mcp@$package_version is already published"
-            exit 1
-          fi
-
       - name: Verify
         run: npm run verify
 
+      - name: Check npm publication status
+        id: npm_status
+        run: |
+          package_version="$(node -p "require('./package.json').version")"
+          if npm view "scythe-context-mcp@$package_version" version >/dev/null 2>&1; then
+            echo "published=true" >> "$GITHUB_OUTPUT"
+            echo "scythe-context-mcp@$package_version is already published; npm publish will be skipped."
+          else
+            echo "published=false" >> "$GITHUB_OUTPUT"
+          fi
+
       - name: Publish to npm
+        if: steps.npm_status.outputs.published != 'true'
         run: npm publish --access public
+
+      - name: Create GitHub Release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          if gh release view "$GITHUB_REF_NAME" >/dev/null 2>&1; then
+            echo "GitHub Release $GITHUB_REF_NAME already exists; skipping creation."
+          else
+            gh release create "$GITHUB_REF_NAME" \
+              --title "$GITHUB_REF_NAME" \
+              --generate-notes \
+              --verify-tag
+          fi

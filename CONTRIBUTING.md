@@ -40,8 +40,7 @@ One-time npm setup for the package owner:
 Release flow:
 
 ```bash
-npm version patch --no-git-tag-version
-# update CHANGELOG.md
+npm run release:prepare -- patch
 npm run verify
 git add package.json package-lock.json CHANGELOG.md
 git commit -m "Release x.y.z"
@@ -50,4 +49,6 @@ git tag vx.y.z
 git push origin vx.y.z
 ```
 
-The publish workflow checks that the tag matches `package.json`, reruns `npm run verify`, checks that the version is not already published, then publishes to npm through OIDC trusted publishing.
+Use `minor`, `major`, or an explicit `x.y.z` version instead of `patch` when needed.
+
+The publish workflow checks that the tag matches `package.json`, reruns `npm run verify`, publishes to npm through OIDC trusted publishing when the version is not already published, and creates the matching GitHub Release with generated notes. If the workflow is rerun after npm publication, it skips `npm publish` and still creates the GitHub Release when it is missing.

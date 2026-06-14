@@ -33,6 +33,7 @@
     "benchmarks",
     "docs",
     "scripts/context-benchmark.mjs",
+    "scripts/prepare-release.mjs",
     ".env.example"
   ],
   "scripts": {
@@ -44,6 +45,7 @@
     "bench:context:source": "npm run build && node scripts/context-benchmark.mjs",
     "dev": "tsx src/index.ts",
     "prepack": "npm run build",
+    "release:prepare": "node scripts/prepare-release.mjs",
     "smoke": "node dist/index.js --version && node dist/index.js --help",
     "test": "vitest run",
     "typecheck": "tsc -p tsconfig.json --noEmit",

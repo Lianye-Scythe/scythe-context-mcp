@@ -15,6 +15,7 @@ This project follows semantic versioning before npm publication where practical.
 - Document and harden external repository benchmark usage with `--project`, `--cases`, expected-path validation, and benchmark scope reporting.
 - Add benchmark case tags and `--suite` filtering for faster core/provider/diagnostics/integration/maintenance/benchmark runs.
 - Add benchmark-only rerank profile matrix support with bundled path-heavy, symbol-heavy, and docs-heavy experiment profiles.
+- Add `npm run release:prepare` and make the publish workflow create GitHub Releases while safely skipping already-published npm versions on reruns.
 
 ### Changed
 
