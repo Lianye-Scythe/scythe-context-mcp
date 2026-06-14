@@ -21,7 +21,7 @@ import {
 } from "../providers/capabilities.js";
 import { buildGeminiEndpoint, GeminiEmbeddingError, GeminiEmbeddingProvider, normalizeGeminiBaseUrl } from "../providers/gemini.js";
 import { runRepoDoctor } from "./doctor.js";
-import { shapeContextPackPayload, shapeSemanticPayload } from "./responseShape.js";
+import { shapeContextPackPayload, shapeReindexPayload, shapeSemanticPayload } from "./responseShape.js";
 
 function asJsonText(value: unknown) {
   return {
@@ -33,6 +33,7 @@ type SearchMode = "hybrid" | "semantic";
 type EffectiveSearchMode = SearchMode | "keyword";
 
 const responseModeSchema = z.enum(["paths_only", "compact", "snippets"]);
+const reindexResponseModeSchema = z.enum(["compact", "full"]);
 
 interface EmbeddingFailureDetails {
   type: string;
@@ -336,6 +337,7 @@ export function registerTools(server: McpServer, config: AppConfig): void {
         index_embeddings: z.boolean().default(false),
         embedding_batch_size: z.number().int().positive().max(128).optional(),
         max_embedding_chunks: z.number().int().positive().max(10000).optional(),
+        response_mode: reindexResponseModeSchema.default("compact"),
       },
     },
     async ({
@@ -348,6 +350,7 @@ export function registerTools(server: McpServer, config: AppConfig): void {
       index_embeddings,
       embedding_batch_size,
       max_embedding_chunks,
+      response_mode,
     }) => {
       const commonOptions = {
         projectPath: path.resolve(project_path || config.defaultProjectPath),
@@ -358,7 +361,7 @@ export function registerTools(server: McpServer, config: AppConfig): void {
       };
 
       if (dry_run) {
-        return asJsonText(await reindexDryRun(commonOptions));
+        return asJsonText(shapeReindexPayload(await reindexDryRun(commonOptions), response_mode));
       }
 
       const metadataResult = await persistentReindexMetadata({
@@ -368,7 +371,7 @@ export function registerTools(server: McpServer, config: AppConfig): void {
       });
 
       if (!index_embeddings) {
-        return asJsonText(metadataResult);
+        return asJsonText(shapeReindexPayload(metadataResult, response_mode));
       }
 
       const indexPath = path.join(commonOptions.projectPath, config.indexDirName);
@@ -400,12 +403,17 @@ export function registerTools(server: McpServer, config: AppConfig): void {
         throw error;
       }
 
-      return asJsonText({
-        ...metadataResult,
-        status: "metadata_and_embeddings_indexed",
-        embeddings: embeddingResult,
-        providerCapabilities: updatedCapabilities,
-      });
+      return asJsonText(
+        shapeReindexPayload(
+          {
+            ...metadataResult,
+            status: "metadata_and_embeddings_indexed",
+            embeddings: embeddingResult,
+            providerCapabilities: updatedCapabilities,
+          },
+          response_mode,
+        ),
+      );
     },
   );
 

@@ -252,7 +252,9 @@ GEMINI_OUTPUT_DIMENSIONALITY = "1536"
 
 `repo_context_pack(mode="hybrid")` 和 `repo_semantic_search(mode="hybrid")` 在 query embedding 不可用时会降级成 keyword-only 结果，并返回 `effectiveMode: "keyword"` 与 `fallback.reason: "embedding_unavailable"`。`mode="semantic"` 不会降级，会返回 `status: "embedding_unavailable"`，因为纯 semantic search 必须有 query embedding。精确字符串、已知路径或小范围检查仍建议直接用 `rg` / 直接读文件。
 
-为了控制 Codex token 消耗，`repo_context_pack` 与 `repo_semantic_search` 支持 `response_mode`：
+为了控制 Codex token 消耗，`repo_reindex` 默认返回 compact 摘要，包含 stats、skipped summary、embedding stats 与估算输出 token；需要完整 skipped file list 或 provider capability raw details 时，才使用 `repo_reindex(response_mode="full")`。
+
+`repo_context_pack` 与 `repo_semantic_search` 也支持 `response_mode`：
 
 - `compact`：默认模式，返回短 snippets、精简 related metadata、suggested paths 与估算输出 token。
 - `paths_only`：第一轮探索用，只返回路径、行号与 match reason，适合先找要读的文件。

@@ -1,4 +1,5 @@
 export type ResponseMode = "paths_only" | "compact" | "snippets";
+export type ReindexResponseMode = "compact" | "full";
 
 export interface ResponseStats {
   estimatedJsonChars: number;
@@ -34,6 +35,93 @@ export function withResponseStats<T extends Record<string, unknown>>(payload: T)
     ...payload,
     responseStats: estimateTokensFromJson(payload),
   };
+}
+
+function summarizeSkipped(skipped: unknown): Record<string, unknown> {
+  const skippedFiles = Array.isArray(skipped) ? (skipped as Array<Record<string, unknown>>) : [];
+  const byReason: Record<string, number> = {};
+  for (const item of skippedFiles) {
+    const reason = typeof item.reason === "string" ? item.reason : "unknown";
+    byReason[reason] = (byReason[reason] ?? 0) + 1;
+  }
+  return {
+    total: skippedFiles.length,
+    byReason,
+    samples: skippedFiles.slice(0, 5).map((item) => ({
+      relativePath: item.relativePath,
+      reason: item.reason,
+      size: item.size,
+      detail: item.detail,
+    })),
+  };
+}
+
+function compactProviderCapabilities(capabilities: unknown): unknown {
+  if (!capabilities || typeof capabilities !== "object" || Array.isArray(capabilities)) return capabilities;
+  const record = capabilities as Record<string, unknown>;
+  return {
+    provider: record.provider,
+    model: record.model,
+    dimensions: record.dimensions,
+    authMode: record.authMode,
+    batchEmbedding: record.batchEmbedding,
+    outputDimensionality: record.outputDimensionality,
+    lastProbeAt: record.lastProbeAt,
+    lastSuccessAt: record.lastSuccessAt,
+    lastFailureAt: record.lastFailureAt,
+    lastErrorType: record.lastErrorType,
+    lastHttpStatus: record.lastHttpStatus,
+    lastRetryable: record.lastRetryable,
+  };
+}
+
+export function shapeReindexPayload(payloadInput: object, mode: ReindexResponseMode): Record<string, unknown> {
+  const payload = payloadInput as Record<string, unknown>;
+  if (mode === "full") return withResponseStats(payload);
+
+  const stats = payload.stats as Record<string, unknown> | undefined;
+  const embeddings = payload.embeddings as Record<string, unknown> | undefined;
+  const shaped: Record<string, unknown> = {
+    projectPath: payload.projectPath,
+    dryRun: payload.dryRun,
+    status: payload.status ?? (payload.dryRun ? "dry_run_complete" : "metadata_indexed"),
+    responseMode: mode,
+    indexPath: typeof payload.dbPath === "string" ? payload.dbPath.replace(/[\\/]index\.sqlite$/, "") : undefined,
+    stats,
+    skippedSummary: summarizeSkipped(payload.skipped),
+  };
+
+  if (embeddings) {
+    shaped.embeddings = {
+      status: embeddings.status,
+      embeddingSetId: embeddings.embeddingSetId,
+      dimensions: embeddings.dimensions,
+      stats: embeddings.stats,
+    };
+  }
+
+  if (payload.providerCapabilities) {
+    shaped.providerCapabilities = compactProviderCapabilities(payload.providerCapabilities);
+  }
+
+  const skippedTotal = Number((shaped.skippedSummary as Record<string, unknown>).total ?? 0);
+  if (payload.dryRun) {
+    shaped.recommendedNextActions = [
+      "Run repo_reindex with dry_run=false to write the metadata index.",
+      "Set index_embeddings=true when semantic search or hybrid context packs need vectors.",
+    ];
+  } else {
+    const actions = ["Index is ready. Use repo_index_status for freshness checks or repo_context_pack for task-oriented lookup."];
+    if (!embeddings) {
+      actions.push("Run repo_reindex with dry_run=false and index_embeddings=true when semantic search or hybrid context packs need vectors.");
+    }
+    if (skippedTotal > 0) {
+      actions.push("Use response_mode=full only when you need the complete skipped file list.");
+    }
+    shaped.recommendedNextActions = actions;
+  }
+
+  return withResponseStats(shaped);
 }
 
 function compactSearchResult(result: Record<string, unknown>, mode: ResponseMode): Record<string, unknown> {
