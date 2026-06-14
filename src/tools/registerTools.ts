@@ -232,6 +232,7 @@ export function registerTools(server: McpServer, config: AppConfig): void {
           "multi_hop_related_files",
           "related_snippet_packing",
           "local_code_aware_reranker",
+          "provider_capability_cache",
           "repo_doctor",
         ],
         pending: ["tree_sitter_symbols"],

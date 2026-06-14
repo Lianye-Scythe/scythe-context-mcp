@@ -101,7 +101,7 @@ Recommended config should expose all tools by default during development, but `e
 
 - Consider a plugin package later if Codex App plugin distribution becomes the preferred installation route.
 - Add tree-sitter symbol extraction only if regex extraction becomes a retrieval-quality bottleneck.
-- Continue expanding provider capability caching and error-specific remediation hints.
+- Continue polishing error-specific remediation hints after more real proxy failures are observed.
 
 ## Troubleshooting
 
