@@ -27,6 +27,7 @@ This project follows semantic versioning before npm publication where practical.
 - Tune code-aware reranking for security/privacy documentation queries and broaden the UTF-8 scanner benchmark expectation to include the scanner decision point.
 - Lower default search/context-pack response budgets and make `compact` the default response mode for high-frequency lookup tools.
 - Move response-shaping logic out of MCP tool registration and keep compacted snippet truncation flags accurate.
+- Resolve the benchmark script root path with `fileURLToPath` for better Windows compatibility.
 
 ## [0.1.6] - 2026-06-14
 

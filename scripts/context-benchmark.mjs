@@ -5,6 +5,7 @@ import path from "node:path";
 import process from "node:process";
 import { spawnSync } from "node:child_process";
 import { performance } from "node:perf_hooks";
+import { fileURLToPath } from "node:url";
 
 const DEFAULT_CASES_PATH = "benchmarks/context-search-cases.json";
 const DEFAULT_SUITE = "full";
@@ -690,7 +691,7 @@ function compareRerankRuns(runs) {
 
 async function main() {
   const args = parseArgs(process.argv.slice(2));
-  const repoRoot = path.resolve(path.dirname(new URL(import.meta.url).pathname), "..");
+  const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
   const projectPath = resolveProjectPath(args.project);
   const casesPath = resolveCasesPath(args.cases);
   const casesPathInsideProject = isPathInside(projectPath, casesPath);
