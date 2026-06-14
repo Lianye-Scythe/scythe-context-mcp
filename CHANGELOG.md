@@ -15,6 +15,7 @@ This project follows semantic versioning before npm publication where practical.
 
 - Make compact search/context-pack responses more token-efficient by shortening snippets, omitting ranking diagnostics, and summarizing related-file metadata.
 - Make tool error responses include response stats and compact shaping, compress `repo_related_files` compact output, and clarify `repo_semantic_search` as a ranking-diagnostics tool.
+- Improve reranking for npm/package maintenance queries so package manifests are not crowded out by long documentation or benchmark files.
 
 ## [0.1.7] - 2026-06-14
 

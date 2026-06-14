@@ -121,6 +121,36 @@ function isTestIntent(terms: readonly string[]): boolean {
   return terms.some((term) => ["test", "tests", "spec", "regression", "fixture"].includes(term));
 }
 
+function isPackageManifestIntent(terms: readonly string[]): boolean {
+  return terms.some((term) =>
+    [
+      "npm",
+      "package",
+      "publish",
+      "release",
+      "dependency",
+      "dependencies",
+      "script",
+      "scripts",
+      "bin",
+      "cli",
+      "version",
+      "license",
+    ].includes(term),
+  );
+}
+
+function isIgnoreBoundaryIntent(terms: readonly string[]): boolean {
+  return terms.some((term) => ["ignore", "ignored", "secret", "secrets", "local", "commit", "committed", "privacy"].includes(term));
+}
+
+function metadataRoleScore(path: string, terms: readonly string[]): number {
+  const basename = path.toLowerCase().split("/").at(-1) ?? path.toLowerCase();
+  if (isPackageManifestIntent(terms) && ["package.json", "deno.json", "jsr.json"].includes(basename)) return 1.2;
+  if (isIgnoreBoundaryIntent(terms) && [".gitignore", ".npmignore", ".dockerignore"].includes(basename)) return 0.9;
+  return 0;
+}
+
 function sourceCounterparts(testPath: string, activePaths: ReadonlySet<string>): string[] {
   const counterparts: string[] = [];
   for (const extension of sourceExtensions) {
@@ -229,6 +259,9 @@ function symbolScore(details: CandidateDetails, terms: readonly string[]): numbe
 }
 
 function roleScore(path: string, terms: readonly string[]): number {
+  const metadataScore = metadataRoleScore(path, terms);
+  if (metadataScore > 0) return metadataScore;
+
   const role = classifyRelatedPath(path);
   const codeIntent = isCodeIntent(terms);
   const docsIntent = isDocsIntent(terms);

@@ -228,4 +228,44 @@ describe("searchKeywordOnly", () => {
 
     expect(results[0].path).toBe("SECURITY.md");
   });
+
+  it("prioritizes package manifests for npm package maintenance queries", async () => {
+    await fs.mkdir(path.join(tempDir, "scripts"), { recursive: true });
+    await fs.mkdir(path.join(tempDir, "docs"), { recursive: true });
+    await fs.writeFile(
+      path.join(tempDir, "package.json"),
+      JSON.stringify(
+        {
+          name: "example",
+          scripts: {
+            build: "tsc",
+            test: "vitest run",
+          },
+          files: ["dist", "docs", "benchmarks", "scripts/context-benchmark.mjs"],
+        },
+        null,
+        2,
+      ),
+    );
+    await fs.writeFile(path.join(tempDir, "docs", "benchmark.md"), "benchmark docs context package npm release script ".repeat(12));
+    await fs.writeFile(path.join(tempDir, "scripts", "context-benchmark.mjs"), "export const benchmark = 'context benchmark script npm package';\n");
+    const metadata = await persistentReindexMetadata({
+      projectPath: tempDir,
+      indexDirName: ".scythe-context",
+      vectorDimensions: 1536,
+      maxFileBytes: 4096,
+      targetChunkChars: 200,
+      chunkOverlapChars: 0,
+      maxChunksPerFile: 10,
+    });
+
+    const results = searchKeywordOnly({
+      dbPath: metadata.dbPath,
+      query: "npm package should include dist docs benchmark cases and context benchmark script",
+      maxResults: 5,
+      maxSnippetChars: 160,
+    });
+
+    expect(results.map((result) => result.path)).toContain("package.json");
+  });
 });
