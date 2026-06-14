@@ -115,7 +115,18 @@ function nodeName(node: Node): string | undefined {
   return name?.text;
 }
 
-function symbolFromDeclaration(node: Node, exported: boolean): ExtractedSymbol | undefined {
+function variableDeclarationKind(node: Node): SymbolKind {
+  const declarationText = node.text.trimStart();
+  return declarationText.startsWith("const") ? "const" : "variable";
+}
+
+function variableDeclaratorName(node: Node): string | undefined {
+  const name = node.childForFieldName("name");
+  if (!name || name.type !== "identifier") return undefined;
+  return name.text;
+}
+
+function symbolsFromDeclaration(node: Node, exported: boolean): ExtractedSymbol[] {
   const declarationTypes: Record<string, SymbolKind> = {
     class_declaration: "class",
     enum_declaration: "enum",
@@ -127,16 +138,22 @@ function symbolFromDeclaration(node: Node, exported: boolean): ExtractedSymbol |
   const kind = declarationTypes[node.type];
   if (kind) {
     const name = nodeName(node);
-    return name ? { name, kind, line: lineForNode(node), signature: normalizeSignature(node.text), exported } : undefined;
+    return name ? [{ name, kind, line: lineForNode(node), signature: normalizeSignature(node.text), exported }] : [];
   }
 
   if (node.type === "lexical_declaration" || node.type === "variable_declaration") {
-    const declarator = node.namedChildren.find((child) => child.type === "variable_declarator");
-    const name = declarator?.childForFieldName("name")?.text;
-    return name ? { name, kind: "const", line: lineForNode(node), signature: normalizeSignature(node.text), exported } : undefined;
+    const variableKind = variableDeclarationKind(node);
+    return node.namedChildren
+      .filter((child) => child.type === "variable_declarator")
+      .flatMap((declarator) => {
+        const name = variableDeclaratorName(declarator);
+        return name
+          ? [{ name, kind: variableKind, line: lineForNode(declarator), signature: normalizeSignature(node.text), exported }]
+          : [];
+      });
   }
 
-  return undefined;
+  return [];
 }
 
 function sourceDependency(node: Node): ExtractedDependency | undefined {
@@ -170,7 +187,7 @@ function declarationChildForExport(node: Node): Node | undefined {
   );
 }
 
-function extractGraphFromTree(root: Node): ExtractedFileGraph {
+export function extractGraphFromTree(root: Node): ExtractedFileGraph {
   const symbols: ExtractedSymbol[] = [];
   const dependencies: ExtractedDependency[] = [];
 
@@ -181,13 +198,11 @@ function extractGraphFromTree(root: Node): ExtractedFileGraph {
 
     if (child.type === "export_statement") {
       const declaration = declarationChildForExport(child);
-      const symbol = declaration ? symbolFromDeclaration(declaration, true) : undefined;
-      if (symbol) addUniqueSymbol(symbols, symbol);
+      for (const symbol of declaration ? symbolsFromDeclaration(declaration, true) : []) addUniqueSymbol(symbols, symbol);
       continue;
     }
 
-    const symbol = symbolFromDeclaration(child, false);
-    if (symbol) addUniqueSymbol(symbols, symbol);
+    for (const symbol of symbolsFromDeclaration(child, false)) addUniqueSymbol(symbols, symbol);
   }
 
   return { symbols, dependencies };
