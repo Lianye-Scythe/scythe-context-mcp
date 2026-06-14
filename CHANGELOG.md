@@ -6,6 +6,10 @@ This project follows semantic versioning before npm publication where practical.
 
 ## [Unreleased]
 
+### Added
+
+- Add a benchmark regression gate for Scythe retrieval quality and compact response token budgets, with optional Gemini-backed hybrid checks.
+
 ## [0.1.8] - 2026-06-14
 
 ### Added

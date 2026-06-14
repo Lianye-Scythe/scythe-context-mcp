@@ -29,6 +29,9 @@ jobs:
       - name: Build
         run: npm run build
 
+      - name: Benchmark regression gate
+        run: node scripts/context-benchmark-gate.mjs
+
       - name: Smoke CLI
         run: npm run smoke
 

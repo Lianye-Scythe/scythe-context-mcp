@@ -41,6 +41,22 @@ When running from a source checkout after changing TypeScript files, rebuild fir
 npm run bench:context:source
 ```
 
+Run the benchmark regression gate before release or ranking/response-shaping changes:
+
+```bash
+npm run bench:gate
+```
+
+The gate rebuilds the project, refreshes the benchmark index, runs the full response-mode comparison without embedding API calls, and fails if Scythe hit@5, MRR, or compact output tokens regress beyond the configured thresholds. CI runs this no-API gate by default so contributors do not need Gemini credentials.
+
+When you explicitly want the gate to call the configured Gemini-compatible endpoint, run:
+
+```bash
+npm run bench:gate:hybrid
+```
+
+The hybrid gate requires `GEMINI_API_KEY` and refreshes embeddings before measuring `scythe-hybrid`. Use it for local release checks or manual validation when provider availability and API usage are acceptable.
+
 Run with Gemini-backed hybrid search when you explicitly want to call the configured embedding API:
 
 ```bash
