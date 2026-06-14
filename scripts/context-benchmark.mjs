@@ -16,6 +16,7 @@ function parseArgs(argv) {
     maxSnippetChars: 1200,
     maxContextChars: 16000,
     includeHybrid: false,
+    compareRerank: false,
     rerank: process.env.SCYTHE_CONTEXT_RERANK_MODE || "auto",
     json: false,
     output: undefined,
@@ -47,6 +48,9 @@ function parseArgs(argv) {
         break;
       case "--include-hybrid":
         args.includeHybrid = true;
+        break;
+      case "--compare-rerank":
+        args.compareRerank = true;
         break;
       case "--rerank":
         args.rerank = next();
@@ -86,6 +90,7 @@ Options:
   --cases <path>               JSON case file. Defaults to ${DEFAULT_CASES_PATH}.
   --max-results <n>            Ranked results to keep per method. Defaults to 8.
   --include-hybrid             Also run Gemini-backed hybrid search. Calls the configured embedding API.
+  --compare-rerank             Run rerank auto and off, then print a delta report.
   --rerank <auto|off>          Code-aware reranking mode. Defaults to env or auto.
   --json                       Print JSON instead of a table.
   --output <path>              Write JSON report to a file.
@@ -312,65 +317,41 @@ function contextPathsFromResults(rawResults, buildContextPack, readRelatedFileGr
   return pack.suggestedPaths;
 }
 
-async function main() {
-  const args = parseArgs(process.argv.slice(2));
-  const repoRoot = path.resolve(path.dirname(new URL(import.meta.url).pathname), "..");
-  const projectPath = path.resolve(args.project);
-  const casesPath = path.resolve(args.cases);
-  const casesRelativePath = normalizeRelativePath(path.relative(projectPath, casesPath));
-  const cases = readCases(casesPath);
-  const dbPath = path.join(projectPath, ".scythe-context", "index.sqlite");
-  process.env.SCYTHE_CONTEXT_RERANK_MODE = args.rerank;
-
-  if (!fs.existsSync(dbPath)) {
-    throw new Error(`Index database not found: ${dbPath}. Run repo_reindex first.`);
-  }
-
-  const [
-    { keywordTerms },
-    { searchKeywordOnly, searchHybrid },
-    { buildContextPack },
-    { readRelatedFileGraph },
-  ] = await Promise.all([
-    import(path.join(repoRoot, "dist/indexing/keywordSearch.js")),
-    import(path.join(repoRoot, "dist/indexing/hybridSearch.js")),
-    import(path.join(repoRoot, "dist/indexing/contextPack.js")),
-    import(path.join(repoRoot, "dist/indexing/relatedFiles.js")),
-  ]);
-
+async function runBenchmarkPass(options) {
+  process.env.SCYTHE_CONTEXT_RERANK_MODE = options.rerankMode;
   const methods = [
-    benchmarkMethod("rg-smart", cases, (testCase) =>
-      rgSmartSearch(projectPath, testCase.query, args.maxResults, keywordTerms),
-      { excludedPaths: [casesRelativePath] },
+    benchmarkMethod("rg-smart", options.cases, (testCase) =>
+      rgSmartSearch(options.projectPath, testCase.query, options.args.maxResults, options.keywordTerms),
+      { excludedPaths: [options.casesRelativePath] },
     ),
-    benchmarkMethod("scythe-keyword", cases, (testCase) => {
-      const rawResults = searchKeywordOnly({
-        dbPath,
+    benchmarkMethod("scythe-keyword", options.cases, (testCase) => {
+      const rawResults = options.searchKeywordOnly({
+        dbPath: options.dbPath,
         query: testCase.query,
-        maxResults: args.maxResults,
-        maxSnippetChars: args.maxSnippetChars,
-        rerankMode: args.rerank,
+        maxResults: options.args.maxResults,
+        maxSnippetChars: options.args.maxSnippetChars,
+        rerankMode: options.rerankMode,
       });
       return {
         paths: rawResults,
-        contextPaths: contextPathsFromResults(rawResults, buildContextPack, readRelatedFileGraph, {
-          dbPath,
+        contextPaths: contextPathsFromResults(rawResults, options.buildContextPack, options.readRelatedFileGraph, {
+          dbPath: options.dbPath,
           query: testCase.query,
-          maxContextChars: args.maxContextChars,
+          maxContextChars: options.args.maxContextChars,
         }),
       };
-    }, { excludedPaths: [casesRelativePath] }),
+    }, { excludedPaths: [options.casesRelativePath] }),
   ];
   const omittedMethods = [];
 
-  if (args.includeHybrid) {
+  if (options.args.includeHybrid) {
     const [{ loadConfig }, { GeminiEmbeddingProvider }] = await Promise.all([
-      import(path.join(repoRoot, "dist/config.js")),
-      import(path.join(repoRoot, "dist/providers/gemini.js")),
+      import(path.join(options.repoRoot, "dist/config.js")),
+      import(path.join(options.repoRoot, "dist/providers/gemini.js")),
     ]);
     const config = loadConfig();
     if (!config.gemini.apiKey) {
-      const hybridCases = cases.map((testCase) => ({
+      const hybridCases = options.cases.map((testCase) => ({
         id: testCase.id,
         query: testCase.query,
         expectedPaths: testCase.expectedPaths,
@@ -390,29 +371,29 @@ async function main() {
       const dimensions = config.gemini.outputDimensionality ?? 1536;
 
       const hybridCases = [];
-      for (const testCase of cases) {
+      for (const testCase of options.cases) {
         const startedAt = performance.now();
         try {
           const embedding = await provider.embed({ kind: "query", text: testCase.query });
           if (embedding.dimensions !== dimensions) {
             throw new Error(`Query embedding dimensions mismatch: expected ${dimensions}, got ${embedding.dimensions}`);
           }
-          const rawResults = searchHybrid({
-            dbPath,
+          const rawResults = options.searchHybrid({
+            dbPath: options.dbPath,
             query: testCase.query,
             dimensions,
             queryVector: embedding.vector,
-            maxResults: args.maxResults,
-            maxSnippetChars: args.maxSnippetChars,
-            rerankMode: args.rerank,
+            maxResults: options.args.maxResults,
+            maxSnippetChars: options.args.maxSnippetChars,
+            rerankMode: options.rerankMode,
           });
-          const paths = uniquePaths(rawResults).filter((candidate) => candidate !== casesRelativePath);
-          const contextPaths = contextPathsFromResults(rawResults, buildContextPack, readRelatedFileGraph, {
-            dbPath,
+          const paths = uniquePaths(rawResults).filter((candidate) => candidate !== options.casesRelativePath);
+          const contextPaths = contextPathsFromResults(rawResults, options.buildContextPack, options.readRelatedFileGraph, {
+            dbPath: options.dbPath,
             query: testCase.query,
-            maxContextChars: args.maxContextChars,
+            maxContextChars: options.args.maxContextChars,
           });
-          const filteredContextPaths = uniquePaths(contextPaths).filter((candidate) => candidate !== casesRelativePath);
+          const filteredContextPaths = uniquePaths(contextPaths).filter((candidate) => candidate !== options.casesRelativePath);
           hybridCases.push({
             id: testCase.id,
             query: testCase.query,
@@ -451,16 +432,100 @@ async function main() {
     });
   }
 
+  return { rerankMode: options.rerankMode, methods, omittedMethods };
+}
+
+function summaryDelta(autoSummary, offSummary) {
+  return {
+    hitAt1: autoSummary.hitAt1 - offSummary.hitAt1,
+    hitAt3: autoSummary.hitAt3 - offSummary.hitAt3,
+    hitAt5: autoSummary.hitAt5 - offSummary.hitAt5,
+    mrr: autoSummary.mrr - offSummary.mrr,
+    meanLatencyMs: autoSummary.meanLatencyMs - offSummary.meanLatencyMs,
+    p95LatencyMs: autoSummary.p95LatencyMs - offSummary.p95LatencyMs,
+  };
+}
+
+function compareRerankRuns(runs) {
+  const auto = runs.find((run) => run.rerankMode === "auto");
+  const off = runs.find((run) => run.rerankMode === "off");
+  if (!auto || !off) return [];
+  const offByMethod = new Map(off.methods.map((method) => [method.method, method]));
+  return auto.methods
+    .map((autoMethod) => {
+      const offMethod = offByMethod.get(autoMethod.method);
+      if (!offMethod) return undefined;
+      return {
+        method: autoMethod.method,
+        auto: autoMethod.summary,
+        off: offMethod.summary,
+        delta: summaryDelta(autoMethod.summary, offMethod.summary),
+      };
+    })
+    .filter(Boolean);
+}
+
+async function main() {
+  const args = parseArgs(process.argv.slice(2));
+  const repoRoot = path.resolve(path.dirname(new URL(import.meta.url).pathname), "..");
+  const projectPath = path.resolve(args.project);
+  const casesPath = path.resolve(args.cases);
+  const casesRelativePath = normalizeRelativePath(path.relative(projectPath, casesPath));
+  const cases = readCases(casesPath);
+  const dbPath = path.join(projectPath, ".scythe-context", "index.sqlite");
+
+  if (!fs.existsSync(dbPath)) {
+    throw new Error(`Index database not found: ${dbPath}. Run repo_reindex first.`);
+  }
+
+  const [
+    { keywordTerms },
+    { searchKeywordOnly, searchHybrid },
+    { buildContextPack },
+    { readRelatedFileGraph },
+  ] = await Promise.all([
+    import(path.join(repoRoot, "dist/indexing/keywordSearch.js")),
+    import(path.join(repoRoot, "dist/indexing/hybridSearch.js")),
+    import(path.join(repoRoot, "dist/indexing/contextPack.js")),
+    import(path.join(repoRoot, "dist/indexing/relatedFiles.js")),
+  ]);
+
+  const passOptions = {
+    args,
+    repoRoot,
+    projectPath,
+    casesPath,
+    casesRelativePath,
+    cases,
+    dbPath,
+    keywordTerms,
+    searchKeywordOnly,
+    searchHybrid,
+    buildContextPack,
+    readRelatedFileGraph,
+  };
+  const runs = args.compareRerank
+    ? [
+        await runBenchmarkPass({ ...passOptions, rerankMode: "auto" }),
+        await runBenchmarkPass({ ...passOptions, rerankMode: "off" }),
+      ]
+    : [await runBenchmarkPass({ ...passOptions, rerankMode: args.rerank })];
+  const primaryRun = runs[0];
+  const comparisons = args.compareRerank ? compareRerankRuns(runs) : undefined;
+
   const report = {
     generatedAt: new Date().toISOString(),
     projectPath,
     casesPath,
     dbPath,
     maxResults: args.maxResults,
-    rerankMode: args.rerank,
+    rerankMode: args.compareRerank ? undefined : args.rerank,
+    compareRerank: args.compareRerank,
     includeHybrid: args.includeHybrid,
-    omittedMethods,
-    methods,
+    omittedMethods: primaryRun.omittedMethods,
+    methods: primaryRun.methods,
+    runs: args.compareRerank ? runs : undefined,
+    comparisons,
   };
 
   if (args.output) {
@@ -477,14 +542,27 @@ async function main() {
   console.log(`Context search benchmark`);
   console.log(`Project: ${projectPath}`);
   console.log(`Cases: ${cases.length}`);
-  console.log(`Rerank: ${args.rerank}`);
+  console.log(`Rerank: ${args.compareRerank ? "auto vs off" : args.rerank}`);
   if (!args.includeHybrid) {
     console.log("Hybrid: omitted. Pass --include-hybrid or use npm run bench:context:hybrid to call the configured embedding API.");
   }
   console.log("");
+  if (args.compareRerank) {
+    console.log("method           hit@1 auto/off/Δ   hit@3 auto/off/Δ   hit@5 auto/off/Δ   MRR auto/off/Δ     mean ms Δ  p95 ms Δ");
+    console.log("---------------  ---------------  ---------------  ---------------  ---------------  ---------  --------");
+    for (const comparison of comparisons) {
+      const { method, auto, off, delta } = comparison;
+      const metric = (name) => `${auto[name].toFixed(2)}/${off[name].toFixed(2)}/${delta[name] >= 0 ? "+" : ""}${delta[name].toFixed(2)}`;
+      console.log(
+        `${method.padEnd(15)}  ${metric("hitAt1").padStart(15)}  ${metric("hitAt3").padStart(15)}  ${metric("hitAt5").padStart(15)}  ${metric("mrr").padStart(15)}  ${delta.meanLatencyMs.toFixed(1).padStart(9)}  ${delta.p95LatencyMs.toFixed(1).padStart(8)}`,
+      );
+    }
+    return;
+  }
+
   console.log("method           ok/skp/err  hit@1  hit@3  hit@5  MRR    mean ms  p95 ms");
   console.log("---------------  ----------  -----  -----  -----  -----  -------  ------");
-  for (const method of methods) {
+  for (const method of primaryRun.methods) {
     const summary = method.summary;
     console.log(
       `${method.method.padEnd(15)}  ${String(`${summary.ok}/${summary.skipped}/${summary.errors}`).padStart(10)}  ${summary.hitAt1.toFixed(2).padStart(5)}  ${summary.hitAt3.toFixed(2).padStart(5)}  ${summary.hitAt5.toFixed(2).padStart(5)}  ${summary.mrr.toFixed(2).padStart(5)}  ${summary.meanLatencyMs.toFixed(1).padStart(7)}  ${summary.p95LatencyMs.toFixed(1).padStart(6)}`,
@@ -493,7 +571,7 @@ async function main() {
 
   console.log("");
   console.log("Misses:");
-  for (const method of methods) {
+  for (const method of primaryRun.methods) {
     const misses = method.cases.filter((item) => item.status === "ok" && !item.hitAt5);
     if (misses.length === 0) continue;
     console.log(`- ${method.method}: ${misses.map((item) => item.id).join(", ")}`);
