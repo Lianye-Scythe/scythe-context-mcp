@@ -6,6 +6,14 @@ This project follows semantic versioning before npm publication where practical.
 
 ## [Unreleased]
 
+### Added
+
+- Add `npm run bench:context:hybrid` for explicit Gemini-backed benchmark runs.
+
+### Changed
+
+- Make the default benchmark report state that `scythe-hybrid` was intentionally omitted unless `--include-hybrid` is set.
+
 ## [0.1.6] - 2026-06-14
 
 ### Added

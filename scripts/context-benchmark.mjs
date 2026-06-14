@@ -85,7 +85,7 @@ Options:
   --project <path>             Project to benchmark. Defaults to cwd.
   --cases <path>               JSON case file. Defaults to ${DEFAULT_CASES_PATH}.
   --max-results <n>            Ranked results to keep per method. Defaults to 8.
-  --include-hybrid             Also run Gemini-backed hybrid search.
+  --include-hybrid             Also run Gemini-backed hybrid search. Calls the configured embedding API.
   --rerank <auto|off>          Code-aware reranking mode. Defaults to env or auto.
   --json                       Print JSON instead of a table.
   --output <path>              Write JSON report to a file.
@@ -361,6 +361,7 @@ async function main() {
       };
     }, { excludedPaths: [casesRelativePath] }),
   ];
+  const omittedMethods = [];
 
   if (args.includeHybrid) {
     const [{ loadConfig }, { GeminiEmbeddingProvider }] = await Promise.all([
@@ -442,6 +443,12 @@ async function main() {
         cases: hybridCases,
       });
     }
+  } else {
+    omittedMethods.push({
+      method: "scythe-hybrid",
+      reason: "not_requested",
+      message: "Gemini-backed hybrid search was not run. Pass --include-hybrid or use npm run bench:context:hybrid to call the configured embedding API.",
+    });
   }
 
   const report = {
@@ -451,6 +458,8 @@ async function main() {
     dbPath,
     maxResults: args.maxResults,
     rerankMode: args.rerank,
+    includeHybrid: args.includeHybrid,
+    omittedMethods,
     methods,
   };
 
@@ -469,6 +478,9 @@ async function main() {
   console.log(`Project: ${projectPath}`);
   console.log(`Cases: ${cases.length}`);
   console.log(`Rerank: ${args.rerank}`);
+  if (!args.includeHybrid) {
+    console.log("Hybrid: omitted. Pass --include-hybrid or use npm run bench:context:hybrid to call the configured embedding API.");
+  }
   console.log("");
   console.log("method           ok/skp/err  hit@1  hit@3  hit@5  MRR    mean ms  p95 ms");
   console.log("---------------  ----------  -----  -----  -----  -----  -------  ------");

@@ -38,6 +38,7 @@
   "scripts": {
     "build": "tsc -p tsconfig.json && node scripts/bin-mode.mjs ensure",
     "bench:context": "node scripts/context-benchmark.mjs",
+    "bench:context:hybrid": "node scripts/context-benchmark.mjs --include-hybrid",
     "bench:context:source": "npm run build && node scripts/context-benchmark.mjs",
     "dev": "tsx src/index.ts",
     "prepack": "npm run build",
