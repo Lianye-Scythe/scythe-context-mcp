@@ -32,7 +32,7 @@ Equivalent explicit form:
 npm run bench:context -- --include-hybrid
 ```
 
-Compare code-aware reranking against the raw merge baseline:
+Compare code-aware reranking against the raw merge baseline without API calls:
 
 ```bash
 npm run bench:context:compare-rerank
@@ -43,6 +43,19 @@ Equivalent explicit form:
 ```bash
 npm run bench:context -- --rerank auto
 npm run bench:context -- --rerank off
+```
+
+For the retrieval-quality comparison that best matches normal Scythe usage, run the Gemini-backed hybrid rerank comparison. This calls the configured embedding API:
+
+```bash
+npm run bench:context:compare-rerank:hybrid
+```
+
+Equivalent explicit form:
+
+```bash
+npm run bench:context:hybrid -- --rerank auto
+npm run bench:context:hybrid -- --rerank off
 ```
 
 The benchmark runner loads `.env` the same way the MCP server does. If `--include-hybrid` is set but `GEMINI_API_KEY` is not available to the benchmark process, `scythe-hybrid` is reported as skipped instead of failed.
