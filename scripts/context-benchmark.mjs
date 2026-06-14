@@ -20,6 +20,7 @@ function parseArgs(argv) {
     rerank: process.env.SCYTHE_CONTEXT_RERANK_MODE || "auto",
     json: false,
     output: undefined,
+    allowMissingExpected: false,
   };
 
   for (let i = 0; i < argv.length; i += 1) {
@@ -61,6 +62,9 @@ function parseArgs(argv) {
       case "--output":
         args.output = next();
         break;
+      case "--allow-missing-expected":
+        args.allowMissingExpected = true;
+        break;
       case "--help":
       case "-h":
         printHelp();
@@ -94,19 +98,90 @@ Options:
   --rerank <auto|off>          Code-aware reranking mode. Defaults to env or auto.
   --json                       Print JSON instead of a table.
   --output <path>              Write JSON report to a file.
+  --allow-missing-expected     Do not fail when expected paths are missing from the target project.
 `);
 }
 
-function readCases(casesPath) {
+function isPathInside(parent, child) {
+  const relative = path.relative(parent, child);
+  return relative === "" || (!relative.startsWith("..") && !path.isAbsolute(relative));
+}
+
+function resolveProjectPath(project) {
+  const projectPath = path.resolve(project);
+  if (!fs.existsSync(projectPath)) {
+    throw new Error(`Project path does not exist: ${projectPath}`);
+  }
+  if (!fs.statSync(projectPath).isDirectory()) {
+    throw new Error(`Project path is not a directory: ${projectPath}`);
+  }
+  return projectPath;
+}
+
+function resolveCasesPath(cases) {
+  const casesPath = path.resolve(cases);
+  if (!fs.existsSync(casesPath)) {
+    throw new Error(`Benchmark case file does not exist: ${casesPath}`);
+  }
+  if (!fs.statSync(casesPath).isFile()) {
+    throw new Error(`Benchmark case path is not a file: ${casesPath}`);
+  }
+  return casesPath;
+}
+
+function readCases(casesPath, projectPath, options = {}) {
   const raw = fs.readFileSync(casesPath, "utf8");
   const cases = JSON.parse(raw);
   if (!Array.isArray(cases)) throw new Error("Benchmark cases must be a JSON array");
-  return cases.map((item, index) => {
-    if (!item.id || !item.query || !Array.isArray(item.expectedPaths) || item.expectedPaths.length === 0) {
+  const seenIds = new Set();
+  const missingExpected = [];
+  const normalizedCases = cases.map((item, index) => {
+    if (
+      typeof item.id !== "string" ||
+      item.id.trim() === "" ||
+      typeof item.query !== "string" ||
+      item.query.trim() === "" ||
+      !Array.isArray(item.expectedPaths) ||
+      item.expectedPaths.length === 0
+    ) {
       throw new Error(`Invalid benchmark case at index ${index}`);
     }
-    return item;
+    if (seenIds.has(item.id)) {
+      throw new Error(`Duplicate benchmark case id: ${item.id}`);
+    }
+    seenIds.add(item.id);
+    const expectedPaths = item.expectedPaths.map((expectedPath) => {
+      if (typeof expectedPath !== "string" || expectedPath.trim() === "") {
+        throw new Error(`Invalid expected path in benchmark case ${item.id}`);
+      }
+      if (path.isAbsolute(expectedPath)) {
+        throw new Error(`Expected path must be project-relative in benchmark case ${item.id}: ${expectedPath}`);
+      }
+      const resolvedExpectedPath = path.resolve(projectPath, expectedPath);
+      if (!isPathInside(projectPath, resolvedExpectedPath)) {
+        throw new Error(`Expected path must stay inside the project in benchmark case ${item.id}: ${expectedPath}`);
+      }
+      const normalized = normalizeRelativePath(path.relative(projectPath, resolvedExpectedPath));
+      if (!fs.existsSync(path.join(projectPath, normalized))) {
+        missingExpected.push({ id: item.id, path: normalized });
+      }
+      return normalized;
+    });
+    return { ...item, expectedPaths };
   });
+
+  if (missingExpected.length > 0 && !options.allowMissingExpected) {
+    const sample = missingExpected
+      .slice(0, 10)
+      .map((item) => `${item.id}: ${item.path}`)
+      .join("; ");
+    throw new Error(
+      `Benchmark case file references ${missingExpected.length} missing expected path(s). ` +
+        `Fix the case file or pass --allow-missing-expected. Sample: ${sample}`,
+    );
+  }
+
+  return { cases: normalizedCases, missingExpected };
 }
 
 function uniquePaths(results) {
@@ -157,7 +232,7 @@ function percentile(values, p) {
 }
 
 function benchmarkMethod(name, cases, runCase, options = {}) {
-  const excludedPaths = new Set((options.excludedPaths ?? []).map(normalizeRelativePath));
+  const excludedPaths = new Set((options.excludedPaths ?? []).filter(Boolean).map(normalizeRelativePath));
   const caseResults = [];
   for (const testCase of cases) {
     const startedAt = performance.now();
@@ -468,10 +543,13 @@ function compareRerankRuns(runs) {
 async function main() {
   const args = parseArgs(process.argv.slice(2));
   const repoRoot = path.resolve(path.dirname(new URL(import.meta.url).pathname), "..");
-  const projectPath = path.resolve(args.project);
-  const casesPath = path.resolve(args.cases);
-  const casesRelativePath = normalizeRelativePath(path.relative(projectPath, casesPath));
-  const cases = readCases(casesPath);
+  const projectPath = resolveProjectPath(args.project);
+  const casesPath = resolveCasesPath(args.cases);
+  const casesPathInsideProject = isPathInside(projectPath, casesPath);
+  const casesRelativePath = casesPathInsideProject ? normalizeRelativePath(path.relative(projectPath, casesPath)) : undefined;
+  const { cases, missingExpected } = readCases(casesPath, projectPath, {
+    allowMissingExpected: args.allowMissingExpected,
+  });
   const dbPath = path.join(projectPath, ".scythe-context", "index.sqlite");
 
   if (!fs.existsSync(dbPath)) {
@@ -517,6 +595,8 @@ async function main() {
     generatedAt: new Date().toISOString(),
     projectPath,
     casesPath,
+    benchmarkScope: casesPathInsideProject ? "project-local" : "external-cases",
+    missingExpected,
     dbPath,
     maxResults: args.maxResults,
     rerankMode: args.compareRerank ? undefined : args.rerank,
@@ -541,7 +621,12 @@ async function main() {
 
   console.log(`Context search benchmark`);
   console.log(`Project: ${projectPath}`);
+  console.log(`Case file: ${casesPath}`);
+  console.log(`Scope: ${casesPathInsideProject ? "project-local" : "external-cases"}`);
   console.log(`Cases: ${cases.length}`);
+  if (missingExpected.length > 0) {
+    console.log(`Missing expected paths: ${missingExpected.length} (--allow-missing-expected enabled)`);
+  }
   console.log(`Rerank: ${args.compareRerank ? "auto vs off" : args.rerank}`);
   if (!args.includeHybrid) {
     console.log("Hybrid: omitted. Pass --include-hybrid or use npm run bench:context:hybrid to call the configured embedding API.");

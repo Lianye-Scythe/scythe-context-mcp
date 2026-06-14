@@ -12,6 +12,7 @@ This project follows semantic versioning before npm publication where practical.
 - Add `npm run bench:context:compare-rerank` for no-API auto/off rerank comparisons.
 - Add `npm run bench:context:compare-rerank:hybrid` for Gemini-backed auto/off retrieval-quality comparisons.
 - Expand the context-search benchmark to 61 task-style cases covering setup, diagnostics, provider compatibility, packaging, release, and benchmark workflows.
+- Document and harden external repository benchmark usage with `--project`, `--cases`, expected-path validation, and benchmark scope reporting.
 
 ### Changed
 
