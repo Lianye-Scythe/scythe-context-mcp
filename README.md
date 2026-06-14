@@ -220,19 +220,25 @@ GEMINI_OUTPUT_DIMENSIONALITY = "1536"
    repo_reindex({ "dry_run": false })
    ```
 
-3. 需要語義搜尋或 context pack 時，再建立 embeddings：
+3. 第一次安裝或環境異常時，先跑本機診斷：
+
+   ```text
+   repo_doctor
+   ```
+
+4. 需要語義搜尋或 context pack 時，再建立 embeddings：
 
    ```text
    repo_reindex({ "dry_run": false, "index_embeddings": true })
    ```
 
-4. 讓 Codex 針對任務拿上下文：
+5. 讓 Codex 針對任務拿上下文：
 
    ```text
    repo_context_pack({ "query": "where is auth token validation handled?" })
    ```
 
-5. 對某個命中檔案展開 imports / reverse imports：
+6. 對某個命中檔案展開 imports / reverse imports：
 
    ```text
    repo_related_files({ "path": "src/server/auth.ts" })
@@ -264,9 +270,9 @@ GEMINI_OUTPUT_DIMENSIONALITY = "1536"
 
 ## 功能狀態
 
-已完成：repo 掃描、chunking、SQLite metadata、SQLite FTS5、sqlite-vec、Gemini Embedding 2 provider、semantic/keyword/hybrid search、embedding 失敗時的 keyword-only fallback、local code-aware reranker、輕量 symbol/dependency graph、related-file lookup、`repo_context_pack`、provider diagnostics、provider capability cache、index freshness diagnostics、`repo_doctor`。
+已完成：repo 掃描、chunking、SQLite metadata、SQLite FTS5、sqlite-vec、Gemini Embedding 2 provider、semantic/keyword/hybrid search、embedding 失敗時的 keyword-only fallback、local code-aware reranker、輕量 symbol/dependency graph、experimental opt-in tree-sitter extractor、related-file lookup、`repo_context_pack`、provider diagnostics、provider capability cache、index freshness diagnostics、`repo_doctor`。
 
-下一步：擴充 benchmark cases、錯誤修復提示 polish、必要時加入 tree-sitter symbol extraction。
+下一步：優先改善安裝後診斷、Codex/WSL troubleshooting、release 維護文件與實際使用回饋；tree-sitter 維持 experimental opt-in，等 benchmark 或使用者回饋證明有明確收益再提高投入。
 
 ## 隱私與本機檔案
 
@@ -285,6 +291,8 @@ GEMINI_OUTPUT_DIMENSIONALITY = "1536"
 - [技術棧](docs/tech-stack.md)
 - [Codex 整合審查](docs/codex-integration.md)
 - [Context search benchmark](docs/benchmark.md)
+- [Troubleshooting and first-run checks](docs/troubleshooting.md)
+- [Release process](docs/release.md)
 
 ## 開發與發佈檢查
 

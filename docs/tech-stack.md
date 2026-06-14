@@ -121,4 +121,4 @@ Phase 3 search：
 
 ## Recommendation
 
-Phase 1 dry-run scanner/chunker 已完成。Phase 2 已完成 `better-sqlite3 + sqlite-vec` 載入 spike、schema 初始化、file/chunk metadata 寫入流程與 embedding index writer。Phase 3 已完成 semantic vector lookup、keyword search 與 hybrid ranker。Phase 5 已完成輕量 symbol graph / related files MVP。Context packer、多跳 related-file traversal、related snippets、provider diagnostics、provider capability cache 與 index freshness diagnostics 也已完成。下一步建議是錯誤 remediation polish、更多 benchmark case 與必要時的 tree-sitter spike。
+Phase 1 dry-run scanner/chunker 已完成。Phase 2 已完成 `better-sqlite3 + sqlite-vec` 載入 spike、schema 初始化、file/chunk metadata 寫入流程與 embedding index writer。Phase 3 已完成 semantic vector lookup、keyword search 與 hybrid ranker。Phase 5 已完成輕量 symbol graph / related files MVP。Context packer、多跳 related-file traversal、related snippets、provider diagnostics、provider capability cache、index freshness diagnostics 與 experimental opt-in tree-sitter extractor 也已完成。下一步建議是安裝後診斷、Codex/WSL troubleshooting、release 維護流程與真實使用回饋整理。

@@ -174,7 +174,7 @@ repo_semantic_search(query, project_path, max_results, mode="hybrid")
 
 ## Phase 5: Symbol Graph
 
-狀態：輕量 MVP 已完成；bounded multi-hop traversal 已完成；tree-sitter / deeper semantic graph 尚未實作。
+狀態：輕量 MVP 已完成；bounded multi-hop traversal 已完成；tree-sitter TS/JS extractor 已以 experimental opt-in 形式加入；deeper semantic graph 尚未實作。
 
 目標：接近 context engine 的「關係理解」。
 

@@ -220,19 +220,25 @@ Use `PWD/p` only if you intentionally run a Windows Node process and need WSL to
    repo_reindex({ "dry_run": false })
    ```
 
-3. Build embeddings only when semantic search or context packs need vectors:
+3. For first-run setup or environment problems, run local diagnostics:
+
+   ```text
+   repo_doctor
+   ```
+
+4. Build embeddings only when semantic search or context packs need vectors:
 
    ```text
    repo_reindex({ "dry_run": false, "index_embeddings": true })
    ```
 
-4. Ask Codex for task-oriented context:
+5. Ask Codex for task-oriented context:
 
    ```text
    repo_context_pack({ "query": "where is auth token validation handled?" })
    ```
 
-5. Expand imports / reverse imports for a matched file:
+6. Expand imports / reverse imports for a matched file:
 
    ```text
    repo_related_files({ "path": "src/server/auth.ts" })
@@ -264,9 +270,9 @@ Prefer `repo_context_pack(response_mode="paths_only")` or the default `compact` 
 
 ## Feature Status
 
-Implemented: repo scanning, chunking, SQLite metadata, SQLite FTS5, sqlite-vec, Gemini Embedding 2 provider, semantic/keyword/hybrid search, keyword-only fallback when embeddings fail, local code-aware reranker, lightweight symbol/dependency graph, related-file lookup, `repo_context_pack`, provider diagnostics, provider capability cache, index freshness diagnostics, and `repo_doctor`.
+Implemented: repo scanning, chunking, SQLite metadata, SQLite FTS5, sqlite-vec, Gemini Embedding 2 provider, semantic/keyword/hybrid search, keyword-only fallback when embeddings fail, local code-aware reranker, lightweight symbol/dependency graph, experimental opt-in tree-sitter extractor, related-file lookup, `repo_context_pack`, provider diagnostics, provider capability cache, index freshness diagnostics, and `repo_doctor`.
 
-Next: expanded benchmark cases, remediation-message polish, and tree-sitter symbol extraction if needed.
+Next: focus on first-run diagnostics, Codex/WSL troubleshooting, release maintenance docs, and real usage feedback. Tree-sitter remains experimental opt-in until benchmark or user evidence shows clear value.
 
 ## Privacy and Local Files
 
@@ -285,6 +291,8 @@ Do not include API keys, proxy tokens, private source snippets, or index databas
 - [Tech Stack](docs/tech-stack.md)
 - [Codex Integration Review](docs/codex-integration.md)
 - [Context Search Benchmark](docs/benchmark.md)
+- [Troubleshooting and first-run checks](docs/troubleshooting.md)
+- [Release process](docs/release.md)
 
 ## Development and Publishing Checks
 

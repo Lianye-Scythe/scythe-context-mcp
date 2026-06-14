@@ -91,7 +91,7 @@ Recommended config should expose all tools by default during development, but `e
 - `AGENTS.md` project guidance.
 - Valid Codex TOML examples using `[mcp_servers.scythe_context.env]`.
 - Secret-safe config examples using `env_vars` for `GEMINI_API_KEY`.
-- `cwd` in MCP config so relative `.env` loading is predictable.
+- Project detection avoids global fixed `cwd`; Scythe prefers tool `project_path`, then `PWD`, then process `cwd`.
 - Windows App + WSL setup guidance using Windows `wsl.exe`, WSL Node, npm package dependencies installed in WSL, `PWD`, and `WSLENV`.
 - `startup_timeout_sec` and `tool_timeout_sec` tuned above defaults.
 - Bounded context output for primary and related snippets.
@@ -101,7 +101,7 @@ Recommended config should expose all tools by default during development, but `e
 ## Remaining Work
 
 - Consider a plugin package later if Codex App plugin distribution becomes the preferred installation route.
-- Add tree-sitter symbol extraction only if regex extraction becomes a retrieval-quality bottleneck.
+- Keep tree-sitter extraction experimental opt-in unless benchmark and real usage show clear value over the default regex extractor.
 - Continue polishing error-specific remediation hints after more real proxy failures are observed.
 
 ## Troubleshooting

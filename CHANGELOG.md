@@ -6,6 +6,15 @@ This project follows semantic versioning before npm publication where practical.
 
 ## [Unreleased]
 
+### Added
+
+- Add troubleshooting and first-run check documentation for Codex, WSL, native modules, provider setup, and safe diagnostics.
+- Add release process documentation for preparing versions, local verification, tagging, GitHub Releases, and npm publication checks.
+
+### Changed
+
+- Refresh README feature status and workflow guidance after the experimental opt-in tree-sitter extractor release.
+
 ## [0.1.10] - 2026-06-14
 
 ### Added
