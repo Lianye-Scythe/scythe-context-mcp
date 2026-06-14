@@ -42,6 +42,8 @@
     "bench:context": "node scripts/context-benchmark.mjs",
     "bench:context:compare-rerank": "node scripts/context-benchmark.mjs --compare-rerank",
     "bench:context:compare-rerank:hybrid": "node scripts/context-benchmark.mjs --compare-rerank --include-hybrid",
+    "bench:context:compare-response-modes": "node scripts/context-benchmark.mjs --compare-response-modes",
+    "bench:context:compare-response-modes:hybrid": "node scripts/context-benchmark.mjs --compare-response-modes --include-hybrid",
     "bench:context:hybrid": "node scripts/context-benchmark.mjs --include-hybrid",
     "bench:context:source": "npm run build && node scripts/context-benchmark.mjs",
     "dev": "tsx src/index.ts",

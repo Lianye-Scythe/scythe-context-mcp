@@ -71,6 +71,26 @@ For quick ranking work, compare only the core suite:
 npm run bench:context -- --suite core --compare-rerank
 ```
 
+Compare context-pack response modes without calling the embedding API:
+
+```bash
+npm run bench:context:compare-response-modes
+```
+
+For a faster smoke check:
+
+```bash
+npm run bench:context -- --suite core --compare-response-modes
+```
+
+This keeps the same Scythe keyword results and estimates the JSON output size for `paths_only`, `compact`, and `snippets`. Hit metrics should normally stay the same across those three methods; the useful comparison is `out tok` and `h5/1k tok`.
+
+Include Gemini-backed hybrid search in the same response-mode comparison when you explicitly want to call the configured embedding API:
+
+```bash
+npm run bench:context:compare-response-modes:hybrid
+```
+
 For benchmark-only reranker tuning, run a profile matrix. This does not change the MCP server runtime configuration; it only passes experimental weights inside the benchmark process:
 
 ```bash

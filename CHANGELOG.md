@@ -6,6 +6,10 @@ This project follows semantic versioning before npm publication where practical.
 
 ## [Unreleased]
 
+### Added
+
+- Add benchmark response-mode comparison for `paths_only`, `compact`, and `snippets` context-pack output token costs.
+
 ## [0.1.7] - 2026-06-14
 
 ### Added

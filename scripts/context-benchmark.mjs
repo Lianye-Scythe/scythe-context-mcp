@@ -20,6 +20,7 @@ function parseArgs(argv) {
     maxContextChars: 16000,
     includeHybrid: false,
     compareRerank: false,
+    compareResponseModes: false,
     rerank: process.env.SCYTHE_CONTEXT_RERANK_MODE || "auto",
     json: false,
     output: undefined,
@@ -57,6 +58,9 @@ function parseArgs(argv) {
         break;
       case "--compare-rerank":
         args.compareRerank = true;
+        break;
+      case "--compare-response-modes":
+        args.compareResponseModes = true;
         break;
       case "--rerank":
         args.rerank = next();
@@ -99,6 +103,9 @@ function parseArgs(argv) {
   if (args.compareRerank && args.rerankProfiles) {
     throw new Error("--compare-rerank cannot be combined with --rerank-profiles");
   }
+  if (args.compareResponseModes && (args.compareRerank || args.rerankProfiles)) {
+    throw new Error("--compare-response-modes cannot be combined with --compare-rerank or --rerank-profiles");
+  }
 
   return args;
 }
@@ -119,6 +126,7 @@ Options:
   --max-results <n>            Ranked results to keep per method. Defaults to 8.
   --include-hybrid             Also run Gemini-backed hybrid search. Calls the configured embedding API.
   --compare-rerank             Run rerank auto and off, then print a delta report.
+  --compare-response-modes     Compare Scythe context-pack response modes and output-token cost.
   --rerank <auto|off>          Code-aware reranking mode. Defaults to env or auto.
   --json                       Print JSON instead of a table.
   --output <path>              Write JSON report to a file.
@@ -363,12 +371,14 @@ function benchmarkMethod(name, cases, runCase, options = {}) {
       const contextPaths = result.contextPaths
         ? uniquePaths(result.contextPaths).filter((candidate) => !excludedPaths.has(candidate))
         : undefined;
-      const estimatedOutputTokens = estimatedTokensFromJson({
-        status: result.status ?? "ok",
-        paths,
-        contextPaths,
-        error: result.error,
-      });
+      const estimatedOutputTokens =
+        result.estimatedOutputTokens ??
+        estimatedTokensFromJson({
+          status: result.status ?? "ok",
+          paths,
+          contextPaths,
+          error: result.error,
+        });
       caseResults.push({
         id: testCase.id,
         query: testCase.query,
@@ -510,7 +520,7 @@ function rgSmartSearch(projectPath, query, maxResults, keywordTerms) {
   return { paths };
 }
 
-function contextPathsFromResults(rawResults, buildContextPack, readRelatedFileGraph, options) {
+function contextPackFromResults(rawResults, buildContextPack, readRelatedFileGraph, options) {
   const seedPaths = uniquePaths(rawResults).slice(0, 3);
   const relatedFiles = readRelatedFileGraph({
     dbPath: options.dbPath,
@@ -524,7 +534,43 @@ function contextPathsFromResults(rawResults, buildContextPack, readRelatedFileGr
     maxRelatedFiles: 10,
     maxRelatedItems: 8,
   });
-  return pack.suggestedPaths;
+  return {
+    relatedSeedCount: seedPaths.length,
+    relatedFiles,
+    pack,
+  };
+}
+
+function contextPathsFromResults(rawResults, buildContextPack, readRelatedFileGraph, options) {
+  return contextPackFromResults(rawResults, buildContextPack, readRelatedFileGraph, options).pack.suggestedPaths;
+}
+
+function contextPackResponseEstimate(rawResults, options, responseMode) {
+  const { relatedSeedCount, pack } = contextPackFromResults(rawResults, options.buildContextPack, options.readRelatedFileGraph, {
+    dbPath: options.dbPath,
+    query: options.query,
+    maxContextChars: options.maxContextChars,
+  });
+  const payload = options.shapeContextPackPayload(
+    {
+      query: options.query,
+      projectPath: options.projectPath,
+      mode: options.searchMode,
+      effectiveMode: options.effectiveMode,
+      rerankMode: options.rerankMode,
+      rerankApplied: options.rerankMode !== "off" && options.effectiveMode !== "semantic",
+      fallback: undefined,
+      relatedDepth: 1,
+      relatedSeedCount,
+      includeRelatedSnippets: false,
+      ...pack,
+    },
+    responseMode,
+  );
+  return {
+    contextPaths: pack.suggestedPaths,
+    estimatedOutputTokens: payload.responseStats?.estimatedOutputTokens ?? estimatedTokensFromJson(payload),
+  };
 }
 
 async function runBenchmarkPass(options) {
@@ -534,25 +580,54 @@ async function runBenchmarkPass(options) {
       rgSmartSearch(options.projectPath, testCase.query, options.args.maxResults, options.keywordTerms),
       { excludedPaths: [options.casesRelativePath] },
     ),
-    benchmarkMethod("scythe-keyword", options.cases, (testCase) => {
-      const rawResults = options.searchKeywordOnly({
-        dbPath: options.dbPath,
-        query: testCase.query,
-        maxResults: options.args.maxResults,
-        maxSnippetChars: options.args.maxSnippetChars,
-        rerankMode: options.rerankMode,
-        rerankWeights: options.rerankWeights,
-      });
-      return {
-        paths: rawResults,
-        contextPaths: contextPathsFromResults(rawResults, options.buildContextPack, options.readRelatedFileGraph, {
-          dbPath: options.dbPath,
-          query: testCase.query,
-          maxContextChars: options.args.maxContextChars,
-        }),
-      };
-    }, { excludedPaths: [options.casesRelativePath] }),
   ];
+  const responseModes = options.args.compareResponseModes ? ["paths_only", "compact", "snippets"] : [undefined];
+  for (const responseMode of responseModes) {
+    methods.push(
+      benchmarkMethod(
+        responseMode ? `scythe-keyword:${responseMode}` : "scythe-keyword",
+        options.cases,
+        (testCase) => {
+          const rawResults = options.searchKeywordOnly({
+            dbPath: options.dbPath,
+            query: testCase.query,
+            maxResults: options.args.maxResults,
+            maxSnippetChars: options.args.maxSnippetChars,
+            rerankMode: options.rerankMode,
+            rerankWeights: options.rerankWeights,
+          });
+          if (responseMode) {
+            const estimate = contextPackResponseEstimate(rawResults, {
+              buildContextPack: options.buildContextPack,
+              readRelatedFileGraph: options.readRelatedFileGraph,
+              shapeContextPackPayload: options.shapeContextPackPayload,
+              dbPath: options.dbPath,
+              projectPath: options.projectPath,
+              query: testCase.query,
+              maxContextChars: options.args.maxContextChars,
+              searchMode: "hybrid",
+              effectiveMode: "keyword",
+              rerankMode: options.rerankMode,
+            }, responseMode);
+            return {
+              paths: rawResults,
+              contextPaths: estimate.contextPaths,
+              estimatedOutputTokens: estimate.estimatedOutputTokens,
+            };
+          }
+          return {
+            paths: rawResults,
+            contextPaths: contextPathsFromResults(rawResults, options.buildContextPack, options.readRelatedFileGraph, {
+              dbPath: options.dbPath,
+              query: testCase.query,
+              maxContextChars: options.args.maxContextChars,
+            }),
+          };
+        },
+        { excludedPaths: [options.casesRelativePath] },
+      ),
+    );
+  }
   const omittedMethods = [];
 
   if (options.args.includeHybrid) {
@@ -562,27 +637,29 @@ async function runBenchmarkPass(options) {
     ]);
     const config = loadConfig();
     if (!config.gemini.apiKey) {
-      const hybridCases = options.cases.map((testCase) => ({
-        id: testCase.id,
-        query: testCase.query,
-        expectedPaths: testCase.expectedPaths,
-        status: "skipped",
-        latencyMs: 0,
-        paths: [],
-        estimatedOutputTokens: estimatedTokensFromJson({ status: "skipped", paths: [], error: "GEMINI_API_KEY is not set" }),
-        error: "GEMINI_API_KEY is not set",
-        ...metricsFor([], testCase.expectedPaths),
-      }));
-      methods.push({
-        method: "scythe-hybrid",
-        summary: summarizeCases(hybridCases),
-        cases: hybridCases,
-      });
+      for (const responseMode of responseModes) {
+        const hybridCases = options.cases.map((testCase) => ({
+          id: testCase.id,
+          query: testCase.query,
+          expectedPaths: testCase.expectedPaths,
+          status: "skipped",
+          latencyMs: 0,
+          paths: [],
+          estimatedOutputTokens: estimatedTokensFromJson({ status: "skipped", paths: [], error: "GEMINI_API_KEY is not set" }),
+          error: "GEMINI_API_KEY is not set",
+          ...metricsFor([], testCase.expectedPaths),
+        }));
+        methods.push({
+          method: responseMode ? `scythe-hybrid:${responseMode}` : "scythe-hybrid",
+          summary: summarizeCases(hybridCases),
+          cases: hybridCases,
+        });
+      }
     } else {
       const provider = new GeminiEmbeddingProvider(config.gemini);
       const dimensions = config.gemini.outputDimensionality ?? 1536;
 
-      const hybridCases = [];
+      const hybridCasesByMode = new Map(responseModes.map((responseMode) => [responseMode, []]));
       for (const testCase of options.cases) {
         const startedAt = performance.now();
         try {
@@ -601,51 +678,76 @@ async function runBenchmarkPass(options) {
             rerankWeights: options.rerankWeights,
           });
           const paths = uniquePaths(rawResults).filter((candidate) => candidate !== options.casesRelativePath);
-          const contextPaths = contextPathsFromResults(rawResults, options.buildContextPack, options.readRelatedFileGraph, {
-            dbPath: options.dbPath,
-            query: testCase.query,
-            maxContextChars: options.args.maxContextChars,
-          });
-          const filteredContextPaths = uniquePaths(contextPaths).filter((candidate) => candidate !== options.casesRelativePath);
-          hybridCases.push({
-            id: testCase.id,
-            query: testCase.query,
-            expectedPaths: testCase.expectedPaths,
-            status: "ok",
-            latencyMs: performance.now() - startedAt,
-            paths,
-            contextPaths: filteredContextPaths,
-            estimatedOutputTokens: estimatedTokensFromJson({
+          const latencyMs = performance.now() - startedAt;
+          for (const responseMode of responseModes) {
+            const estimate = responseMode
+              ? contextPackResponseEstimate(rawResults, {
+                  buildContextPack: options.buildContextPack,
+                  readRelatedFileGraph: options.readRelatedFileGraph,
+                  shapeContextPackPayload: options.shapeContextPackPayload,
+                  dbPath: options.dbPath,
+                  projectPath: options.projectPath,
+                  query: testCase.query,
+                  maxContextChars: options.args.maxContextChars,
+                  searchMode: "hybrid",
+                  effectiveMode: "hybrid",
+                  rerankMode: options.rerankMode,
+                }, responseMode)
+              : {
+                  contextPaths: contextPathsFromResults(rawResults, options.buildContextPack, options.readRelatedFileGraph, {
+                    dbPath: options.dbPath,
+                    query: testCase.query,
+                    maxContextChars: options.args.maxContextChars,
+                  }),
+                };
+            const filteredContextPaths = uniquePaths(estimate.contextPaths).filter((candidate) => candidate !== options.casesRelativePath);
+            hybridCasesByMode.get(responseMode).push({
+              id: testCase.id,
+              query: testCase.query,
+              expectedPaths: testCase.expectedPaths,
               status: "ok",
+              latencyMs,
               paths,
               contextPaths: filteredContextPaths,
-            }),
-            ...metricsFor(paths, testCase.expectedPaths),
-            context: metricsFor(filteredContextPaths, testCase.expectedPaths),
-          });
+              estimatedOutputTokens:
+                estimate.estimatedOutputTokens ??
+                estimatedTokensFromJson({
+                  status: "ok",
+                  paths,
+                  contextPaths: filteredContextPaths,
+                }),
+              ...metricsFor(paths, testCase.expectedPaths),
+              context: metricsFor(filteredContextPaths, testCase.expectedPaths),
+            });
+          }
         } catch (error) {
-          hybridCases.push({
-            id: testCase.id,
-            query: testCase.query,
-            expectedPaths: testCase.expectedPaths,
-            status: "error",
-            latencyMs: performance.now() - startedAt,
-            paths: [],
-            estimatedOutputTokens: estimatedTokensFromJson({
+          for (const responseMode of responseModes) {
+            hybridCasesByMode.get(responseMode).push({
+              id: testCase.id,
+              query: testCase.query,
+              expectedPaths: testCase.expectedPaths,
               status: "error",
+              latencyMs: performance.now() - startedAt,
               paths: [],
+              estimatedOutputTokens: estimatedTokensFromJson({
+                status: "error",
+                paths: [],
+                error: error instanceof Error ? error.message : String(error),
+              }),
               error: error instanceof Error ? error.message : String(error),
-            }),
-            error: error instanceof Error ? error.message : String(error),
-            ...metricsFor([], testCase.expectedPaths),
-          });
+              ...metricsFor([], testCase.expectedPaths),
+            });
+          }
         }
       }
-      methods.push({
-        method: "scythe-hybrid",
-        summary: summarizeCases(hybridCases),
-        cases: hybridCases,
-      });
+      for (const responseMode of responseModes) {
+        const hybridCases = hybridCasesByMode.get(responseMode);
+        methods.push({
+          method: responseMode ? `scythe-hybrid:${responseMode}` : "scythe-hybrid",
+          summary: summarizeCases(hybridCases),
+          cases: hybridCases,
+        });
+      }
     }
   } else {
     omittedMethods.push({
@@ -712,11 +814,13 @@ async function main() {
     { searchKeywordOnly, searchHybrid },
     { buildContextPack },
     { readRelatedFileGraph },
+    { shapeContextPackPayload },
   ] = await Promise.all([
     import(path.join(repoRoot, "dist/indexing/keywordSearch.js")),
     import(path.join(repoRoot, "dist/indexing/hybridSearch.js")),
     import(path.join(repoRoot, "dist/indexing/contextPack.js")),
     import(path.join(repoRoot, "dist/indexing/relatedFiles.js")),
+    import(path.join(repoRoot, "dist/tools/responseShape.js")),
   ]);
 
   const passOptions = {
@@ -732,6 +836,7 @@ async function main() {
     searchHybrid,
     buildContextPack,
     readRelatedFileGraph,
+    shapeContextPackPayload,
   };
   const runs = [];
   if (rerankProfileConfig) {
@@ -771,6 +876,7 @@ async function main() {
     maxResults: args.maxResults,
     rerankMode: args.compareRerank || rerankProfileConfig ? undefined : args.rerank,
     compareRerank: args.compareRerank,
+    compareResponseModes: args.compareResponseModes,
     includeHybrid: args.includeHybrid,
     omittedMethods: primaryRun.omittedMethods,
     methods: primaryRun.methods,
@@ -799,6 +905,7 @@ async function main() {
     console.log(`Missing expected paths: ${missingExpected.length} (--allow-missing-expected enabled)`);
   }
   console.log(`Rerank: ${rerankProfileConfig ? `profiles (${rerankProfileConfig.profiles.length})` : args.compareRerank ? "auto vs off" : args.rerank}`);
+  console.log(`Response modes: ${args.compareResponseModes ? "paths_only vs compact vs snippets" : "default"}`);
   if (!args.includeHybrid) {
     console.log("Hybrid: omitted. Pass --include-hybrid or use npm run bench:context:hybrid to call the configured embedding API.");
   }
@@ -830,12 +937,12 @@ async function main() {
     return;
   }
 
-  console.log("method           ok/skp/err  hit@1  hit@3  hit@5  MRR    out tok  h5/1k tok  mean ms  p95 ms");
-  console.log("---------------  ----------  -----  -----  -----  -----  -------  ---------  -------  ------");
+  console.log("method                        ok/skp/err  hit@1  hit@3  hit@5  MRR    out tok  h5/1k tok  mean ms  p95 ms");
+  console.log("----------------------------  ----------  -----  -----  -----  -----  -------  ---------  -------  ------");
   for (const method of primaryRun.methods) {
     const summary = method.summary;
     console.log(
-      `${method.method.padEnd(15)}  ${String(`${summary.ok}/${summary.skipped}/${summary.errors}`).padStart(10)}  ${summary.hitAt1.toFixed(2).padStart(5)}  ${summary.hitAt3.toFixed(2).padStart(5)}  ${summary.hitAt5.toFixed(2).padStart(5)}  ${summary.mrr.toFixed(2).padStart(5)}  ${summary.meanOutputTokens.toFixed(0).padStart(7)}  ${summary.hitAt5Per1kTokens.toFixed(2).padStart(9)}  ${summary.meanLatencyMs.toFixed(1).padStart(7)}  ${summary.p95LatencyMs.toFixed(1).padStart(6)}`,
+      `${method.method.padEnd(28)}  ${String(`${summary.ok}/${summary.skipped}/${summary.errors}`).padStart(10)}  ${summary.hitAt1.toFixed(2).padStart(5)}  ${summary.hitAt3.toFixed(2).padStart(5)}  ${summary.hitAt5.toFixed(2).padStart(5)}  ${summary.mrr.toFixed(2).padStart(5)}  ${summary.meanOutputTokens.toFixed(0).padStart(7)}  ${summary.hitAt5Per1kTokens.toFixed(2).padStart(9)}  ${summary.meanLatencyMs.toFixed(1).padStart(7)}  ${summary.p95LatencyMs.toFixed(1).padStart(6)}`,
     );
   }
 
