@@ -288,5 +288,323 @@
       "AGENTS.md"
     ],
     "notes": "Privacy docs and remote embedding risk."
+  },
+  {
+    "id": "provider-capability-cache",
+    "query": "provider capability cache should remember batch embedding support and output dimensionality",
+    "expectedPaths": [
+      "src/providers/capabilities.ts",
+      "src/providers/capabilities.test.ts",
+      "src/tools/registerTools.ts",
+      "src/tools/doctor.ts"
+    ],
+    "notes": "Provider capability persistence and diagnostics."
+  },
+  {
+    "id": "gemini-probe-writes-capabilities",
+    "query": "Gemini embedding probe should cache provider capabilities after a successful single embedding request",
+    "expectedPaths": [
+      "src/tools/registerTools.ts",
+      "src/providers/capabilities.ts",
+      "src/providers/gemini.ts"
+    ],
+    "notes": "Probe side effects and provider compatibility diagnostics."
+  },
+  {
+    "id": "doctor-provider-capabilities",
+    "query": "repo doctor should report cached provider capabilities without exposing API keys or proxy secrets",
+    "expectedPaths": [
+      "src/tools/doctor.ts",
+      "src/tools/doctor.test.ts",
+      "src/providers/capabilities.ts"
+    ],
+    "notes": "Secret-safe capability diagnostics."
+  },
+  {
+    "id": "fallback-when-query-embedding-fails",
+    "query": "context pack should degrade to keyword results when query embedding is unavailable in hybrid mode",
+    "expectedPaths": [
+      "src/tools/registerTools.ts",
+      "src/indexing/hybridSearch.ts",
+      "README.md"
+    ],
+    "notes": "Runtime fallback behavior for embedding outages."
+  },
+  {
+    "id": "semantic-mode-no-keyword-fallback",
+    "query": "semantic search mode should return embedding unavailable instead of keyword fallback",
+    "expectedPaths": [
+      "src/tools/registerTools.ts",
+      "src/indexing/semanticSearch.ts",
+      "README.en.md"
+    ],
+    "notes": "Explicit semantic-only error behavior."
+  },
+  {
+    "id": "windows-wsl-wrapper-config",
+    "query": "Windows Codex App should launch WSL Node through wsl.exe wrapper with PWD and WSLENV",
+    "expectedPaths": [
+      "docs/codex-integration.md",
+      "README.md",
+      "src/config.ts"
+    ],
+    "notes": "Windows App plus WSL setup guidance."
+  },
+  {
+    "id": "project-path-auto-detection",
+    "query": "avoid fixed repo path configuration by detecting project path from tool argument PWD or cwd",
+    "expectedPaths": [
+      "src/config.ts",
+      "src/config.test.ts",
+      "README.md",
+      "docs/codex-integration.md"
+    ],
+    "notes": "Multi-repo default project detection."
+  },
+  {
+    "id": "mcp-tool-schema-timeouts",
+    "query": "MCP config examples should show startup timeout tool timeout and enabled tools",
+    "expectedPaths": [
+      "README.md",
+      "README.en.md",
+      "README.zh-CN.md",
+      "docs/codex-integration.md"
+    ],
+    "notes": "User-facing Codex MCP configuration."
+  },
+  {
+    "id": "repo-index-status-freshness",
+    "query": "index status should report stale modified new missing files and recommended next actions",
+    "expectedPaths": [
+      "src/indexing/indexStatus.ts",
+      "src/indexing/indexStatus.test.ts",
+      "src/tools/registerTools.ts"
+    ],
+    "notes": "Freshness diagnostics in status tool."
+  },
+  {
+    "id": "embedding-coverage-diagnostics",
+    "query": "diagnostics should warn when indexed chunks are missing 1536 dimension embeddings",
+    "expectedPaths": [
+      "src/indexing/indexStatus.ts",
+      "src/tools/doctor.ts",
+      "src/tools/doctor.test.ts"
+    ],
+    "notes": "Embedding coverage checks."
+  },
+  {
+    "id": "stable-vector-row-rewrite",
+    "query": "embedding writer should overwrite stale sqlite vector rows before inserting reused embedding ids",
+    "expectedPaths": [
+      "src/indexing/embeddingWriter.ts",
+      "src/indexing/embeddingWriter.test.ts",
+      "src/storage/schema.ts"
+    ],
+    "notes": "Incremental embedding cache correctness."
+  },
+  {
+    "id": "chunker-overlap-budget",
+    "query": "chunker should split files by target chunk chars overlap and max chunks per file",
+    "expectedPaths": [
+      "src/indexing/chunker.ts",
+      "src/indexing/chunker.test.ts",
+      "src/indexing/defaults.ts"
+    ],
+    "notes": "Chunking behavior and defaults."
+  },
+  {
+    "id": "scanner-built-in-ignores",
+    "query": "scanner should skip node_modules dist build images fonts package lock and local indexes",
+    "expectedPaths": [
+      "src/indexing/scanner.ts",
+      "src/indexing/scanner.test.ts",
+      ".gitignore"
+    ],
+    "notes": "Scanner ignore policy."
+  },
+  {
+    "id": "result-format-context-budget",
+    "query": "search result formatter should cap context chars and include truncated snippet metadata",
+    "expectedPaths": [
+      "src/indexing/resultFormat.ts",
+      "src/indexing/resultFormat.test.ts",
+      "src/tools/registerTools.ts"
+    ],
+    "notes": "Formatted search response budgeting."
+  },
+  {
+    "id": "related-snippets-budget",
+    "query": "related snippets should obey per file and total related context budget",
+    "expectedPaths": [
+      "src/indexing/relatedSnippets.ts",
+      "src/tools/registerTools.ts",
+      "src/indexing/contextPack.test.ts"
+    ],
+    "notes": "Secondary context packing controls."
+  },
+  {
+    "id": "context-pack-seed-related-depth",
+    "query": "context pack should use seed files related depth and related item limits",
+    "expectedPaths": [
+      "src/tools/registerTools.ts",
+      "src/indexing/contextPack.ts",
+      "src/indexing/relatedFiles.ts"
+    ],
+    "notes": "Task-oriented context pack parameters."
+  },
+  {
+    "id": "dependency-graph-imported-by",
+    "query": "related files should show imports reverse imports symbols and importedBy counts",
+    "expectedPaths": [
+      "src/indexing/relatedFiles.ts",
+      "src/indexing/symbolGraph.ts",
+      "src/indexing/symbolGraph.test.ts"
+    ],
+    "notes": "Graph-oriented related file lookup."
+  },
+  {
+    "id": "benchmark-rerank-delta-report",
+    "query": "benchmark compare rerank should print auto off delta report and JSON comparisons",
+    "expectedPaths": [
+      "scripts/context-benchmark.mjs",
+      "docs/benchmark.md",
+      "package.json"
+    ],
+    "notes": "Benchmark compare report UX."
+  },
+  {
+    "id": "benchmark-hybrid-opt-in",
+    "query": "benchmark should omit Gemini hybrid by default and require include hybrid to call embedding API",
+    "expectedPaths": [
+      "scripts/context-benchmark.mjs",
+      "docs/benchmark.md",
+      "package.json"
+    ],
+    "notes": "No-API default benchmark behavior."
+  },
+  {
+    "id": "publish-workflow-tag-trigger",
+    "query": "npm publish workflow should run on v tags check package version and use trusted publishing",
+    "expectedPaths": [
+      ".github/workflows/publish.yml",
+      "package.json",
+      "CHANGELOG.md"
+    ],
+    "notes": "GitHub Actions npm publish flow."
+  },
+  {
+    "id": "issue-pr-templates",
+    "query": "GitHub issue and pull request templates should collect bug reports feature requests and validation checklist",
+    "expectedPaths": [
+      ".github/ISSUE_TEMPLATE/bug_report.yml",
+      ".github/ISSUE_TEMPLATE/feature_request.yml",
+      ".github/PULL_REQUEST_TEMPLATE.md"
+    ],
+    "notes": "Project maintenance templates."
+  },
+  {
+    "id": "contributing-release-checklist",
+    "query": "contributing guide should explain tests build smoke audit and release validation",
+    "expectedPaths": [
+      "CONTRIBUTING.md",
+      "package.json",
+      ".github/workflows/ci.yml"
+    ],
+    "notes": "Contributor workflow and validation."
+  },
+  {
+    "id": "package-excludes-local-secrets",
+    "query": "npm ignore and git ignore should exclude local secrets indexes benchmark reports and generated artifacts",
+    "expectedPaths": [
+      ".npmignore",
+      ".gitignore",
+      "package.json",
+      "scripts/context-benchmark.mjs",
+      "docs/benchmark.md"
+    ],
+    "notes": "Packaging and repository privacy boundary."
+  },
+  {
+    "id": "cli-unknown-option-error",
+    "query": "CLI should parse unknown options as errors and support help and version smoke tests",
+    "expectedPaths": [
+      "src/cli.ts",
+      "src/cli.test.ts",
+      "package.json"
+    ],
+    "notes": "CLI argument handling."
+  },
+  {
+    "id": "provider-error-redaction",
+    "query": "Gemini provider should redact API key from HTTP error body snippets",
+    "expectedPaths": [
+      "src/providers/gemini.ts",
+      "src/providers/gemini.test.ts",
+      "src/tools/registerTools.ts"
+    ],
+    "notes": "Provider error safety."
+  },
+  {
+    "id": "base-url-normalization",
+    "query": "Gemini base URL normalization should accept provider root with or without v1beta trailing slash",
+    "expectedPaths": [
+      "src/providers/gemini.ts",
+      "src/providers/gemini.test.ts",
+      "docs/gemini-compatibility.md"
+    ],
+    "notes": "Proxy URL compatibility."
+  },
+  {
+    "id": "auth-mode-query-header-bearer",
+    "query": "Gemini auth mode should support x goog api key bearer and query parameter key",
+    "expectedPaths": [
+      "src/config.ts",
+      "src/providers/gemini.ts",
+      "docs/gemini-compatibility.md"
+    ],
+    "notes": "Provider auth compatibility."
+  },
+  {
+    "id": "node-runtime-supported-range",
+    "query": "repo doctor should accept Node 24 LTS and warn outside the supported runtime range",
+    "expectedPaths": [
+      "src/tools/doctor.ts",
+      "src/tools/doctor.test.ts",
+      "package.json"
+    ],
+    "notes": "Runtime diagnostics."
+  },
+  {
+    "id": "native-module-install-troubleshooting",
+    "query": "doctor should diagnose better sqlite3 sqlite vec native module install failures and WSL platform mismatch",
+    "expectedPaths": [
+      "src/tools/doctor.ts",
+      "docs/codex-integration.md",
+      "README.md"
+    ],
+    "notes": "Native dependency troubleshooting."
+  },
+  {
+    "id": "server-instructions-first-512",
+    "query": "MCP server instructions should tell Codex when to use context pack semantic search related files and rg",
+    "expectedPaths": [
+      "src/index.ts",
+      "AGENTS.md",
+      "README.md"
+    ],
+    "notes": "Tool selection guidance for Codex."
+  },
+  {
+    "id": "tree-sitter-future-work",
+    "query": "tree sitter symbol extraction is pending and should only be added if regex extraction becomes a bottleneck",
+    "expectedPaths": [
+      "README.md",
+      "docs/tech-stack.md",
+      "docs/codex-integration.md",
+      "docs/architecture.md",
+      "docs/development-plan.md",
+      "src/indexing/symbolGraph.ts"
+    ],
+    "notes": "Future symbol extraction planning."
   }
 ]
