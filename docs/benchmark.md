@@ -35,6 +35,12 @@ npm run bench:context -- --include-hybrid
 Compare code-aware reranking against the raw merge baseline:
 
 ```bash
+npm run bench:context:compare-rerank
+```
+
+Equivalent explicit form:
+
+```bash
 npm run bench:context -- --rerank auto
 npm run bench:context -- --rerank off
 ```

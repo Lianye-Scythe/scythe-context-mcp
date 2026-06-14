@@ -9,6 +9,7 @@ This project follows semantic versioning before npm publication where practical.
 ### Added
 
 - Add `npm run bench:context:hybrid` for explicit Gemini-backed benchmark runs.
+- Add `npm run bench:context:compare-rerank` for no-API auto/off rerank comparisons.
 
 ### Changed
 
