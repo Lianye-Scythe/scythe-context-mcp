@@ -1,5 +1,5 @@
 import { searchByKeyword, type KeywordSearchResult } from "./keywordSearch.js";
-import { rerankCodeAware } from "./codeAwareReranker.js";
+import { rerankCodeAware, type CodeAwareRerankWeights } from "./codeAwareReranker.js";
 import { searchByVector, type VectorSearchResult } from "./semanticSearch.js";
 
 export type RerankMode = "auto" | "off";
@@ -12,6 +12,7 @@ export interface HybridSearchOptions {
   maxResults: number;
   maxSnippetChars: number;
   rerankMode?: RerankMode;
+  rerankWeights?: Partial<CodeAwareRerankWeights>;
 }
 
 export interface HybridSearchResult {
@@ -110,6 +111,7 @@ export function searchHybrid(options: HybridSearchOptions): HybridSearchResult[]
     results: mergedResults,
     maxResults: options.maxResults,
     maxSnippetChars: options.maxSnippetChars,
+    weights: options.rerankWeights,
   });
 }
 
@@ -132,5 +134,6 @@ export function searchKeywordOnly(options: Omit<HybridSearchOptions, "dimensions
     results: mergedResults,
     maxResults: options.maxResults,
     maxSnippetChars: options.maxSnippetChars,
+    weights: options.rerankWeights,
   });
 }

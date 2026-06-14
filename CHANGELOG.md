@@ -14,6 +14,7 @@ This project follows semantic versioning before npm publication where practical.
 - Expand the context-search benchmark to 61 task-style cases covering setup, diagnostics, provider compatibility, packaging, release, and benchmark workflows.
 - Document and harden external repository benchmark usage with `--project`, `--cases`, expected-path validation, and benchmark scope reporting.
 - Add benchmark case tags and `--suite` filtering for faster core/provider/diagnostics/integration/maintenance/benchmark runs.
+- Add benchmark-only rerank profile matrix support with bundled path-heavy, symbol-heavy, and docs-heavy experiment profiles.
 
 ### Changed
 

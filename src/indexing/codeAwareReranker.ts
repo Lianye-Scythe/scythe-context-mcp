@@ -10,6 +10,7 @@ export interface CodeAwareRerankOptions {
   results: HybridSearchResult[];
   maxResults: number;
   maxSnippetChars: number;
+  weights?: Partial<CodeAwareRerankWeights>;
 }
 
 interface CandidateDetails {
@@ -17,6 +18,26 @@ interface CandidateDetails {
   imports: number;
   importedBy: number;
 }
+
+export interface CodeAwareRerankWeights {
+  base: number;
+  path: number;
+  snippet: number;
+  symbol: number;
+  role: number;
+  graph: number;
+  sourceCounterpartRatio: number;
+}
+
+export const defaultCodeAwareRerankWeights: CodeAwareRerankWeights = {
+  base: 1,
+  path: 1,
+  snippet: 1,
+  symbol: 1,
+  role: 1,
+  graph: 1,
+  sourceCounterpartRatio: 0.85,
+};
 
 const sourceExtensions = [".ts", ".tsx", ".mts", ".cts", ".js", ".jsx", ".mjs", ".cjs"];
 
@@ -245,6 +266,10 @@ export function rerankCodeAware(options: CodeAwareRerankOptions): HybridSearchRe
   if (terms.length === 0 || options.results.length === 0) {
     return options.results.slice(0, options.maxResults);
   }
+  const weights = {
+    ...defaultCodeAwareRerankWeights,
+    ...options.weights,
+  };
 
   const db = new Database(options.dbPath, { readonly: true });
   try {
@@ -256,7 +281,7 @@ export function rerankCodeAware(options: CodeAwareRerankOptions): HybridSearchRe
       for (const counterpart of sourceCounterparts(result.path, activePaths)) {
         const counterpartResult = readFirstChunk(db, counterpart, options.maxSnippetChars);
         if (counterpartResult) {
-          counterpartResult.score = Math.max(0, baseScore(result) * 0.85);
+          counterpartResult.score = Math.max(0, baseScore(result) * weights.sourceCounterpartRatio);
           addCandidate(candidates, counterpartResult);
         }
       }
@@ -275,12 +300,12 @@ export function rerankCodeAware(options: CodeAwareRerankOptions): HybridSearchRe
       .map((candidate) => {
         const details = detailsFor(candidate.path);
         const rerankScore =
-          baseScore(candidate) +
-          pathScore(candidate.path, terms) +
-          snippetScore(candidate.snippet, terms) +
-          symbolScore(details, terms) +
-          roleScore(candidate.path, terms) +
-          graphScore(details);
+          baseScore(candidate) * weights.base +
+          pathScore(candidate.path, terms) * weights.path +
+          snippetScore(candidate.snippet, terms) * weights.snippet +
+          symbolScore(details, terms) * weights.symbol +
+          roleScore(candidate.path, terms) * weights.role +
+          graphScore(details) * weights.graph;
 
         return {
           ...candidate,

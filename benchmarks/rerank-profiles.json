@@ -1,0 +1,43 @@
+[
+  {
+    "name": "off",
+    "rerankMode": "off",
+    "notes": "Raw merged baseline without code-aware reranking."
+  },
+  {
+    "name": "default",
+    "rerankMode": "auto",
+    "notes": "Current production reranker weights."
+  },
+  {
+    "name": "path-heavy",
+    "rerankMode": "auto",
+    "weights": {
+      "path": 1.45,
+      "symbol": 0.85,
+      "snippet": 0.9
+    },
+    "notes": "Emphasizes filename and directory matches for task-oriented lookup."
+  },
+  {
+    "name": "symbol-heavy",
+    "rerankMode": "auto",
+    "weights": {
+      "path": 0.9,
+      "symbol": 1.45,
+      "graph": 1.15
+    },
+    "notes": "Emphasizes symbol and graph signals for implementation lookup."
+  },
+  {
+    "name": "docs-heavy",
+    "rerankMode": "auto",
+    "weights": {
+      "path": 1.1,
+      "snippet": 1.25,
+      "role": 1.35,
+      "symbol": 0.75
+    },
+    "notes": "Emphasizes docs/config/security style queries."
+  }
+]

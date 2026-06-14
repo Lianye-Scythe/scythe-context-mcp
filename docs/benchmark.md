@@ -71,6 +71,24 @@ For quick ranking work, compare only the core suite:
 npm run bench:context -- --suite core --compare-rerank
 ```
 
+For benchmark-only reranker tuning, run a profile matrix. This does not change the MCP server runtime configuration; it only passes experimental weights inside the benchmark process:
+
+```bash
+npm run bench:context -- \
+  --suite core \
+  --rerank-profiles benchmarks/rerank-profiles.json
+```
+
+The bundled profile file compares `off`, `default`, `path-heavy`, `symbol-heavy`, and `docs-heavy`. Profile weights are multipliers for the current code-aware reranker components:
+
+- `base`: existing merged search score.
+- `path`: path and basename term matches.
+- `snippet`: snippet term matches.
+- `symbol`: extracted symbol matches.
+- `role`: source/test/docs/generated role adjustment.
+- `graph`: import and reverse-import counts.
+- `sourceCounterpartRatio`: score ratio used when a matched test file adds its source counterpart.
+
 For the retrieval-quality comparison that best matches normal Scythe usage, run the Gemini-backed hybrid rerank comparison. This calls the configured embedding API and prints auto/off deltas for `scythe-hybrid` as well:
 
 ```bash

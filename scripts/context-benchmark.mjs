@@ -8,6 +8,7 @@ import { performance } from "node:perf_hooks";
 
 const DEFAULT_CASES_PATH = "benchmarks/context-search-cases.json";
 const DEFAULT_SUITE = "full";
+const RERANK_WEIGHT_KEYS = ["base", "path", "snippet", "symbol", "role", "graph", "sourceCounterpartRatio"];
 
 function parseArgs(argv) {
   const args = {
@@ -23,6 +24,7 @@ function parseArgs(argv) {
     output: undefined,
     allowMissingExpected: false,
     suites: [DEFAULT_SUITE],
+    rerankProfiles: undefined,
   };
 
   for (let i = 0; i < argv.length; i += 1) {
@@ -70,6 +72,9 @@ function parseArgs(argv) {
       case "--suite":
         args.suites = parseSuites(next());
         break;
+      case "--rerank-profiles":
+        args.rerankProfiles = next();
+        break;
       case "--help":
       case "-h":
         printHelp();
@@ -89,6 +94,9 @@ function parseArgs(argv) {
   }
   if (args.suites.length === 0) {
     throw new Error("--suite must include at least one suite name");
+  }
+  if (args.compareRerank && args.rerankProfiles) {
+    throw new Error("--compare-rerank cannot be combined with --rerank-profiles");
   }
 
   return args;
@@ -115,6 +123,7 @@ Options:
   --output <path>              Write JSON report to a file.
   --allow-missing-expected     Do not fail when expected paths are missing from the target project.
   --suite <name[,name]>        Case suite tags to run. Defaults to full.
+  --rerank-profiles <path>     Run a benchmark-only rerank profile matrix from JSON.
 `);
 }
 
@@ -206,6 +215,57 @@ function readCases(casesPath, projectPath, options = {}) {
   }
 
   return { cases: normalizedCases, missingExpected };
+}
+
+function readRerankProfiles(profilesPath) {
+  const resolvedPath = resolveCasesPath(profilesPath);
+  const raw = fs.readFileSync(resolvedPath, "utf8");
+  const profiles = JSON.parse(raw);
+  if (!Array.isArray(profiles) || profiles.length === 0) {
+    throw new Error("Rerank profiles must be a non-empty JSON array");
+  }
+
+  const seenNames = new Set();
+  return {
+    path: resolvedPath,
+    profiles: profiles.map((profile, index) => {
+      if (typeof profile.name !== "string" || profile.name.trim() === "") {
+        throw new Error(`Invalid rerank profile at index ${index}: name is required`);
+      }
+      const name = profile.name.trim();
+      if (seenNames.has(name)) {
+        throw new Error(`Duplicate rerank profile name: ${name}`);
+      }
+      seenNames.add(name);
+
+      const rerankMode = profile.rerankMode ?? "auto";
+      if (rerankMode !== "auto" && rerankMode !== "off") {
+        throw new Error(`Profile ${name} rerankMode must be one of: auto, off`);
+      }
+
+      const weights = profile.weights ?? undefined;
+      if (weights !== undefined) {
+        if (typeof weights !== "object" || Array.isArray(weights) || weights === null) {
+          throw new Error(`Profile ${name} weights must be an object`);
+        }
+        for (const key of Object.keys(weights)) {
+          if (!RERANK_WEIGHT_KEYS.includes(key)) {
+            throw new Error(`Profile ${name} has unknown weight: ${key}`);
+          }
+          if (typeof weights[key] !== "number" || !Number.isFinite(weights[key])) {
+            throw new Error(`Profile ${name} weight ${key} must be a finite number`);
+          }
+        }
+      }
+
+      return {
+        name,
+        rerankMode,
+        weights,
+        notes: profile.notes,
+      };
+    }),
+  };
 }
 
 function filterCasesBySuite(cases, suites) {
@@ -461,6 +521,7 @@ async function runBenchmarkPass(options) {
         maxResults: options.args.maxResults,
         maxSnippetChars: options.args.maxSnippetChars,
         rerankMode: options.rerankMode,
+        rerankWeights: options.rerankWeights,
       });
       return {
         paths: rawResults,
@@ -516,6 +577,7 @@ async function runBenchmarkPass(options) {
             maxResults: options.args.maxResults,
             maxSnippetChars: options.args.maxSnippetChars,
             rerankMode: options.rerankMode,
+            rerankWeights: options.rerankWeights,
           });
           const paths = uniquePaths(rawResults).filter((candidate) => candidate !== options.casesRelativePath);
           const contextPaths = contextPathsFromResults(rawResults, options.buildContextPack, options.readRelatedFileGraph, {
@@ -562,7 +624,7 @@ async function runBenchmarkPass(options) {
     });
   }
 
-  return { rerankMode: options.rerankMode, methods, omittedMethods };
+  return { rerankMode: options.rerankMode, rerankProfile: options.rerankProfile, methods, omittedMethods };
 }
 
 function summaryDelta(autoSummary, offSummary) {
@@ -606,6 +668,7 @@ async function main() {
     allowMissingExpected: args.allowMissingExpected,
   });
   const { selectedCases, activeSuites } = filterCasesBySuite(cases, args.suites);
+  const rerankProfileConfig = args.rerankProfiles ? readRerankProfiles(args.rerankProfiles) : undefined;
   const dbPath = path.join(projectPath, ".scythe-context", "index.sqlite");
 
   if (!fs.existsSync(dbPath)) {
@@ -638,12 +701,26 @@ async function main() {
     buildContextPack,
     readRelatedFileGraph,
   };
-  const runs = args.compareRerank
-    ? [
-        await runBenchmarkPass({ ...passOptions, rerankMode: "auto" }),
-        await runBenchmarkPass({ ...passOptions, rerankMode: "off" }),
-      ]
-    : [await runBenchmarkPass({ ...passOptions, rerankMode: args.rerank })];
+  const runs = [];
+  if (rerankProfileConfig) {
+    for (const profile of rerankProfileConfig.profiles) {
+      runs.push(
+        await runBenchmarkPass({
+          ...passOptions,
+          rerankMode: profile.rerankMode,
+          rerankWeights: profile.weights,
+          rerankProfile: profile.name,
+        }),
+      );
+    }
+  } else if (args.compareRerank) {
+    runs.push(
+      await runBenchmarkPass({ ...passOptions, rerankMode: "auto" }),
+      await runBenchmarkPass({ ...passOptions, rerankMode: "off" }),
+    );
+  } else {
+    runs.push(await runBenchmarkPass({ ...passOptions, rerankMode: args.rerank }));
+  }
   const primaryRun = runs[0];
   const comparisons = args.compareRerank ? compareRerankRuns(runs) : undefined;
 
@@ -656,14 +733,16 @@ async function main() {
     totalCases: cases.length,
     selectedCases: selectedCases.length,
     missingExpected,
+    rerankProfilesPath: rerankProfileConfig?.path,
+    rerankProfiles: rerankProfileConfig?.profiles,
     dbPath,
     maxResults: args.maxResults,
-    rerankMode: args.compareRerank ? undefined : args.rerank,
+    rerankMode: args.compareRerank || rerankProfileConfig ? undefined : args.rerank,
     compareRerank: args.compareRerank,
     includeHybrid: args.includeHybrid,
     omittedMethods: primaryRun.omittedMethods,
     methods: primaryRun.methods,
-    runs: args.compareRerank ? runs : undefined,
+    runs: args.compareRerank || rerankProfileConfig ? runs : undefined,
     comparisons,
   };
 
@@ -687,11 +766,25 @@ async function main() {
   if (missingExpected.length > 0) {
     console.log(`Missing expected paths: ${missingExpected.length} (--allow-missing-expected enabled)`);
   }
-  console.log(`Rerank: ${args.compareRerank ? "auto vs off" : args.rerank}`);
+  console.log(`Rerank: ${rerankProfileConfig ? `profiles (${rerankProfileConfig.profiles.length})` : args.compareRerank ? "auto vs off" : args.rerank}`);
   if (!args.includeHybrid) {
     console.log("Hybrid: omitted. Pass --include-hybrid or use npm run bench:context:hybrid to call the configured embedding API.");
   }
   console.log("");
+  if (rerankProfileConfig) {
+    console.log("method/profile              ok/skp/err  hit@1  hit@3  hit@5  MRR    mean ms  p95 ms");
+    console.log("--------------------------  ----------  -----  -----  -----  -----  -------  ------");
+    for (const run of runs) {
+      for (const method of run.methods) {
+        const summary = method.summary;
+        const label = `${method.method}/${run.rerankProfile ?? run.rerankMode}`;
+        console.log(
+          `${label.padEnd(26)}  ${String(`${summary.ok}/${summary.skipped}/${summary.errors}`).padStart(10)}  ${summary.hitAt1.toFixed(2).padStart(5)}  ${summary.hitAt3.toFixed(2).padStart(5)}  ${summary.hitAt5.toFixed(2).padStart(5)}  ${summary.mrr.toFixed(2).padStart(5)}  ${summary.meanLatencyMs.toFixed(1).padStart(7)}  ${summary.p95LatencyMs.toFixed(1).padStart(6)}`,
+        );
+      }
+    }
+    return;
+  }
   if (args.compareRerank) {
     console.log("method           hit@1 auto/off/Δ   hit@3 auto/off/Δ   hit@5 auto/off/Δ   MRR auto/off/Δ     mean ms Δ  p95 ms Δ");
     console.log("---------------  ---------------  ---------------  ---------------  ---------------  ---------  --------");

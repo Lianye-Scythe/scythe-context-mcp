@@ -162,6 +162,43 @@ describe("searchKeywordOnly", () => {
     expect(paths.indexOf("src/indexWriter.test.ts")).toBeLessThan(paths.indexOf("src/indexWriter.ts"));
   });
 
+  it("can apply benchmark-only rerank weights", async () => {
+    await fs.mkdir(path.join(tempDir, "src"), { recursive: true });
+    await fs.writeFile(path.join(tempDir, "src", "baseUrlNormalization.ts"), "export const marker = 'gemini provider compatibility';\n");
+    await fs.writeFile(path.join(tempDir, "src", "provider.ts"), "export const marker = 'gemini provider compatibility';\n");
+    const metadata = await persistentReindexMetadata({
+      projectPath: tempDir,
+      indexDirName: ".scythe-context",
+      vectorDimensions: 1536,
+      maxFileBytes: 4096,
+      targetChunkChars: 200,
+      chunkOverlapChars: 0,
+      maxChunksPerFile: 10,
+    });
+
+    const defaultResults = searchKeywordOnly({
+      dbPath: metadata.dbPath,
+      query: "base url normalization gemini provider compatibility",
+      maxResults: 5,
+      maxSnippetChars: 120,
+    });
+    const pathHeavyResults = searchKeywordOnly({
+      dbPath: metadata.dbPath,
+      query: "base url normalization gemini provider compatibility",
+      maxResults: 5,
+      maxSnippetChars: 120,
+      rerankWeights: {
+        path: 2,
+      },
+    });
+
+    const defaultTarget = defaultResults.find((result) => result.path === "src/baseUrlNormalization.ts");
+    const pathHeavyTarget = pathHeavyResults.find((result) => result.path === "src/baseUrlNormalization.ts");
+    expect(defaultTarget).toBeDefined();
+    expect(pathHeavyTarget).toBeDefined();
+    expect(pathHeavyTarget!.score).toBeGreaterThan(defaultTarget!.score);
+  });
+
   it("does not let source-role boosts outrank documentation for security policy queries", async () => {
     await fs.mkdir(path.join(tempDir, "src", "tools"), { recursive: true });
     await fs.writeFile(
