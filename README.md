@@ -157,6 +157,8 @@ enabled_tools = [
 
 如果你真的想固定某一個預設專案，可以在 `[mcp_servers.scythe_context.env]` 設 `SCYTHE_CONTEXT_DEFAULT_PROJECT`。一般多 repo 使用不需要這樣做；Scythe 會優先使用工具呼叫的 `project_path`，再使用 `PWD`，最後才使用 MCP process 的 `cwd`。
 
+`SCYTHE_CONTEXT_RERANK_MODE` 可設為 `auto` 或 `off`。預設 `auto` 會啟用 local code-aware reranker；排查 ranking 問題時可暫時設為 `off`，回到 semantic/keyword merge 的原始排序。
+
 ### Gemini / v1beta proxy
 
 如果不填 URL/model/auth，預設會使用官方 Gemini 相容設定：

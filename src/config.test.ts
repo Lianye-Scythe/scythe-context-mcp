@@ -12,6 +12,7 @@ const MANAGED_ENV = [
   "SCYTHE_CONTEXT_MAX_CHUNKS_PER_FILE",
   "SCYTHE_CONTEXT_EMBEDDING_BATCH_SIZE",
   "SCYTHE_CONTEXT_MAX_EMBEDDING_CHUNKS",
+  "SCYTHE_CONTEXT_RERANK_MODE",
   "REPO_BEACON_DEFAULT_PROJECT",
   "REPO_BEACON_INDEX_DIR",
   "REPO_BEACON_MAX_FILE_BYTES",
@@ -20,6 +21,7 @@ const MANAGED_ENV = [
   "REPO_BEACON_MAX_CHUNKS_PER_FILE",
   "REPO_BEACON_EMBEDDING_BATCH_SIZE",
   "REPO_BEACON_MAX_EMBEDDING_CHUNKS",
+  "REPO_BEACON_RERANK_MODE",
   "PWD",
 ] as const;
 
@@ -45,6 +47,7 @@ describe("loadConfig", () => {
     process.env.SCYTHE_CONTEXT_MAX_CHUNKS_PER_FILE = "8";
     process.env.SCYTHE_CONTEXT_EMBEDDING_BATCH_SIZE = "9";
     process.env.SCYTHE_CONTEXT_MAX_EMBEDDING_CHUNKS = "10";
+    process.env.SCYTHE_CONTEXT_RERANK_MODE = "off";
 
     const config = loadConfig();
 
@@ -58,6 +61,7 @@ describe("loadConfig", () => {
       embeddingBatchSize: 9,
       maxEmbeddingChunks: 10,
     });
+    expect(config.search.rerankMode).toBe("off");
   });
 
   it("uses PWD as the default project when no explicit project is configured", () => {
@@ -87,10 +91,25 @@ describe("loadConfig", () => {
     process.env.REPO_BEACON_INDEX_DIR = ".legacy-index";
     process.env.SCYTHE_CONTEXT_MAX_FILE_BYTES = "222";
     process.env.REPO_BEACON_MAX_FILE_BYTES = "111";
+    process.env.SCYTHE_CONTEXT_RERANK_MODE = "off";
+    process.env.REPO_BEACON_RERANK_MODE = "auto";
 
     const config = loadConfig();
 
     expect(config.indexDirName).toBe(".new-index");
     expect(config.indexing.maxFileBytes).toBe(222);
+    expect(config.search.rerankMode).toBe("off");
+  });
+
+  it("defaults rerank mode to auto", () => {
+    const config = loadConfig();
+
+    expect(config.search.rerankMode).toBe("auto");
+  });
+
+  it("rejects invalid rerank mode values", () => {
+    process.env.SCYTHE_CONTEXT_RERANK_MODE = "aggressive";
+
+    expect(() => loadConfig()).toThrow("SCYTHE_CONTEXT_RERANK_MODE must be one of: auto, off");
   });
 });

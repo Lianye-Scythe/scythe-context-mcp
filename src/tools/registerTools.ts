@@ -41,6 +41,7 @@ function searchIndexedChunks(options: {
   maxResults: number;
   maxSnippetChars: number;
   mode: SearchMode;
+  rerankMode: AppConfig["search"]["rerankMode"];
 }): FormattableSearchResult[] {
   return options.mode === "semantic"
     ? searchByVector({
@@ -57,6 +58,7 @@ function searchIndexedChunks(options: {
         queryVector: options.queryVector,
         maxResults: options.maxResults,
         maxSnippetChars: options.maxSnippetChars,
+        rerankMode: options.rerankMode,
       });
 }
 
@@ -65,13 +67,19 @@ function searchKeywordOnlyChunks(options: {
   query: string;
   maxResults: number;
   maxSnippetChars: number;
+  rerankMode: AppConfig["search"]["rerankMode"];
 }): FormattableSearchResult[] {
   return searchKeywordOnly({
     dbPath: options.dbPath,
     query: options.query,
     maxResults: options.maxResults,
     maxSnippetChars: options.maxSnippetChars,
+    rerankMode: options.rerankMode,
   });
+}
+
+function rerankApplied(mode: EffectiveSearchMode, rerankMode: AppConfig["search"]["rerankMode"]): boolean {
+  return rerankMode !== "off" && mode !== "semantic";
 }
 
 function embeddingFailureDetails(error: unknown): EmbeddingFailureDetails {
@@ -202,6 +210,7 @@ export function registerTools(server: McpServer, config: AppConfig): void {
         ],
         pending: ["tree_sitter_symbols"],
         indexing: config.indexing,
+        search: config.search,
         gemini: {
           baseUrl: config.gemini.baseUrl,
           model: config.gemini.model,
@@ -381,6 +390,7 @@ export function registerTools(server: McpServer, config: AppConfig): void {
           maxResults: max_results,
           maxSnippetChars: max_snippet_chars,
           mode,
+          rerankMode: config.search.rerankMode,
         });
       } catch (error) {
         if (mode === "semantic") {
@@ -406,6 +416,7 @@ export function registerTools(server: McpServer, config: AppConfig): void {
           query,
           maxResults: max_results,
           maxSnippetChars: max_snippet_chars,
+          rerankMode: config.search.rerankMode,
         });
       }
 
@@ -418,6 +429,8 @@ export function registerTools(server: McpServer, config: AppConfig): void {
         dimensions,
         mode,
         effectiveMode,
+        rerankMode: config.search.rerankMode,
+        rerankApplied: rerankApplied(effectiveMode, config.search.rerankMode),
         fallback,
         results: formatted.results,
         context: formatted.summary,
@@ -535,6 +548,7 @@ export function registerTools(server: McpServer, config: AppConfig): void {
           maxResults: max_results,
           maxSnippetChars: max_snippet_chars,
           mode,
+          rerankMode: config.search.rerankMode,
         });
       } catch (error) {
         if (mode === "semantic") {
@@ -560,6 +574,7 @@ export function registerTools(server: McpServer, config: AppConfig): void {
           query,
           maxResults: max_results,
           maxSnippetChars: max_snippet_chars,
+          rerankMode: config.search.rerankMode,
         });
       }
       const relatedPaths = Array.from(new Set(rawResults.map((result) => result.path))).slice(
@@ -601,6 +616,8 @@ export function registerTools(server: McpServer, config: AppConfig): void {
         dimensions,
         mode,
         effectiveMode,
+        rerankMode: config.search.rerankMode,
+        rerankApplied: rerankApplied(effectiveMode, config.search.rerankMode),
         fallback,
         relatedDepth: related_depth,
         relatedSeedCount: relatedPaths.length,

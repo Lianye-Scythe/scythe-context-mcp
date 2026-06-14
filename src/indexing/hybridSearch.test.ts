@@ -128,4 +128,37 @@ describe("searchKeywordOnly", () => {
     expect(paths).toContain("src/indexWriter.ts");
     expect(paths.indexOf("src/indexWriter.ts")).toBeLessThan(paths.indexOf("src/indexWriter.test.ts"));
   });
+
+  it("can disable code-aware reranking", async () => {
+    await fs.mkdir(path.join(tempDir, "src"), { recursive: true });
+    await fs.writeFile(
+      path.join(tempDir, "src", "indexWriter.ts"),
+      "export function persistentReindexMetadata() { return 'source implementation'; }\n",
+    );
+    await fs.writeFile(
+      path.join(tempDir, "src", "indexWriter.test.ts"),
+      "it('preserves stable chunk row ids so embedding cache remains useful after reindex', () => {});\n",
+    );
+    const metadata = await persistentReindexMetadata({
+      projectPath: tempDir,
+      indexDirName: ".scythe-context",
+      vectorDimensions: 1536,
+      maxFileBytes: 4096,
+      targetChunkChars: 200,
+      chunkOverlapChars: 0,
+      maxChunksPerFile: 10,
+    });
+
+    const results = searchKeywordOnly({
+      dbPath: metadata.dbPath,
+      query: "preserve stable chunk row ids so embedding cache remains useful after reindex",
+      maxResults: 5,
+      maxSnippetChars: 120,
+      rerankMode: "off",
+    });
+
+    const paths = results.map((result) => result.path);
+    expect(paths).toContain("src/indexWriter.test.ts");
+    expect(paths.indexOf("src/indexWriter.test.ts")).toBeLessThan(paths.indexOf("src/indexWriter.ts"));
+  });
 });

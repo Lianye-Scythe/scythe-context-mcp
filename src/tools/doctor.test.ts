@@ -28,6 +28,9 @@ function testConfig(overrides: Partial<AppConfig> = {}): AppConfig {
       embeddingBatchSize: 16,
       maxEmbeddingChunks: 256,
     },
+    search: {
+      rerankMode: "auto",
+    },
     gemini: {
       apiKey: "secret-key",
       baseUrl: "https://generativelanguage.googleapis.com/v1beta",

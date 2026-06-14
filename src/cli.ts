@@ -38,5 +38,6 @@ Environment:
   GEMINI_API_KEY                  Gemini or Gemini-compatible API key
   GEMINI_BASE_URL                 Gemini-compatible base URL, default https://generativelanguage.googleapis.com/v1beta
   GEMINI_OUTPUT_DIMENSIONALITY    Embedding dimensions, default 1536
+  SCYTHE_CONTEXT_RERANK_MODE      auto or off, default auto
 `;
 }

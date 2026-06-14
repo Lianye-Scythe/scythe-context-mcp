@@ -2,6 +2,7 @@ import fs from "node:fs";
 import path from "node:path";
 import process from "node:process";
 import { DEFAULT_INDEXING_LIMITS } from "./indexing/defaults.js";
+import type { RerankMode } from "./indexing/hybridSearch.js";
 
 export type GeminiAuthMode = "x-goog-api-key" | "bearer" | "query";
 
@@ -15,6 +16,9 @@ export interface AppConfig {
     maxChunksPerFile: number;
     embeddingBatchSize: number;
     maxEmbeddingChunks: number;
+  };
+  search: {
+    rerankMode: RerankMode;
   };
   gemini: {
     apiKey?: string;
@@ -59,6 +63,12 @@ function authModeFromEnv(value: string | undefined): GeminiAuthMode {
   throw new Error("GEMINI_AUTH_MODE must be one of: x-goog-api-key, bearer, query");
 }
 
+function rerankModeFromEnv(value: string | undefined): RerankMode {
+  if (!value) return "auto";
+  if (value === "auto" || value === "off") return value;
+  throw new Error("SCYTHE_CONTEXT_RERANK_MODE must be one of: auto, off");
+}
+
 function defaultProjectPathFromEnv(): string {
   const explicitProject = envValue("SCYTHE_CONTEXT_DEFAULT_PROJECT", "REPO_BEACON_DEFAULT_PROJECT");
   if (explicitProject) return explicitProject;
@@ -92,6 +102,9 @@ export function loadConfig(): AppConfig {
         DEFAULT_INDEXING_LIMITS.maxChunksPerFile,
       embeddingBatchSize: numberFromEnvAlias("SCYTHE_CONTEXT_EMBEDDING_BATCH_SIZE", "REPO_BEACON_EMBEDDING_BATCH_SIZE", 16) ?? 16,
       maxEmbeddingChunks: numberFromEnvAlias("SCYTHE_CONTEXT_MAX_EMBEDDING_CHUNKS", "REPO_BEACON_MAX_EMBEDDING_CHUNKS", 256) ?? 256,
+    },
+    search: {
+      rerankMode: rerankModeFromEnv(envValue("SCYTHE_CONTEXT_RERANK_MODE", "REPO_BEACON_RERANK_MODE")),
     },
     gemini: {
       apiKey: process.env.GEMINI_API_KEY,

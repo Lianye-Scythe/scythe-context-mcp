@@ -24,6 +24,13 @@ Run with Gemini-backed hybrid search:
 npm run bench:context -- --include-hybrid
 ```
 
+Compare code-aware reranking against the raw merge baseline:
+
+```bash
+npm run bench:context -- --rerank auto
+npm run bench:context -- --rerank off
+```
+
 The benchmark runner loads `.env` the same way the MCP server does. If `GEMINI_API_KEY` is not available to the benchmark process, `scythe-hybrid` is reported as skipped instead of failed.
 
 Write a machine-readable report:

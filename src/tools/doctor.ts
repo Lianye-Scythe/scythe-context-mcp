@@ -263,6 +263,7 @@ function environmentCheck(config: AppConfig): DoctorCheck {
       hasLegacyDefaultProject: Boolean(process.env.REPO_BEACON_DEFAULT_PROJECT),
       defaultProjectPath: config.defaultProjectPath,
       indexDirName: config.indexDirName,
+      rerankMode: config.search.rerankMode,
     },
   };
 }

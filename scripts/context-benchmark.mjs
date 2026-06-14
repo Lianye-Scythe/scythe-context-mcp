@@ -16,6 +16,7 @@ function parseArgs(argv) {
     maxSnippetChars: 1200,
     maxContextChars: 16000,
     includeHybrid: false,
+    rerank: process.env.SCYTHE_CONTEXT_RERANK_MODE || "auto",
     json: false,
     output: undefined,
   };
@@ -47,6 +48,9 @@ function parseArgs(argv) {
       case "--include-hybrid":
         args.includeHybrid = true;
         break;
+      case "--rerank":
+        args.rerank = next();
+        break;
       case "--json":
         args.json = true;
         break;
@@ -67,6 +71,9 @@ function parseArgs(argv) {
       throw new Error(`${key} must be a positive integer`);
     }
   }
+  if (args.rerank !== "auto" && args.rerank !== "off") {
+    throw new Error("--rerank must be one of: auto, off");
+  }
 
   return args;
 }
@@ -79,6 +86,7 @@ Options:
   --cases <path>               JSON case file. Defaults to ${DEFAULT_CASES_PATH}.
   --max-results <n>            Ranked results to keep per method. Defaults to 8.
   --include-hybrid             Also run Gemini-backed hybrid search.
+  --rerank <auto|off>          Code-aware reranking mode. Defaults to env or auto.
   --json                       Print JSON instead of a table.
   --output <path>              Write JSON report to a file.
 `);
@@ -312,6 +320,7 @@ async function main() {
   const casesRelativePath = normalizeRelativePath(path.relative(projectPath, casesPath));
   const cases = readCases(casesPath);
   const dbPath = path.join(projectPath, ".scythe-context", "index.sqlite");
+  process.env.SCYTHE_CONTEXT_RERANK_MODE = args.rerank;
 
   if (!fs.existsSync(dbPath)) {
     throw new Error(`Index database not found: ${dbPath}. Run repo_reindex first.`);
@@ -340,6 +349,7 @@ async function main() {
         query: testCase.query,
         maxResults: args.maxResults,
         maxSnippetChars: args.maxSnippetChars,
+        rerankMode: args.rerank,
       });
       return {
         paths: rawResults,
@@ -393,6 +403,7 @@ async function main() {
             queryVector: embedding.vector,
             maxResults: args.maxResults,
             maxSnippetChars: args.maxSnippetChars,
+            rerankMode: args.rerank,
           });
           const paths = uniquePaths(rawResults).filter((candidate) => candidate !== casesRelativePath);
           const contextPaths = contextPathsFromResults(rawResults, buildContextPack, readRelatedFileGraph, {
@@ -439,6 +450,7 @@ async function main() {
     casesPath,
     dbPath,
     maxResults: args.maxResults,
+    rerankMode: args.rerank,
     methods,
   };
 
@@ -456,6 +468,7 @@ async function main() {
   console.log(`Context search benchmark`);
   console.log(`Project: ${projectPath}`);
   console.log(`Cases: ${cases.length}`);
+  console.log(`Rerank: ${args.rerank}`);
   console.log("");
   console.log("method           ok/skp/err  hit@1  hit@3  hit@5  MRR    mean ms  p95 ms");
   console.log("---------------  ----------  -----  -----  -----  -----  -------  ------");

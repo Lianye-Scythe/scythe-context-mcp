@@ -157,6 +157,8 @@ enabled_tools = [
 
 If you really want to pin one default project, set `SCYTHE_CONTEXT_DEFAULT_PROJECT` under `[mcp_servers.scythe_context.env]`. Normal multi-repo usage should not need this; Scythe prefers a tool call's `project_path`, then `PWD`, then the MCP process `cwd`.
 
+`SCYTHE_CONTEXT_RERANK_MODE` can be `auto` or `off`. The default `auto` enables the local code-aware reranker; set it to `off` temporarily when diagnosing ranking behavior and comparing against the raw semantic/keyword merge.
+
 ### Gemini / v1beta proxy
 
 If URL/model/auth are not set, Scythe uses the official Gemini-compatible defaults:
