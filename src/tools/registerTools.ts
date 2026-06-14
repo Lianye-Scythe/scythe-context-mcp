@@ -13,6 +13,12 @@ import { readRelatedFileGraph, readRelatedFiles } from "../indexing/relatedFiles
 import { readRelatedSnippets } from "../indexing/relatedSnippets.js";
 import { formatSearchResults, type FormattableSearchResult } from "../indexing/resultFormat.js";
 import { searchByVector } from "../indexing/semanticSearch.js";
+import {
+  findProviderCapability,
+  providerCapabilityInput,
+  updateProviderCapability,
+  type ProviderCapabilityUpdate,
+} from "../providers/capabilities.js";
 import { buildGeminiEndpoint, GeminiEmbeddingError, GeminiEmbeddingProvider, normalizeGeminiBaseUrl } from "../providers/gemini.js";
 import { runRepoDoctor } from "./doctor.js";
 
@@ -91,6 +97,26 @@ function embeddingFailureDetails(error: unknown): EmbeddingFailureDetails {
     retryable: geminiError?.retryable ?? false,
     bodySnippet: geminiError?.bodySnippet,
   };
+}
+
+function embeddingFailureCapabilityUpdate(error: unknown, now = new Date().toISOString()): ProviderCapabilityUpdate {
+  const details = embeddingFailureDetails(error);
+  return {
+    lastFailureAt: now,
+    lastErrorType: details.type,
+    lastHttpStatus: details.httpStatus,
+    lastRetryable: details.retryable,
+  };
+}
+
+function geminiCapabilityKey(config: AppConfig["gemini"], expectedDimensions: number) {
+  return providerCapabilityInput({
+    provider: "gemini",
+    baseUrl: config.baseUrl,
+    model: config.model,
+    dimensions: expectedDimensions,
+    authMode: config.authMode,
+  });
 }
 
 function embeddingUnavailablePayload(error: unknown) {
@@ -229,29 +255,50 @@ export function registerTools(server: McpServer, config: AppConfig): void {
       description: "Send one embedding request and return diagnostics for official Gemini or proxy compatibility.",
       inputSchema: {
         text: z.string().min(1),
+        project_path: z.string().optional(),
       },
     },
-    async ({ text }) => {
+    async ({ text, project_path }) => {
       const startedAt = Date.now();
       const diagnostics = buildGeminiDiagnostics(config.gemini, expectedDimensions);
+      const projectPath = path.resolve(project_path || config.defaultProjectPath);
+      const indexPath = path.join(projectPath, config.indexDirName);
+      const capabilityKey = geminiCapabilityKey(config.gemini, expectedDimensions);
+      const now = new Date().toISOString();
 
       try {
         const result = await embeddingProvider.embed({ kind: "query", text });
+        const dimensionsMatchExpected = result.dimensions === expectedDimensions;
+        const capabilities = updateProviderCapability(indexPath, capabilityKey, {
+          outputDimensionality: dimensionsMatchExpected ? "supported" : "unsupported",
+          lastProbeAt: now,
+          lastSuccessAt: now,
+        });
         return asJsonText({
           status: "ok",
           latencyMs: Date.now() - startedAt,
+          projectPath,
+          indexPath,
           diagnostics,
+          providerCapabilities: capabilities,
           model: result.model,
           dimensions: result.dimensions,
-          dimensionsMatchExpected: result.dimensions === expectedDimensions,
+          dimensionsMatchExpected,
           sample: result.vector.slice(0, 8),
         });
       } catch (error) {
+        const capabilities = updateProviderCapability(indexPath, capabilityKey, {
+          lastProbeAt: now,
+          ...embeddingFailureCapabilityUpdate(error, now),
+        });
         const geminiError = error instanceof GeminiEmbeddingError ? error : undefined;
         return asJsonText({
           status: "embedding_probe_failed",
           latencyMs: Date.now() - startedAt,
+          projectPath,
+          indexPath,
           diagnostics,
+          providerCapabilities: capabilities,
           error: {
             type: error instanceof Error ? error.name : "UnknownError",
             message: error instanceof Error ? error.message : String(error),
@@ -320,21 +367,40 @@ export function registerTools(server: McpServer, config: AppConfig): void {
         return asJsonText(metadataResult);
       }
 
-      const embeddingResult = await indexMissingEmbeddings({
-        dbPath: metadataResult.dbPath,
-        providerName: "gemini",
-        providerBaseUrl: config.gemini.baseUrl,
-        model: config.gemini.model,
-        dimensions: expectedDimensions,
-        batchSize: embedding_batch_size ?? config.indexing.embeddingBatchSize,
-        maxChunks: max_embedding_chunks ?? config.indexing.maxEmbeddingChunks,
-        provider: embeddingProvider,
-      });
+      const indexPath = path.join(commonOptions.projectPath, config.indexDirName);
+      const capabilityKey = geminiCapabilityKey(config.gemini, expectedDimensions);
+      const capabilities = findProviderCapability(indexPath, capabilityKey);
+      let embeddingResult: Awaited<ReturnType<typeof indexMissingEmbeddings>>;
+      let updatedCapabilities = capabilities;
+      try {
+        embeddingResult = await indexMissingEmbeddings({
+          dbPath: metadataResult.dbPath,
+          providerName: "gemini",
+          providerBaseUrl: config.gemini.baseUrl,
+          model: config.gemini.model,
+          dimensions: expectedDimensions,
+          batchSize: embedding_batch_size ?? config.indexing.embeddingBatchSize,
+          maxChunks: max_embedding_chunks ?? config.indexing.maxEmbeddingChunks,
+          provider: embeddingProvider,
+          capabilities,
+          onCapabilitiesUpdated: (update) => {
+            updateProviderCapability(indexPath, capabilityKey, update);
+          },
+        });
+        updatedCapabilities = updateProviderCapability(indexPath, capabilityKey, {
+          outputDimensionality: "supported",
+          lastSuccessAt: new Date().toISOString(),
+        });
+      } catch (error) {
+        updateProviderCapability(indexPath, capabilityKey, embeddingFailureCapabilityUpdate(error));
+        throw error;
+      }
 
       return asJsonText({
         ...metadataResult,
         status: "metadata_and_embeddings_indexed",
         embeddings: embeddingResult,
+        providerCapabilities: updatedCapabilities,
       });
     },
   );

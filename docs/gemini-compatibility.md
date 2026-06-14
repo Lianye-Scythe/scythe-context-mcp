@@ -130,9 +130,9 @@ POST /v1beta/models/gemini-embedding-2:batchEmbedContents
 
 1. 優先嘗試 batch。
 2. 如果 batch request 失敗，索引流程 fallback 到逐筆 `embedContent`。
-3. 後續可加入 provider capability cache，避免每次重試 batch。
+3. 把 batch 支援狀態寫入 provider capability cache，避免每次重試已知不支援的 batch endpoint。
 
-目前 `embedBatch` 已按官方 batch 格式送出，`repo_reindex(index_embeddings=true)` 的 embedding writer 會在 batch 失敗時 fallback 到單筆 embedding，並在結果中回報 `batchFallbacks`。
+目前 `embedBatch` 已按官方 batch 格式送出，`repo_reindex(index_embeddings=true)` 的 embedding writer 會在 batch 失敗時 fallback 到單筆 embedding，並在結果中回報 `batchFallbacks`。支援狀態會寫入 `.scythe-context/provider-capabilities.json`；後續同一 repo、同一 provider/model/dimensionality/auth 設定會直接使用已知能力。
 
 ## Codex MCP 設定範例
 

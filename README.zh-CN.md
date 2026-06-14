@@ -149,7 +149,8 @@ enabled_tools = [
   "repo_context_pack",
   "repo_semantic_search",
   "repo_related_files",
-  "gemini_embedding_probe"
+  "gemini_embedding_probe",
+  "repo_doctor"
 ]
 ```
 
@@ -158,6 +159,8 @@ enabled_tools = [
 如果你真的想固定某一个默认项目，可以在 `[mcp_servers.scythe_context.env]` 设置 `SCYTHE_CONTEXT_DEFAULT_PROJECT`。一般多 repo 使用不需要这样做；Scythe 会优先使用工具调用的 `project_path`，再使用 `PWD`，最后才使用 MCP process 的 `cwd`。
 
 `SCYTHE_CONTEXT_RERANK_MODE` 可设为 `auto` 或 `off`。默认 `auto` 会启用 local code-aware reranker；排查 ranking 问题时可暂时设为 `off`，回到 semantic/keyword merge 的原始排序。
+
+Scythe 会在 repo-local `.scythe-context/provider-capabilities.json` 记录当前 Gemini-compatible provider 的能力观察结果，例如 batch embedding 是否可用、output dimensionality 是否符合预期，以及最近一次 probe / success / failure。这个文件不提交；`repo_reindex(index_embeddings=true)` 会使用它避免反复尝试已知不支持的 batch endpoint。
 
 ### Gemini / v1beta proxy
 
@@ -245,15 +248,15 @@ GEMINI_OUTPUT_DIMENSIONALITY = "1536"
 | `repo_semantic_search` | 对已索引 chunks 做 hybrid 或 semantic search，适合排查 ranking。 |
 | `repo_related_files` | 查看单一文件的 symbols、imports、importedBy。 |
 | `gemini_embedding_probe` | 测试 Gemini 或 proxy 兼容性，返回 endpoint、latency、错误分类与可修复建议。 |
-| `repo_doctor` | 不调用外部 API，检查 Node runtime、native modules、Gemini env、WSL interop 与 index health。 |
+| `repo_doctor` | 不调用外部 API，检查 Node runtime、native modules、Gemini env、provider capability cache、WSL interop 与 index health。 |
 
 `repo_context_pack(mode="hybrid")` 和 `repo_semantic_search(mode="hybrid")` 在 query embedding 不可用时会降级成 keyword-only 结果，并返回 `effectiveMode: "keyword"` 与 `fallback.reason: "embedding_unavailable"`。`mode="semantic"` 不会降级，会返回 `status: "embedding_unavailable"`，因为纯 semantic search 必须有 query embedding。精确字符串、已知路径或小范围检查仍建议直接用 `rg` / 直接读文件。
 
 ## 功能状态
 
-已完成：repo 扫描、chunking、SQLite metadata、SQLite FTS5、sqlite-vec、Gemini Embedding 2 provider、semantic/keyword/hybrid search、embedding 失败时的 keyword-only fallback、local code-aware reranker、轻量 symbol/dependency graph、related-file lookup、`repo_context_pack`、provider diagnostics、index freshness diagnostics、`repo_doctor`。
+已完成：repo 扫描、chunking、SQLite metadata、SQLite FTS5、sqlite-vec、Gemini Embedding 2 provider、semantic/keyword/hybrid search、embedding 失败时的 keyword-only fallback、local code-aware reranker、轻量 symbol/dependency graph、related-file lookup、`repo_context_pack`、provider diagnostics、provider capability cache、index freshness diagnostics、`repo_doctor`。
 
-下一步：provider capability cache、扩充 benchmark cases、必要时加入 tree-sitter symbol extraction。
+下一步：扩充 benchmark cases、错误修复提示 polish、必要时加入 tree-sitter symbol extraction。
 
 ## 隐私与本地文件
 

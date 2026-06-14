@@ -4,6 +4,7 @@ import path from "node:path";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import type { AppConfig } from "../config.js";
 import { persistentReindexMetadata } from "../indexing/indexWriter.js";
+import { providerCapabilityInput, updateProviderCapability } from "../providers/capabilities.js";
 import { runRepoDoctor } from "./doctor.js";
 
 let tempDir: string;
@@ -59,6 +60,7 @@ describe("runRepoDoctor", () => {
       "project_path",
       "environment",
       "gemini_config",
+      "provider_capabilities",
       "wsl_interop",
       "index",
     ]);
@@ -92,6 +94,43 @@ describe("runRepoDoctor", () => {
     const geminiCheck = result.checks.find((check) => check.name === "gemini_config");
     expect(geminiCheck).toEqual(expect.objectContaining({ status: "warn" }));
     expect(geminiCheck?.recommendedActions).toContain("Set GEMINI_API_KEY in the environment that starts Codex, or forward it with env_vars.");
+  });
+
+  it("reports cached provider capabilities without exposing secrets", async () => {
+    const config = testConfig();
+    const indexPath = path.join(tempDir, config.indexDirName);
+    updateProviderCapability(
+      indexPath,
+      providerCapabilityInput({
+        provider: "gemini",
+        baseUrl: config.gemini.baseUrl,
+        model: config.gemini.model,
+        dimensions: 1536,
+        authMode: config.gemini.authMode,
+      }),
+      {
+        batchEmbedding: "unsupported",
+        outputDimensionality: "supported",
+        lastSuccessAt: "2026-06-14T00:00:00.000Z",
+      },
+    );
+
+    const result = await runRepoDoctor({
+      config,
+      projectPath: tempDir,
+      expectedDimensions: 1536,
+    });
+
+    const providerCheck = result.checks.find((check) => check.name === "provider_capabilities");
+    expect(providerCheck).toEqual(expect.objectContaining({ status: "ok" }));
+    expect(providerCheck?.details).toEqual(
+      expect.objectContaining({
+        batchEmbedding: "unsupported",
+        outputDimensionality: "supported",
+      }),
+    );
+    expect(JSON.stringify(providerCheck)).not.toContain("secret-key");
+    expect(JSON.stringify(providerCheck)).not.toContain(config.gemini.baseUrl);
   });
 
   it("warns when metadata exists but embeddings are not populated", async () => {

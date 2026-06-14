@@ -149,7 +149,8 @@ enabled_tools = [
   "repo_context_pack",
   "repo_semantic_search",
   "repo_related_files",
-  "gemini_embedding_probe"
+  "gemini_embedding_probe",
+  "repo_doctor"
 ]
 ```
 
@@ -158,6 +159,8 @@ enabled_tools = [
 If you really want to pin one default project, set `SCYTHE_CONTEXT_DEFAULT_PROJECT` under `[mcp_servers.scythe_context.env]`. Normal multi-repo usage should not need this; Scythe prefers a tool call's `project_path`, then `PWD`, then the MCP process `cwd`.
 
 `SCYTHE_CONTEXT_RERANK_MODE` can be `auto` or `off`. The default `auto` enables the local code-aware reranker; set it to `off` temporarily when diagnosing ranking behavior and comparing against the raw semantic/keyword merge.
+
+Scythe stores observed Gemini-compatible provider capabilities in repo-local `.scythe-context/provider-capabilities.json`, including whether batch embedding works, whether output dimensionality matches the expected size, and the latest probe / success / failure timestamps. This file is not committed; `repo_reindex(index_embeddings=true)` uses it to avoid repeatedly trying a batch endpoint that is already known to be unsupported.
 
 ### Gemini / v1beta proxy
 
@@ -245,15 +248,15 @@ Use `PWD/p` only if you intentionally run a Windows Node process and need WSL to
 | `repo_semantic_search` | Runs hybrid or semantic search over indexed chunks; useful for ranking diagnostics. |
 | `repo_related_files` | Shows symbols, imports, and importedBy for one file. |
 | `gemini_embedding_probe` | Tests Gemini or proxy compatibility and returns endpoint, latency, error classification, and remediation hints. |
-| `repo_doctor` | Checks Node runtime, native modules, Gemini env, WSL interop, and index health without calling external APIs. |
+| `repo_doctor` | Checks Node runtime, native modules, Gemini env, provider capability cache, WSL interop, and index health without calling external APIs. |
 
 `repo_context_pack(mode="hybrid")` and `repo_semantic_search(mode="hybrid")` degrade to keyword-only results when query embedding is unavailable, returning `effectiveMode: "keyword"` and `fallback.reason: "embedding_unavailable"`. `mode="semantic"` does not degrade and returns `status: "embedding_unavailable"` because pure semantic search requires query embedding. Use `rg` / direct file reads for exact strings, known paths, or small targeted checks.
 
 ## Feature Status
 
-Implemented: repo scanning, chunking, SQLite metadata, SQLite FTS5, sqlite-vec, Gemini Embedding 2 provider, semantic/keyword/hybrid search, keyword-only fallback when embeddings fail, local code-aware reranker, lightweight symbol/dependency graph, related-file lookup, `repo_context_pack`, provider diagnostics, index freshness diagnostics, and `repo_doctor`.
+Implemented: repo scanning, chunking, SQLite metadata, SQLite FTS5, sqlite-vec, Gemini Embedding 2 provider, semantic/keyword/hybrid search, keyword-only fallback when embeddings fail, local code-aware reranker, lightweight symbol/dependency graph, related-file lookup, `repo_context_pack`, provider diagnostics, provider capability cache, index freshness diagnostics, and `repo_doctor`.
 
-Next: provider capability cache, expanded benchmark cases, and tree-sitter symbol extraction if needed.
+Next: expanded benchmark cases, remediation-message polish, and tree-sitter symbol extraction if needed.
 
 ## Privacy and Local Files
 

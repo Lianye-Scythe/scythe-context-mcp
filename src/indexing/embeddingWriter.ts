@@ -1,6 +1,7 @@
 import Database from "better-sqlite3";
 import { sha256Hex } from "./hash.js";
 import type { EmbeddingProvider, EmbeddingRequest, EmbeddingResult } from "../providers/types.js";
+import type { ProviderCapabilityRecord } from "../providers/capabilities.js";
 import {
   getOrCreateEmbeddingRecord,
   getOrCreateEmbeddingSet,
@@ -18,6 +19,8 @@ export interface EmbeddingIndexOptions {
   batchSize: number;
   maxChunks?: number;
   provider: EmbeddingProvider;
+  capabilities?: Pick<ProviderCapabilityRecord, "batchEmbedding">;
+  onCapabilitiesUpdated?: (update: Pick<ProviderCapabilityRecord, "batchEmbedding">) => void;
 }
 
 export interface EmbeddingIndexResult {
@@ -66,10 +69,25 @@ function chunkArray<T>(items: T[], batchSize: number): T[][] {
 async function embedWithFallback(
   provider: EmbeddingProvider,
   requests: EmbeddingRequest[],
+  options: {
+    skipBatch: boolean;
+    onBatchEmbeddingSupport?: (support: "supported" | "unsupported") => void;
+  },
 ): Promise<{ results: EmbeddingResult[]; usedFallback: boolean }> {
+  if (options.skipBatch) {
+    const results: EmbeddingResult[] = [];
+    for (const request of requests) {
+      results.push(await provider.embed(request));
+    }
+    return { results, usedFallback: true };
+  }
+
   try {
-    return { results: await provider.embedBatch(requests), usedFallback: false };
+    const results = await provider.embedBatch(requests);
+    options.onBatchEmbeddingSupport?.("supported");
+    return { results, usedFallback: false };
   } catch (error) {
+    options.onBatchEmbeddingSupport?.("unsupported");
     const results: EmbeddingResult[] = [];
     for (const request of requests) {
       results.push(await provider.embed(request));
@@ -127,6 +145,10 @@ export async function indexMissingEmbeddings(options: EmbeddingIndexOptions): Pr
       const { results, usedFallback } = await embedWithFallback(
         options.provider,
         batch.map((chunk) => toEmbeddingRequest(chunk)),
+        {
+          skipBatch: options.capabilities?.batchEmbedding === "unsupported",
+          onBatchEmbeddingSupport: (batchEmbedding) => options.onCapabilitiesUpdated?.({ batchEmbedding }),
+        },
       );
       if (usedFallback) batchFallbacks += 1;
 

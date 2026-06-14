@@ -5,6 +5,7 @@ import process from "node:process";
 import Database from "better-sqlite3";
 import type { AppConfig } from "../config.js";
 import { readDetailedIndexStatus, readIndexFreshness, recommendedNextActions, type IndexFreshness } from "../indexing/indexStatus.js";
+import { findProviderCapability, providerCapabilityInput } from "../providers/capabilities.js";
 import { buildGeminiEndpoint, normalizeGeminiBaseUrl } from "../providers/gemini.js";
 import { loadSqliteVec } from "../storage/sqliteVec.js";
 
@@ -217,6 +218,62 @@ function geminiConfigCheck(config: AppConfig["gemini"], expectedDimensions: numb
   }
 }
 
+function providerCapabilityCheck(config: AppConfig["gemini"], indexPath: string, expectedDimensions: number): DoctorCheck {
+  const key = providerCapabilityInput({
+    provider: "gemini",
+    baseUrl: config.baseUrl,
+    model: config.model,
+    dimensions: expectedDimensions,
+    authMode: config.authMode,
+  });
+  const record = findProviderCapability(indexPath, key);
+
+  if (!record) {
+    return {
+      name: "provider_capabilities",
+      status: "ok",
+      summary: "No cached Gemini-compatible provider capabilities have been observed yet.",
+      details: {
+        provider: key.provider,
+        baseUrlHash: "unobserved",
+        model: key.model,
+        dimensions: key.dimensions,
+        authMode: key.authMode,
+      },
+    };
+  }
+
+  const lastFailureIsCurrent =
+    record.lastFailureAt && (!record.lastSuccessAt || record.lastFailureAt > record.lastSuccessAt);
+  const status: DoctorStatus = lastFailureIsCurrent ? "warn" : "ok";
+  return {
+    name: "provider_capabilities",
+    status,
+    summary:
+      status === "ok"
+        ? "Cached provider capabilities are available for the current Gemini-compatible configuration."
+        : "The latest cached provider capability observation was a failure.",
+    details: {
+      provider: record.provider,
+      baseUrlHash: record.baseUrlHash,
+      model: record.model,
+      dimensions: record.dimensions,
+      authMode: record.authMode,
+      batchEmbedding: record.batchEmbedding,
+      outputDimensionality: record.outputDimensionality,
+      lastProbeAt: record.lastProbeAt,
+      lastSuccessAt: record.lastSuccessAt,
+      lastFailureAt: record.lastFailureAt,
+      lastErrorType: record.lastErrorType,
+      lastHttpStatus: record.lastHttpStatus,
+      lastRetryable: record.lastRetryable,
+    },
+    recommendedActions: lastFailureIsCurrent
+      ? ["Run gemini_embedding_probe after fixing provider credentials, URL, model, auth mode, or dimensionality."]
+      : undefined,
+  };
+}
+
 function wslCheck(projectPath: string): DoctorCheck {
   const isWsl = Boolean(process.env.WSL_DISTRO_NAME || process.env.WSL_INTEROP || /microsoft/i.test(os.release()));
   const isWindows = process.platform === "win32";
@@ -282,6 +339,7 @@ export async function runRepoDoctor(options: {
     projectPathCheck(projectPath),
     environmentCheck(options.config),
     geminiConfigCheck(options.config.gemini, options.expectedDimensions),
+    providerCapabilityCheck(options.config.gemini, indexPath, options.expectedDimensions),
     wslCheck(projectPath),
     await indexCheck(options.config, projectPath, dbPath, options.expectedDimensions),
   ];

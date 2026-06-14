@@ -111,6 +111,7 @@ describe("indexMissingEmbeddings", () => {
   it("falls back to single embedding calls when batch fails", async () => {
     const metadata = await createMetadataIndex();
     const provider = new FakeEmbeddingProvider(1536, true);
+    const updates: Array<{ batchEmbedding: string }> = [];
 
     const result = await indexMissingEmbeddings({
       dbPath: metadata.dbPath,
@@ -120,11 +121,36 @@ describe("indexMissingEmbeddings", () => {
       dimensions: 1536,
       batchSize: 3,
       provider,
+      onCapabilitiesUpdated: (update) => updates.push(update),
     });
 
     expect(result.stats.batchFallbacks).toBeGreaterThan(0);
     expect(provider.batchCalls).toBeGreaterThan(0);
     expect(provider.singleCalls).toBe(result.stats.embeddedChunks);
+    expect(updates).toContainEqual({ batchEmbedding: "unsupported" });
+  });
+
+  it("skips batch calls when cached capabilities mark batch embedding unsupported", async () => {
+    const metadata = await createMetadataIndex();
+    const provider = new FakeEmbeddingProvider(1536);
+    const updates: Array<{ batchEmbedding: string }> = [];
+
+    const result = await indexMissingEmbeddings({
+      dbPath: metadata.dbPath,
+      providerName: "fake",
+      providerBaseUrl: "memory://fake",
+      model: "fake-embedding",
+      dimensions: 1536,
+      batchSize: 3,
+      provider,
+      capabilities: { batchEmbedding: "unsupported" },
+      onCapabilitiesUpdated: (update) => updates.push(update),
+    });
+
+    expect(result.stats.batchFallbacks).toBeGreaterThan(0);
+    expect(provider.batchCalls).toBe(0);
+    expect(provider.singleCalls).toBe(result.stats.embeddedChunks);
+    expect(updates).toEqual([]);
   });
 
   it("limits embedding work when maxChunks is set", async () => {
