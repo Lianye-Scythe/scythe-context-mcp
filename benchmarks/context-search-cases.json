@@ -79,6 +79,7 @@
     "id": "npm-bin-mode",
     "query": "npm package executable bin mode should be checked before publish",
     "expectedPaths": [
+      "docs/release.md",
       "scripts/bin-mode.mjs",
       "package.json",
       "src/cli.ts"

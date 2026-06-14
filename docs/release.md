@@ -41,7 +41,7 @@ When API usage is acceptable and `GEMINI_API_KEY` is configured, also run:
 npm run bench:gate:hybrid
 ```
 
-`npm run verify` includes tests, build, CLI smoke, production audit, and `npm pack --dry-run`. If a tarball is left in the repo root after local checks, remove it before committing.
+`npm run verify` includes tests, build, `node scripts/bin-mode.mjs check`, CLI smoke, production audit, and `npm pack --dry-run`. If a tarball is left in the repo root after local checks, remove it before committing.
 
 ## Commit, Tag, and Push
 
