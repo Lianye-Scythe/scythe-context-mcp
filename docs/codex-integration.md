@@ -76,6 +76,7 @@ The current MCP output is optimized for Codex use:
 
 - JSON text responses are deterministic and easy to inspect.
 - `repo_context_pack` is the preferred single-call workflow for code lookup.
+- `repo_semantic_search` is for raw semantic/hybrid ranking diagnostics; use `response_mode=snippets` when scores or fuller snippets matter.
 - `max_context_chars` and `max_related_context_chars` keep output bounded.
 - `suggestedPaths`, line ranges, `matchReason`, compact symbols/imports, and optional related snippets give Codex actionable next steps without forcing whole-file reads.
 

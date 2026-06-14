@@ -7,6 +7,7 @@ import {
   shapeReindexPayload,
   shapeRelatedFilesPayload,
   shapeSemanticPayload,
+  shapeToolErrorPayload,
 } from "./responseShape.js";
 
 const longSnippet = "x".repeat(900);
@@ -253,7 +254,7 @@ describe("response shaping", () => {
     expect(shaped).toHaveProperty("responseStats.estimatedOutputTokens");
   });
 
-  it("compacts related file metadata by dropping symbol signatures", () => {
+  it("compacts related file metadata into decision-oriented summaries", () => {
     const shaped = shapeRelatedFilesPayload(
       {
         projectPath: "/repo",
@@ -282,10 +283,14 @@ describe("response shaping", () => {
         imports: 1,
         importedBy: 1,
       },
-      symbols: [{ name: "main", kind: "function", line: 10, exported: true }],
+      symbols: ["function main:10 export"],
+      imports: ["src/config.ts:1"],
+      importedBy: ["src/cli.ts:2"],
     });
     expect(shaped).not.toHaveProperty("dbPath");
     expect(JSON.stringify(shaped)).not.toContain("long signature");
+    expect(JSON.stringify(shaped)).not.toContain("specifier");
+    expect(JSON.stringify(shaped)).not.toContain("resolvedPath");
     expect(shaped).toHaveProperty("responseStats.estimatedOutputTokens");
   });
 
@@ -301,6 +306,47 @@ describe("response shaping", () => {
     expect(shaped).toMatchObject({
       symbols: [{ name: "main", signature: "export function main()" }],
     });
+    expect(shaped).toHaveProperty("responseStats.estimatedOutputTokens");
+  });
+
+  it("compacts tool error payloads with response stats and without raw diagnostics", () => {
+    const shaped = shapeToolErrorPayload(
+      {
+        query: "find auth",
+        projectPath: "/repo",
+        dbPath: "/repo/.scythe-context/index.sqlite",
+        dimensions: 1536,
+        mode: "semantic",
+        status: "embedding_unavailable",
+        fallbackAvailable: "Use mode=hybrid.",
+        error: {
+          type: "GeminiEmbeddingError",
+          message: "HTTP 500",
+          httpStatus: 500,
+          retryable: true,
+          bodySnippet: "long upstream body",
+        },
+        recommendedNextActions: ["Run gemini_embedding_probe."],
+      },
+      "compact",
+    );
+
+    expect(shaped).toMatchObject({
+      status: "embedding_unavailable",
+      responseMode: "compact",
+      query: "find auth",
+      projectPath: "/repo",
+      dimensions: 1536,
+      mode: "semantic",
+      error: {
+        type: "GeminiEmbeddingError",
+        message: "HTTP 500",
+        httpStatus: 500,
+        retryable: true,
+      },
+    });
+    expect(shaped).not.toHaveProperty("dbPath");
+    expect(JSON.stringify(shaped)).not.toContain("long upstream body");
     expect(shaped).toHaveProperty("responseStats.estimatedOutputTokens");
   });
 

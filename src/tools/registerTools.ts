@@ -29,6 +29,7 @@ import {
   shapeReindexPayload,
   shapeRelatedFilesPayload,
   shapeSemanticPayload,
+  shapeToolErrorPayload,
 } from "./responseShape.js";
 
 function asJsonText(value: unknown) {
@@ -451,7 +452,8 @@ export function registerTools(server: McpServer, config: AppConfig): void {
     "repo_semantic_search",
     {
       title: "Repo Semantic Search",
-      description: "Search indexed code chunks by semantic similarity. Requires repo_reindex with index_embeddings=true first.",
+      description:
+        "Debug raw semantic or hybrid ranking over indexed chunks. Prefer repo_context_pack for normal task lookup; use response_mode=snippets when ranking scores or fuller snippets are needed.",
       inputSchema: {
         query: z.string().min(1),
         project_path: z.string().optional(),
@@ -466,12 +468,21 @@ export function registerTools(server: McpServer, config: AppConfig): void {
       const projectPath = path.resolve(project_path || config.defaultProjectPath);
       const dbPath = path.join(projectPath, config.indexDirName, "index.sqlite");
       if (!fs.existsSync(dbPath)) {
-        return asJsonText({
-          query,
-          projectPath,
-          status: "index_missing",
-          message: "Run repo_reindex with dry_run=false and index_embeddings=true before semantic search.",
-        });
+        return asJsonText(
+          shapeToolErrorPayload(
+            {
+              query,
+              projectPath,
+              status: "index_missing",
+              message: "Run repo_reindex with dry_run=false and index_embeddings=true before semantic search.",
+              recommendedNextActions: [
+                "Run repo_index_status to confirm whether the project has an index.",
+                "Run repo_reindex with dry_run=false and index_embeddings=true before semantic search.",
+              ],
+            },
+            response_mode,
+          ),
+        );
       }
 
       const dimensions = expectedDimensions;
@@ -503,14 +514,19 @@ export function registerTools(server: McpServer, config: AppConfig): void {
         });
       } catch (error) {
         if (mode === "semantic") {
-          return asJsonText({
-            query,
-            projectPath,
-            dbPath,
-            dimensions,
-            mode,
-            ...embeddingUnavailablePayload(error),
-          });
+          return asJsonText(
+            shapeToolErrorPayload(
+              {
+                query,
+                projectPath,
+                dbPath,
+                dimensions,
+                mode,
+                ...embeddingUnavailablePayload(error),
+              },
+              response_mode,
+            ),
+          );
         }
 
         effectiveMode = "keyword";
@@ -564,12 +580,21 @@ export function registerTools(server: McpServer, config: AppConfig): void {
       const projectPath = path.resolve(project_path || config.defaultProjectPath);
       const dbPath = path.join(projectPath, config.indexDirName, "index.sqlite");
       if (!fs.existsSync(dbPath)) {
-        return asJsonText({
-          path: filePath,
-          projectPath,
-          status: "index_missing",
-          message: "Run repo_reindex with dry_run=false before related file lookup.",
-        });
+        return asJsonText(
+          shapeToolErrorPayload(
+            {
+              path: filePath,
+              projectPath,
+              status: "index_missing",
+              message: "Run repo_reindex with dry_run=false before related file lookup.",
+              recommendedNextActions: [
+                "Run repo_index_status to confirm whether the project has an index.",
+                "Run repo_reindex with dry_run=false before related file lookup.",
+              ],
+            },
+            response_mode,
+          ),
+        );
       }
 
       return asJsonText(
@@ -593,7 +618,7 @@ export function registerTools(server: McpServer, config: AppConfig): void {
     "repo_context_pack",
     {
       title: "Repo Context Pack",
-      description: "Search code and package primary snippets with symbols/imports/reverse imports for matched files.",
+      description: "Preferred task-oriented code lookup. Search code, pack primary snippets, compact related metadata, and suggested paths.",
       inputSchema: {
         query: z.string().min(1),
         project_path: z.string().optional(),
@@ -632,12 +657,22 @@ export function registerTools(server: McpServer, config: AppConfig): void {
       const projectPath = path.resolve(project_path || config.defaultProjectPath);
       const dbPath = path.join(projectPath, config.indexDirName, "index.sqlite");
       if (!fs.existsSync(dbPath)) {
-        return asJsonText({
-          query,
-          projectPath,
-          status: "index_missing",
-          message: "Run repo_reindex with dry_run=false and index_embeddings=true before building a context pack.",
-        });
+        return asJsonText(
+          shapeToolErrorPayload(
+            {
+              query,
+              projectPath,
+              status: "index_missing",
+              message: "Run repo_reindex with dry_run=false and index_embeddings=true before building a context pack.",
+              recommendedNextActions: [
+                "Run repo_index_status to confirm whether the project has an index.",
+                "Run repo_reindex with dry_run=false for metadata lookup.",
+                "Set index_embeddings=true only when semantic search or hybrid context packs need vectors.",
+              ],
+            },
+            response_mode,
+          ),
+        );
       }
 
       const dimensions = expectedDimensions;
@@ -669,14 +704,19 @@ export function registerTools(server: McpServer, config: AppConfig): void {
         });
       } catch (error) {
         if (mode === "semantic") {
-          return asJsonText({
-            query,
-            projectPath,
-            dbPath,
-            dimensions,
-            mode,
-            ...embeddingUnavailablePayload(error),
-          });
+          return asJsonText(
+            shapeToolErrorPayload(
+              {
+                query,
+                projectPath,
+                dbPath,
+                dimensions,
+                mode,
+                ...embeddingUnavailablePayload(error),
+              },
+              response_mode,
+            ),
+          );
         }
 
         effectiveMode = "keyword";

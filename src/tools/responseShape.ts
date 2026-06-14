@@ -38,6 +38,38 @@ export function withResponseStats<T extends Record<string, unknown>>(payload: T)
   };
 }
 
+function compactError(error: unknown): unknown {
+  if (!error || typeof error !== "object" || Array.isArray(error)) return error;
+  const record = error as Record<string, unknown>;
+  return {
+    type: record.type,
+    message: record.message,
+    httpStatus: record.httpStatus,
+    retryable: record.retryable,
+  };
+}
+
+export function shapeToolErrorPayload(payloadInput: object, mode: string): Record<string, unknown> {
+  const payload = payloadInput as Record<string, unknown>;
+  if (mode === "full") return withResponseStats(payload);
+
+  const shaped: Record<string, unknown> = {
+    status: payload.status,
+    responseMode: mode,
+    query: payload.query,
+    path: payload.path,
+    projectPath: payload.projectPath,
+    mode: payload.mode,
+    effectiveMode: payload.effectiveMode,
+    fallbackAvailable: payload.fallbackAvailable,
+    message: payload.message,
+    error: compactError(payload.error),
+    recommendedNextActions: payload.recommendedNextActions,
+  };
+  if (payload.dimensions !== undefined) shaped.dimensions = payload.dimensions;
+  return withResponseStats(shaped);
+}
+
 function summarizeSkipped(skipped: unknown): Record<string, unknown> {
   const skippedFiles = Array.isArray(skipped) ? (skipped as Array<Record<string, unknown>>) : [];
   const byReason: Record<string, number> = {};
@@ -165,22 +197,13 @@ export function shapeIndexStatusPayload(payloadInput: object, mode: ToolResponse
   return withResponseStats(shaped);
 }
 
-function compactSymbol(symbol: Record<string, unknown>): Record<string, unknown> {
-  return {
-    name: symbol.name,
-    kind: symbol.kind,
-    line: symbol.line,
-    exported: symbol.exported,
-  };
-}
-
 export function shapeRelatedFilesPayload(payloadInput: object, mode: ToolResponseMode): Record<string, unknown> {
   const payload = payloadInput as Record<string, unknown>;
   if (mode === "full") return withResponseStats(payload);
 
-  const symbols = Array.isArray(payload.symbols) ? (payload.symbols as Array<Record<string, unknown>>) : [];
-  const imports = Array.isArray(payload.imports) ? (payload.imports as Array<Record<string, unknown>>) : [];
-  const importedBy = Array.isArray(payload.importedBy) ? (payload.importedBy as Array<Record<string, unknown>>) : [];
+  const symbols = Array.isArray(payload.symbols) ? payload.symbols : [];
+  const imports = Array.isArray(payload.imports) ? payload.imports : [];
+  const importedBy = Array.isArray(payload.importedBy) ? payload.importedBy : [];
   const shaped: Record<string, unknown> = {
     projectPath: payload.projectPath,
     path: payload.path,
@@ -190,9 +213,9 @@ export function shapeRelatedFilesPayload(payloadInput: object, mode: ToolRespons
       imports: imports.length,
       importedBy: importedBy.length,
     },
-    symbols: symbols.map(compactSymbol),
-    imports,
-    importedBy,
+    symbols: compactRelatedSymbols(symbols.slice(0, 8)),
+    imports: compactImports(imports.slice(0, 8)),
+    importedBy: compactImportedBy(importedBy.slice(0, 8)),
   };
   return withResponseStats(shaped);
 }

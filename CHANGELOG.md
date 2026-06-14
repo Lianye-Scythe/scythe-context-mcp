@@ -14,6 +14,7 @@ This project follows semantic versioning before npm publication where practical.
 ### Changed
 
 - Make compact search/context-pack responses more token-efficient by shortening snippets, omitting ranking diagnostics, and summarizing related-file metadata.
+- Make tool error responses include response stats and compact shaping, compress `repo_related_files` compact output, and clarify `repo_semantic_search` as a ranking-diagnostics tool.
 
 ## [0.1.7] - 2026-06-14
 

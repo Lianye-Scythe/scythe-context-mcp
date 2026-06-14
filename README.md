@@ -245,7 +245,7 @@ GEMINI_OUTPUT_DIMENSIONALITY = "1536"
 | `repo_index_status` | 查看 index path、metadata/embedding coverage、freshness diagnostics 與建議動作。 |
 | `repo_reindex` | 掃描專案並寫入 metadata；設定 `index_embeddings=true` 時才會呼叫 embedding provider。 |
 | `repo_context_pack` | 針對任務查詢打包 primary snippets、match reasons、related files 與 suggested paths。 |
-| `repo_semantic_search` | 對已索引 chunks 做 hybrid 或 semantic search，適合排查 ranking。 |
+| `repo_semantic_search` | 對已索引 chunks 做 hybrid 或 semantic search，主要用於排查 raw ranking；一般查找優先用 `repo_context_pack`。 |
 | `repo_related_files` | 查看單一檔案的 symbols、imports、importedBy。 |
 | `gemini_embedding_probe` | 測試 Gemini 或 proxy 相容性，回傳 endpoint、latency、錯誤分類與可修復建議。 |
 | `repo_doctor` | 不呼叫外部 API，檢查 Node runtime、native modules、Gemini env、provider capability cache、WSL interop 與 index health。 |
@@ -260,7 +260,7 @@ GEMINI_OUTPUT_DIMENSIONALITY = "1536"
 - `paths_only`：第一輪探索用，只回傳路徑、行號與 match reason，適合先找要讀的檔案。
 - `snippets`：需要更多上下文或 ranking 診斷時使用，保留較完整 snippets、分數與 metadata。
 
-建議先用 `response_mode="paths_only"` 或預設 `compact` 找到候選檔案，再用 Codex 直接讀特定檔案或小範圍片段。
+建議先用 `repo_context_pack(response_mode="paths_only")` 或預設 `compact` 找到候選檔案，再用 Codex 直接讀特定檔案或小範圍片段。需要排名分數或較完整片段來排查 ranking 時，再使用 `repo_semantic_search(response_mode="snippets")`。
 
 ## 功能狀態
 

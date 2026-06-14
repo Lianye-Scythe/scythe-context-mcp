@@ -245,7 +245,7 @@ Use `PWD/p` only if you intentionally run a Windows Node process and need WSL to
 | `repo_index_status` | Shows index path, metadata/embedding coverage, freshness diagnostics, and recommended actions. |
 | `repo_reindex` | Scans the project and writes metadata; calls the embedding provider only when `index_embeddings=true`. |
 | `repo_context_pack` | Packs primary snippets, match reasons, related files, and suggested paths for a task query. |
-| `repo_semantic_search` | Runs hybrid or semantic search over indexed chunks; useful for ranking diagnostics. |
+| `repo_semantic_search` | Runs hybrid or semantic search over indexed chunks, mainly for raw ranking diagnostics. Prefer `repo_context_pack` for normal lookup. |
 | `repo_related_files` | Shows symbols, imports, and importedBy for one file. |
 | `gemini_embedding_probe` | Tests Gemini or proxy compatibility and returns endpoint, latency, error classification, and remediation hints. |
 | `repo_doctor` | Checks Node runtime, native modules, Gemini env, provider capability cache, WSL interop, and index health without calling external APIs. |
@@ -260,7 +260,7 @@ To control Codex token usage, `repo_index_status`, `repo_related_files`, `repo_r
 - `paths_only`: first-pass scouting mode with paths, line ranges, and match reasons only.
 - `snippets`: fuller snippets, ranking scores, and metadata when more context or ranking diagnostics are needed.
 
-Prefer `response_mode="paths_only"` or the default `compact` mode first, then let Codex read specific files or small ranges directly.
+Prefer `repo_context_pack(response_mode="paths_only")` or the default `compact` mode first, then let Codex read specific files or small ranges directly. Use `repo_semantic_search(response_mode="snippets")` when you need ranking scores or fuller snippets for ranking diagnostics.
 
 ## Feature Status
 
