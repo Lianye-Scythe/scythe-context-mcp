@@ -36,6 +36,7 @@
     "scripts/context-benchmark-gate.mjs",
     "scripts/prepare-release.mjs",
     "scripts/release-notes.mjs",
+    "scripts/tree-sitter-spike.mjs",
     ".env.example"
   ],
   "scripts": {
@@ -49,6 +50,7 @@
     "bench:gate:hybrid": "npm run build && node scripts/context-benchmark-gate.mjs --include-hybrid",
     "bench:context:hybrid": "node scripts/context-benchmark.mjs --include-hybrid",
     "bench:context:source": "npm run build && node scripts/context-benchmark.mjs",
+    "spike:tree-sitter": "npm run build && node scripts/tree-sitter-spike.mjs",
     "dev": "tsx src/index.ts",
     "prepack": "npm run build",
     "release:prepare": "node scripts/prepare-release.mjs",

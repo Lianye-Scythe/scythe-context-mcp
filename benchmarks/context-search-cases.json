@@ -789,11 +789,12 @@
     "id": "tree-sitter-future-work",
     "query": "tree sitter symbol extraction is pending and should only be added if regex extraction becomes a bottleneck",
     "expectedPaths": [
-      "README.md",
-      "docs/tech-stack.md",
-      "docs/codex-integration.md",
+      "docs/tree-sitter-spike.md",
       "docs/architecture.md",
-      "docs/development-plan.md",
+      "src/indexing/experimental/treeSitterStructure.ts",
+      "src/indexing/experimental/treeSitterStructure.test.ts",
+      "src/indexing/experimental/structureFixtures.ts",
+      "scripts/tree-sitter-spike.mjs",
       "src/indexing/symbolGraph.ts"
     ],
     "notes": "Future symbol extraction planning.",

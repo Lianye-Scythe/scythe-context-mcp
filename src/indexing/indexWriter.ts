@@ -5,7 +5,9 @@ import { chunkText } from "./chunker.js";
 import { resolveIndexingLimits } from "./dryRun.js";
 import { sha256Hex } from "./hash.js";
 import { scanProject } from "./scanner.js";
-import { extractFileGraph, resolveDependencyPath } from "./symbolGraph.js";
+import { regexStructureExtractor } from "./structureExtractor.js";
+import { resolveDependencyPath } from "./symbolGraph.js";
+import type { CodeStructureExtractor } from "./structureExtractor.js";
 import type { IndexingLimits, ReindexDryRunOptions, SkippedFile } from "./types.js";
 import {
   deleteChunksForFile,
@@ -19,6 +21,7 @@ import {
 export interface PersistentReindexOptions extends ReindexDryRunOptions {
   indexDirName: string;
   vectorDimensions: number;
+  structureExtractor?: CodeStructureExtractor;
 }
 
 export interface PersistentReindexResult {
@@ -49,6 +52,8 @@ export async function persistentReindexMetadata(options: PersistentReindexOption
   const scan = await scanProject(projectPath, limits);
   const activePathSet = new Set(scan.files.map((file) => file.relativePath));
   const db = new Database(dbPath);
+  const structureExtractor = options.structureExtractor ?? regexStructureExtractor;
+  const structureChunker = structureExtractor.chunkText ?? chunkText;
   let chunkCount = 0;
   let byteCount = 0;
   let symbolCount = 0;
@@ -76,7 +81,7 @@ export async function persistentReindexMetadata(options: PersistentReindexOption
           hash: input.hash,
         });
 
-        const graph = extractFileGraph(input.relativePath, input.content);
+        const graph = structureExtractor.extractFileGraph(input.relativePath, input.content);
         replaceSymbolGraphForFile(
           db,
           fileId,
@@ -112,7 +117,7 @@ export async function persistentReindexMetadata(options: PersistentReindexOption
 
     for (const file of scan.files) {
       const content = await fs.readFile(file.absolutePath, "utf8");
-      const chunks = chunkText(file.relativePath, content, limits);
+      const chunks = structureChunker(file.relativePath, content, limits);
       const graph = writeFileMetadata({
         relativePath: file.relativePath,
         size: file.size,

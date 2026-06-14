@@ -6,6 +6,10 @@ This project follows semantic versioning before npm publication where practical.
 
 ## [Unreleased]
 
+### Added
+
+- Add a tree-sitter spike skeleton with a structure-extractor interface, fixture coverage, and local comparison script.
+
 ## [0.1.9] - 2026-06-14
 
 ### Added

@@ -110,6 +110,14 @@ If only symbol extraction changes, embedding cache churn should be zero for unch
 5. Run the benchmark gate with tree-sitter symbols enabled behind an env flag.
 6. Decide whether to keep, revise, or discard the approach.
 
+Run the current skeleton with:
+
+```bash
+npm run spike:tree-sitter
+```
+
+The initial skeleton intentionally reports `Parser wired: no`. It exists to keep the extractor interface, fixture cases, and measurement output stable before adding a parser dependency.
+
 ## Default Decision
 
 The default recommendation is:
