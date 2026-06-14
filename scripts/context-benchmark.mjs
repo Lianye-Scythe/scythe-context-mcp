@@ -7,6 +7,7 @@ import { spawnSync } from "node:child_process";
 import { performance } from "node:perf_hooks";
 
 const DEFAULT_CASES_PATH = "benchmarks/context-search-cases.json";
+const DEFAULT_SUITE = "full";
 
 function parseArgs(argv) {
   const args = {
@@ -21,6 +22,7 @@ function parseArgs(argv) {
     json: false,
     output: undefined,
     allowMissingExpected: false,
+    suites: [DEFAULT_SUITE],
   };
 
   for (let i = 0; i < argv.length; i += 1) {
@@ -65,6 +67,9 @@ function parseArgs(argv) {
       case "--allow-missing-expected":
         args.allowMissingExpected = true;
         break;
+      case "--suite":
+        args.suites = parseSuites(next());
+        break;
       case "--help":
       case "-h":
         printHelp();
@@ -82,8 +87,18 @@ function parseArgs(argv) {
   if (args.rerank !== "auto" && args.rerank !== "off") {
     throw new Error("--rerank must be one of: auto, off");
   }
+  if (args.suites.length === 0) {
+    throw new Error("--suite must include at least one suite name");
+  }
 
   return args;
+}
+
+function parseSuites(value) {
+  return value
+    .split(",")
+    .map((item) => item.trim())
+    .filter(Boolean);
 }
 
 function printHelp() {
@@ -99,6 +114,7 @@ Options:
   --json                       Print JSON instead of a table.
   --output <path>              Write JSON report to a file.
   --allow-missing-expected     Do not fail when expected paths are missing from the target project.
+  --suite <name[,name]>        Case suite tags to run. Defaults to full.
 `);
 }
 
@@ -167,7 +183,15 @@ function readCases(casesPath, projectPath, options = {}) {
       }
       return normalized;
     });
-    return { ...item, expectedPaths };
+    const tags = Array.isArray(item.tags)
+      ? item.tags.map((tag) => {
+          if (typeof tag !== "string" || tag.trim() === "") {
+            throw new Error(`Invalid tag in benchmark case ${item.id}`);
+          }
+          return tag.trim();
+        })
+      : [];
+    return { ...item, expectedPaths, tags };
   });
 
   if (missingExpected.length > 0 && !options.allowMissingExpected) {
@@ -182,6 +206,37 @@ function readCases(casesPath, projectPath, options = {}) {
   }
 
   return { cases: normalizedCases, missingExpected };
+}
+
+function filterCasesBySuite(cases, suites) {
+  const knownSuites = new Set([DEFAULT_SUITE]);
+  for (const testCase of cases) {
+    for (const tag of testCase.tags) knownSuites.add(tag);
+  }
+  const unknownSuites = suites.filter((suite) => !knownSuites.has(suite));
+  if (unknownSuites.length > 0) {
+    throw new Error(
+      `Unknown benchmark suite(s): ${unknownSuites.join(", ")}. Known suites: ${Array.from(knownSuites).sort().join(", ")}`,
+    );
+  }
+
+  if (suites.includes(DEFAULT_SUITE)) {
+    return {
+      selectedCases: cases,
+      activeSuites: [DEFAULT_SUITE],
+    };
+  }
+
+  const selectedSuites = new Set(suites);
+  const selectedCases = cases.filter((testCase) => testCase.tags.some((tag) => selectedSuites.has(tag)));
+  if (selectedCases.length === 0) {
+    throw new Error(`No benchmark cases matched suite(s): ${suites.join(", ")}`);
+  }
+
+  return {
+    selectedCases,
+    activeSuites: suites,
+  };
 }
 
 function uniquePaths(results) {
@@ -550,6 +605,7 @@ async function main() {
   const { cases, missingExpected } = readCases(casesPath, projectPath, {
     allowMissingExpected: args.allowMissingExpected,
   });
+  const { selectedCases, activeSuites } = filterCasesBySuite(cases, args.suites);
   const dbPath = path.join(projectPath, ".scythe-context", "index.sqlite");
 
   if (!fs.existsSync(dbPath)) {
@@ -574,7 +630,7 @@ async function main() {
     projectPath,
     casesPath,
     casesRelativePath,
-    cases,
+    cases: selectedCases,
     dbPath,
     keywordTerms,
     searchKeywordOnly,
@@ -596,6 +652,9 @@ async function main() {
     projectPath,
     casesPath,
     benchmarkScope: casesPathInsideProject ? "project-local" : "external-cases",
+    suites: activeSuites,
+    totalCases: cases.length,
+    selectedCases: selectedCases.length,
     missingExpected,
     dbPath,
     maxResults: args.maxResults,
@@ -623,7 +682,8 @@ async function main() {
   console.log(`Project: ${projectPath}`);
   console.log(`Case file: ${casesPath}`);
   console.log(`Scope: ${casesPathInsideProject ? "project-local" : "external-cases"}`);
-  console.log(`Cases: ${cases.length}`);
+  console.log(`Suites: ${activeSuites.join(", ")}`);
+  console.log(`Cases: ${selectedCases.length}/${cases.length}`);
   if (missingExpected.length > 0) {
     console.log(`Missing expected paths: ${missingExpected.length} (--allow-missing-expected enabled)`);
   }

@@ -6,7 +6,10 @@
       "src/tools/registerTools.ts",
       "src/indexing/hybridSearch.ts"
     ],
-    "notes": "Task-style query for the hybrid-to-keyword fallback path."
+    "notes": "Task-style query for the hybrid-to-keyword fallback path.",
+    "tags": [
+      "core"
+    ]
   },
   {
     "id": "stable-chunk-ids",
@@ -16,7 +19,10 @@
       "src/storage/schema.ts",
       "src/storage/sqliteVec.test.ts"
     ],
-    "notes": "Looks for storage and reindex behavior tied to embedding reuse."
+    "notes": "Looks for storage and reindex behavior tied to embedding reuse.",
+    "tags": [
+      "core"
+    ]
   },
   {
     "id": "utf8-binary-detection",
@@ -26,7 +32,10 @@
       "src/indexing/binary.ts",
       "src/indexing/scanner.test.ts"
     ],
-    "notes": "Regression coverage for text detection around multibyte boundaries."
+    "notes": "Regression coverage for text detection around multibyte boundaries.",
+    "tags": [
+      "core"
+    ]
   },
   {
     "id": "codex-wsl-config",
@@ -36,7 +45,10 @@
       "docs/codex-integration.md",
       "src/config.ts"
     ],
-    "notes": "Documentation and config lookup for the Windows Node plus WSL workspace mode."
+    "notes": "Documentation and config lookup for the Windows Node plus WSL workspace mode.",
+    "tags": [
+      "integration"
+    ]
   },
   {
     "id": "related-file-graph",
@@ -45,7 +57,10 @@
       "src/indexing/relatedFiles.ts",
       "src/indexing/contextPack.ts"
     ],
-    "notes": "Finds symbol and dependency graph code used by repo_context_pack."
+    "notes": "Finds symbol and dependency graph code used by repo_context_pack.",
+    "tags": [
+      "core"
+    ]
   },
   {
     "id": "gemini-proxy-url",
@@ -55,7 +70,10 @@
       "src/config.ts",
       "docs/gemini-compatibility.md"
     ],
-    "notes": "Provider compatibility query with base URL and auth details."
+    "notes": "Provider compatibility query with base URL and auth details.",
+    "tags": [
+      "provider"
+    ]
   },
   {
     "id": "npm-bin-mode",
@@ -65,7 +83,10 @@
       "package.json",
       "src/cli.ts"
     ],
-    "notes": "Release packaging and executable bit smoke coverage."
+    "notes": "Release packaging and executable bit smoke coverage.",
+    "tags": [
+      "maintenance"
+    ]
   },
   {
     "id": "fts-keyword-search",
@@ -74,7 +95,10 @@
       "src/indexing/keywordSearch.ts",
       "src/storage/schema.ts"
     ],
-    "notes": "Keyword search internals and schema lookup."
+    "notes": "Keyword search internals and schema lookup.",
+    "tags": [
+      "core"
+    ]
   },
   {
     "id": "doctor-native-modules",
@@ -84,7 +108,10 @@
       "src/storage/sqliteVec.ts",
       "src/tools/doctor.test.ts"
     ],
-    "notes": "Install/runtime diagnostics for native dependencies."
+    "notes": "Install/runtime diagnostics for native dependencies.",
+    "tags": [
+      "diagnostics"
+    ]
   },
   {
     "id": "doctor-embedding-coverage",
@@ -93,7 +120,10 @@
       "src/tools/doctor.ts",
       "src/tools/doctor.test.ts"
     ],
-    "notes": "Doctor index health and embedding coverage warning behavior."
+    "notes": "Doctor index health and embedding coverage warning behavior.",
+    "tags": [
+      "diagnostics"
+    ]
   },
   {
     "id": "register-repo-doctor-tool",
@@ -102,7 +132,10 @@
       "src/tools/registerTools.ts",
       "src/tools/doctor.ts"
     ],
-    "notes": "Exact tool wiring lookup."
+    "notes": "Exact tool wiring lookup.",
+    "tags": [
+      "diagnostics"
+    ]
   },
   {
     "id": "server-instructions-rg-vs-context",
@@ -112,7 +145,10 @@
       "README.md",
       "docs/codex-integration.md"
     ],
-    "notes": "Prompt/tool-use policy lookup."
+    "notes": "Prompt/tool-use policy lookup.",
+    "tags": [
+      "integration"
+    ]
   },
   {
     "id": "cli-version-help",
@@ -122,7 +158,10 @@
       "src/cli.test.ts",
       "package.json"
     ],
-    "notes": "CLI smoke and version consistency."
+    "notes": "CLI smoke and version consistency.",
+    "tags": [
+      "maintenance"
+    ]
   },
   {
     "id": "config-default-project-pwd",
@@ -131,7 +170,10 @@
       "src/config.ts",
       "src/config.test.ts"
     ],
-    "notes": "Multi-repo default project behavior."
+    "notes": "Multi-repo default project behavior.",
+    "tags": [
+      "integration"
+    ]
   },
   {
     "id": "legacy-env-aliases",
@@ -141,7 +183,10 @@
       "src/config.test.ts",
       "README.md"
     ],
-    "notes": "Rename compatibility and config migration."
+    "notes": "Rename compatibility and config migration.",
+    "tags": [
+      "integration"
+    ]
   },
   {
     "id": "gemini-batch-fallback",
@@ -150,7 +195,11 @@
       "src/indexing/embeddingWriter.ts",
       "src/indexing/embeddingWriter.test.ts"
     ],
-    "notes": "Provider capability and batch compatibility behavior."
+    "notes": "Provider capability and batch compatibility behavior.",
+    "tags": [
+      "provider",
+      "core"
+    ]
   },
   {
     "id": "gemini-error-classification",
@@ -159,7 +208,10 @@
       "src/providers/gemini.ts",
       "src/providers/gemini.test.ts"
     ],
-    "notes": "Provider error handling lookup."
+    "notes": "Provider error handling lookup.",
+    "tags": [
+      "provider"
+    ]
   },
   {
     "id": "context-budgeting-truncation",
@@ -170,7 +222,10 @@
       "src/indexing/contextPack.test.ts",
       "src/indexing/resultFormat.test.ts"
     ],
-    "notes": "Context budget and formatting behavior."
+    "notes": "Context budget and formatting behavior.",
+    "tags": [
+      "core"
+    ]
   },
   {
     "id": "related-snippet-packing",
@@ -180,7 +235,10 @@
       "src/tools/registerTools.ts",
       "src/indexing/contextPack.test.ts"
     ],
-    "notes": "Related context expansion query."
+    "notes": "Related context expansion query.",
+    "tags": [
+      "core"
+    ]
   },
   {
     "id": "code-aware-reranker-source-counterpart",
@@ -190,7 +248,10 @@
       "src/indexing/hybridSearch.test.ts",
       "src/indexing/hybridSearch.ts"
     ],
-    "notes": "Reranker source/test relation behavior."
+    "notes": "Reranker source/test relation behavior.",
+    "tags": [
+      "core"
+    ]
   },
   {
     "id": "path-role-ranking",
@@ -199,7 +260,10 @@
       "src/indexing/codeAwareReranker.ts",
       "src/indexing/relatedFiles.ts"
     ],
-    "notes": "File role and intent based ranking."
+    "notes": "File role and intent based ranking.",
+    "tags": [
+      "core"
+    ]
   },
   {
     "id": "scanner-ignore-local-secrets",
@@ -209,7 +273,11 @@
       ".gitignore",
       "AGENTS.md"
     ],
-    "notes": "Privacy and ignored files behavior."
+    "notes": "Privacy and ignored files behavior.",
+    "tags": [
+      "core",
+      "maintenance"
+    ]
   },
   {
     "id": "dry-run-indexing-stats",
@@ -218,7 +286,10 @@
       "src/indexing/dryRun.ts",
       "src/indexing/dryRun.test.ts"
     ],
-    "notes": "Safe indexing preview lookup."
+    "notes": "Safe indexing preview lookup.",
+    "tags": [
+      "core"
+    ]
   },
   {
     "id": "sqlite-schema-fts-vector",
@@ -228,7 +299,10 @@
       "src/storage/schema.test.ts",
       "src/storage/sqliteVec.ts"
     ],
-    "notes": "Storage schema internals."
+    "notes": "Storage schema internals.",
+    "tags": [
+      "core"
+    ]
   },
   {
     "id": "dependency-resolution-relative-imports",
@@ -237,7 +311,10 @@
       "src/indexing/symbolGraph.ts",
       "src/indexing/symbolGraph.test.ts"
     ],
-    "notes": "Symbol/dependency graph extraction."
+    "notes": "Symbol/dependency graph extraction.",
+    "tags": [
+      "core"
+    ]
   },
   {
     "id": "semantic-vector-search-sqlite-vec",
@@ -247,7 +324,10 @@
       "src/indexing/semanticSearch.test.ts",
       "src/storage/sqliteVec.ts"
     ],
-    "notes": "Raw semantic vector search behavior."
+    "notes": "Raw semantic vector search behavior.",
+    "tags": [
+      "core"
+    ]
   },
   {
     "id": "benchmark-rg-baseline",
@@ -257,7 +337,10 @@
       "benchmarks/context-search-cases.json",
       "docs/benchmark.md"
     ],
-    "notes": "Benchmark harness and no-MCP baseline."
+    "notes": "Benchmark harness and no-MCP baseline.",
+    "tags": [
+      "benchmark"
+    ]
   },
   {
     "id": "npm-package-files",
@@ -267,7 +350,10 @@
       ".gitignore",
       "scripts/context-benchmark.mjs"
     ],
-    "notes": "Package files and privacy boundary."
+    "notes": "Package files and privacy boundary.",
+    "tags": [
+      "maintenance"
+    ]
   },
   {
     "id": "github-ci-release-checks",
@@ -277,7 +363,10 @@
       "package.json",
       "CONTRIBUTING.md"
     ],
-    "notes": "Contributor and CI workflow lookup."
+    "notes": "Contributor and CI workflow lookup.",
+    "tags": [
+      "maintenance"
+    ]
   },
   {
     "id": "security-privacy-embedding-text",
@@ -287,7 +376,11 @@
       "README.md",
       "AGENTS.md"
     ],
-    "notes": "Privacy docs and remote embedding risk."
+    "notes": "Privacy docs and remote embedding risk.",
+    "tags": [
+      "maintenance",
+      "provider"
+    ]
   },
   {
     "id": "provider-capability-cache",
@@ -298,7 +391,11 @@
       "src/tools/registerTools.ts",
       "src/tools/doctor.ts"
     ],
-    "notes": "Provider capability persistence and diagnostics."
+    "notes": "Provider capability persistence and diagnostics.",
+    "tags": [
+      "provider",
+      "diagnostics"
+    ]
   },
   {
     "id": "gemini-probe-writes-capabilities",
@@ -308,7 +405,11 @@
       "src/providers/capabilities.ts",
       "src/providers/gemini.ts"
     ],
-    "notes": "Probe side effects and provider compatibility diagnostics."
+    "notes": "Probe side effects and provider compatibility diagnostics.",
+    "tags": [
+      "provider",
+      "diagnostics"
+    ]
   },
   {
     "id": "doctor-provider-capabilities",
@@ -318,7 +419,11 @@
       "src/tools/doctor.test.ts",
       "src/providers/capabilities.ts"
     ],
-    "notes": "Secret-safe capability diagnostics."
+    "notes": "Secret-safe capability diagnostics.",
+    "tags": [
+      "diagnostics",
+      "provider"
+    ]
   },
   {
     "id": "fallback-when-query-embedding-fails",
@@ -328,7 +433,11 @@
       "src/indexing/hybridSearch.ts",
       "README.md"
     ],
-    "notes": "Runtime fallback behavior for embedding outages."
+    "notes": "Runtime fallback behavior for embedding outages.",
+    "tags": [
+      "core",
+      "provider"
+    ]
   },
   {
     "id": "semantic-mode-no-keyword-fallback",
@@ -338,7 +447,11 @@
       "src/indexing/semanticSearch.ts",
       "README.en.md"
     ],
-    "notes": "Explicit semantic-only error behavior."
+    "notes": "Explicit semantic-only error behavior.",
+    "tags": [
+      "core",
+      "provider"
+    ]
   },
   {
     "id": "windows-wsl-wrapper-config",
@@ -348,7 +461,10 @@
       "README.md",
       "src/config.ts"
     ],
-    "notes": "Windows App plus WSL setup guidance."
+    "notes": "Windows App plus WSL setup guidance.",
+    "tags": [
+      "integration"
+    ]
   },
   {
     "id": "project-path-auto-detection",
@@ -359,7 +475,10 @@
       "README.md",
       "docs/codex-integration.md"
     ],
-    "notes": "Multi-repo default project detection."
+    "notes": "Multi-repo default project detection.",
+    "tags": [
+      "integration"
+    ]
   },
   {
     "id": "mcp-tool-schema-timeouts",
@@ -370,7 +489,10 @@
       "README.zh-CN.md",
       "docs/codex-integration.md"
     ],
-    "notes": "User-facing Codex MCP configuration."
+    "notes": "User-facing Codex MCP configuration.",
+    "tags": [
+      "integration"
+    ]
   },
   {
     "id": "repo-index-status-freshness",
@@ -380,7 +502,11 @@
       "src/indexing/indexStatus.test.ts",
       "src/tools/registerTools.ts"
     ],
-    "notes": "Freshness diagnostics in status tool."
+    "notes": "Freshness diagnostics in status tool.",
+    "tags": [
+      "diagnostics",
+      "core"
+    ]
   },
   {
     "id": "embedding-coverage-diagnostics",
@@ -390,7 +516,10 @@
       "src/tools/doctor.ts",
       "src/tools/doctor.test.ts"
     ],
-    "notes": "Embedding coverage checks."
+    "notes": "Embedding coverage checks.",
+    "tags": [
+      "diagnostics"
+    ]
   },
   {
     "id": "stable-vector-row-rewrite",
@@ -400,7 +529,10 @@
       "src/indexing/embeddingWriter.test.ts",
       "src/storage/schema.ts"
     ],
-    "notes": "Incremental embedding cache correctness."
+    "notes": "Incremental embedding cache correctness.",
+    "tags": [
+      "core"
+    ]
   },
   {
     "id": "chunker-overlap-budget",
@@ -410,7 +542,10 @@
       "src/indexing/chunker.test.ts",
       "src/indexing/defaults.ts"
     ],
-    "notes": "Chunking behavior and defaults."
+    "notes": "Chunking behavior and defaults.",
+    "tags": [
+      "core"
+    ]
   },
   {
     "id": "scanner-built-in-ignores",
@@ -420,7 +555,10 @@
       "src/indexing/scanner.test.ts",
       ".gitignore"
     ],
-    "notes": "Scanner ignore policy."
+    "notes": "Scanner ignore policy.",
+    "tags": [
+      "core"
+    ]
   },
   {
     "id": "result-format-context-budget",
@@ -430,7 +568,10 @@
       "src/indexing/resultFormat.test.ts",
       "src/tools/registerTools.ts"
     ],
-    "notes": "Formatted search response budgeting."
+    "notes": "Formatted search response budgeting.",
+    "tags": [
+      "core"
+    ]
   },
   {
     "id": "related-snippets-budget",
@@ -440,7 +581,10 @@
       "src/tools/registerTools.ts",
       "src/indexing/contextPack.test.ts"
     ],
-    "notes": "Secondary context packing controls."
+    "notes": "Secondary context packing controls.",
+    "tags": [
+      "core"
+    ]
   },
   {
     "id": "context-pack-seed-related-depth",
@@ -450,7 +594,10 @@
       "src/indexing/contextPack.ts",
       "src/indexing/relatedFiles.ts"
     ],
-    "notes": "Task-oriented context pack parameters."
+    "notes": "Task-oriented context pack parameters.",
+    "tags": [
+      "core"
+    ]
   },
   {
     "id": "dependency-graph-imported-by",
@@ -460,7 +607,10 @@
       "src/indexing/symbolGraph.ts",
       "src/indexing/symbolGraph.test.ts"
     ],
-    "notes": "Graph-oriented related file lookup."
+    "notes": "Graph-oriented related file lookup.",
+    "tags": [
+      "core"
+    ]
   },
   {
     "id": "benchmark-rerank-delta-report",
@@ -470,7 +620,10 @@
       "docs/benchmark.md",
       "package.json"
     ],
-    "notes": "Benchmark compare report UX."
+    "notes": "Benchmark compare report UX.",
+    "tags": [
+      "benchmark"
+    ]
   },
   {
     "id": "benchmark-hybrid-opt-in",
@@ -480,7 +633,11 @@
       "docs/benchmark.md",
       "package.json"
     ],
-    "notes": "No-API default benchmark behavior."
+    "notes": "No-API default benchmark behavior.",
+    "tags": [
+      "benchmark",
+      "provider"
+    ]
   },
   {
     "id": "publish-workflow-tag-trigger",
@@ -490,7 +647,10 @@
       "package.json",
       "CHANGELOG.md"
     ],
-    "notes": "GitHub Actions npm publish flow."
+    "notes": "GitHub Actions npm publish flow.",
+    "tags": [
+      "maintenance"
+    ]
   },
   {
     "id": "issue-pr-templates",
@@ -500,7 +660,10 @@
       ".github/ISSUE_TEMPLATE/feature_request.yml",
       ".github/PULL_REQUEST_TEMPLATE.md"
     ],
-    "notes": "Project maintenance templates."
+    "notes": "Project maintenance templates.",
+    "tags": [
+      "maintenance"
+    ]
   },
   {
     "id": "contributing-release-checklist",
@@ -510,7 +673,10 @@
       "package.json",
       ".github/workflows/ci.yml"
     ],
-    "notes": "Contributor workflow and validation."
+    "notes": "Contributor workflow and validation.",
+    "tags": [
+      "maintenance"
+    ]
   },
   {
     "id": "package-excludes-local-secrets",
@@ -522,7 +688,10 @@
       "scripts/context-benchmark.mjs",
       "docs/benchmark.md"
     ],
-    "notes": "Packaging and repository privacy boundary."
+    "notes": "Packaging and repository privacy boundary.",
+    "tags": [
+      "maintenance"
+    ]
   },
   {
     "id": "cli-unknown-option-error",
@@ -532,7 +701,10 @@
       "src/cli.test.ts",
       "package.json"
     ],
-    "notes": "CLI argument handling."
+    "notes": "CLI argument handling.",
+    "tags": [
+      "maintenance"
+    ]
   },
   {
     "id": "provider-error-redaction",
@@ -542,7 +714,10 @@
       "src/providers/gemini.test.ts",
       "src/tools/registerTools.ts"
     ],
-    "notes": "Provider error safety."
+    "notes": "Provider error safety.",
+    "tags": [
+      "provider"
+    ]
   },
   {
     "id": "base-url-normalization",
@@ -552,7 +727,10 @@
       "src/providers/gemini.test.ts",
       "docs/gemini-compatibility.md"
     ],
-    "notes": "Proxy URL compatibility."
+    "notes": "Proxy URL compatibility.",
+    "tags": [
+      "provider"
+    ]
   },
   {
     "id": "auth-mode-query-header-bearer",
@@ -562,7 +740,10 @@
       "src/providers/gemini.ts",
       "docs/gemini-compatibility.md"
     ],
-    "notes": "Provider auth compatibility."
+    "notes": "Provider auth compatibility.",
+    "tags": [
+      "provider"
+    ]
   },
   {
     "id": "node-runtime-supported-range",
@@ -572,7 +753,10 @@
       "src/tools/doctor.test.ts",
       "package.json"
     ],
-    "notes": "Runtime diagnostics."
+    "notes": "Runtime diagnostics.",
+    "tags": [
+      "diagnostics"
+    ]
   },
   {
     "id": "native-module-install-troubleshooting",
@@ -582,7 +766,11 @@
       "docs/codex-integration.md",
       "README.md"
     ],
-    "notes": "Native dependency troubleshooting."
+    "notes": "Native dependency troubleshooting.",
+    "tags": [
+      "diagnostics",
+      "integration"
+    ]
   },
   {
     "id": "server-instructions-first-512",
@@ -592,7 +780,10 @@
       "AGENTS.md",
       "README.md"
     ],
-    "notes": "Tool selection guidance for Codex."
+    "notes": "Tool selection guidance for Codex.",
+    "tags": [
+      "integration"
+    ]
   },
   {
     "id": "tree-sitter-future-work",
@@ -605,6 +796,9 @@
       "docs/development-plan.md",
       "src/indexing/symbolGraph.ts"
     ],
-    "notes": "Future symbol extraction planning."
+    "notes": "Future symbol extraction planning.",
+    "tags": [
+      "core"
+    ]
   }
 ]

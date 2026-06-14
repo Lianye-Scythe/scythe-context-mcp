@@ -16,6 +16,23 @@ By default it runs only local, no-API methods. This keeps CI and quick local che
 npm run bench:context
 ```
 
+The default suite is `full`, which runs every bundled case. For faster iteration, run one or more tagged suites:
+
+```bash
+npm run bench:context -- --suite core
+npm run bench:context -- --suite core,provider
+npm run bench:context -- --suite diagnostics
+```
+
+Bundled suite tags:
+
+- `core`: indexing, search, ranking, context packing, chunking, scanner, and graph behavior.
+- `provider`: Gemini-compatible provider behavior, auth, URL handling, embeddings, and provider safety.
+- `diagnostics`: `repo_doctor`, index status, runtime, embedding coverage, and troubleshooting.
+- `integration`: Codex App / CLI setup, WSL, MCP config, project detection, and tool instructions.
+- `maintenance`: npm packaging, CI, release, security, CLI, and contribution workflows.
+- `benchmark`: benchmark runner behavior and benchmark-report regressions.
+
 The default report includes an `omittedMethods` entry for `scythe-hybrid` so it is clear that Gemini-backed search was intentionally not measured.
 
 When running from a source checkout after changing TypeScript files, rebuild first or use:
@@ -46,6 +63,12 @@ Equivalent explicit form:
 
 ```bash
 npm run bench:context -- --compare-rerank
+```
+
+For quick ranking work, compare only the core suite:
+
+```bash
+npm run bench:context -- --suite core --compare-rerank
 ```
 
 For the retrieval-quality comparison that best matches normal Scythe usage, run the Gemini-backed hybrid rerank comparison. This calls the configured embedding API and prints auto/off deltas for `scythe-hybrid` as well:
@@ -106,12 +129,15 @@ The default case file is `benchmarks/context-search-cases.json`. Each case has a
       "src/providers/gemini.ts",
       "src/providers/gemini.test.ts"
     ],
+    "tags": [
+      "provider"
+    ],
     "notes": "Provider URL compatibility."
   }
 ]
 ```
 
-Expected paths are validated by default. This catches typos and prevents false misses. If you intentionally benchmark against paths that may be absent in some checkout, pass `--allow-missing-expected`.
+Expected paths are validated by default. This catches typos and prevents false misses. If you intentionally benchmark against paths that may be absent in some checkout, pass `--allow-missing-expected`. Tags are optional for external case files, but they are required if you want `--suite` filtering to select those cases.
 
 The summary reports ok/skipped/error counts, hit@1, hit@3, hit@5, MRR, and latency. Use this before and after ranking changes so reranker improvements are measured instead of judged by feel.
 
