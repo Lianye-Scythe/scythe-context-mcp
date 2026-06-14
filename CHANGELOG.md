@@ -18,6 +18,7 @@ This project follows semantic versioning before npm publication where practical.
 - Add `npm run release:prepare` and make the publish workflow create GitHub Releases while safely skipping already-published npm versions on reruns.
 - Add changelog-based GitHub Release notes generation so releases use curated project notes instead of GitHub's minimal generated summary.
 - Add `response_mode` for token-efficient search/context-pack output, response token estimates, and benchmark output-token efficiency metrics.
+- Add focused response-shaping tests for `paths_only`, `compact`, and `snippets` output modes.
 
 ### Changed
 
@@ -25,6 +26,7 @@ This project follows semantic versioning before npm publication where practical.
 - Make rerank comparison benchmarks print one auto/off delta report instead of two separate tables.
 - Tune code-aware reranking for security/privacy documentation queries and broaden the UTF-8 scanner benchmark expectation to include the scanner decision point.
 - Lower default search/context-pack response budgets and make `compact` the default response mode for high-frequency lookup tools.
+- Move response-shaping logic out of MCP tool registration and keep compacted snippet truncation flags accurate.
 
 ## [0.1.6] - 2026-06-14
 
