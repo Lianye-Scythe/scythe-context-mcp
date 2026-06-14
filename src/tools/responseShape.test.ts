@@ -1,9 +1,141 @@
 import { describe, expect, it } from "vitest";
-import { shapeContextPackPayload, shapeReindexPayload, shapeSemanticPayload } from "./responseShape.js";
+import {
+  shapeContextPackPayload,
+  shapeIndexStatusPayload,
+  shapeReindexPayload,
+  shapeRelatedFilesPayload,
+  shapeSemanticPayload,
+} from "./responseShape.js";
 
 const longSnippet = "x".repeat(900);
 
 describe("response shaping", () => {
+  it("compacts index status output for the default tool entrypoint", () => {
+    const shaped = shapeIndexStatusPayload(
+      {
+        projectPath: "/repo",
+        indexPath: "/repo/.scythe-context",
+        status: "usable_mvp",
+        index: {
+          exists: true,
+          dbPath: "/repo/.scythe-context/index.sqlite",
+          files: 10,
+          chunks: 20,
+          ftsRows: 20,
+          symbols: 5,
+          dependencies: 4,
+          embeddingSets: [{ id: 1, provider: "gemini", model: "gemini-embedding-2", dimensions: 1536, embeddings: 20 }],
+        },
+        freshness: {
+          checked: true,
+          status: "fresh",
+          checkedAt: "2026-06-14T00:00:00.000Z",
+          indexedProjectPaths: ["/repo"],
+          staleFiles: 0,
+          newFiles: 0,
+          modifiedFiles: 0,
+          metadataChangedFiles: 0,
+          missingFiles: 0,
+          skippedFiles: 2,
+          samples: [],
+        },
+        recommendedNextActions: ["Index is ready."],
+        implemented: ["mcp_server", "repo_doctor"],
+        pending: ["tree_sitter_symbols"],
+        indexing: { maxFileBytes: 1000 },
+        gemini: { baseUrl: "https://example.test", hasApiKey: true },
+      },
+      "compact",
+    );
+
+    expect(shaped).toMatchObject({
+      responseMode: "compact",
+      index: {
+        exists: true,
+        files: 10,
+        chunks: 20,
+      },
+      freshness: {
+        status: "fresh",
+        skippedFiles: 2,
+      },
+    });
+    expect(shaped).not.toHaveProperty("implemented");
+    expect(shaped).not.toHaveProperty("pending");
+    expect(shaped).not.toHaveProperty("indexing");
+    expect(shaped).not.toHaveProperty("gemini");
+    expect(JSON.stringify(shaped)).not.toContain("dbPath");
+    expect(shaped).toHaveProperty("responseStats.estimatedOutputTokens");
+  });
+
+  it("keeps raw index status details in full mode", () => {
+    const shaped = shapeIndexStatusPayload(
+      {
+        projectPath: "/repo",
+        implemented: ["mcp_server"],
+        gemini: { baseUrl: "https://example.test" },
+      },
+      "full",
+    );
+
+    expect(shaped).toMatchObject({
+      implemented: ["mcp_server"],
+      gemini: { baseUrl: "https://example.test" },
+    });
+    expect(shaped).toHaveProperty("responseStats.estimatedOutputTokens");
+  });
+
+  it("compacts related file metadata by dropping symbol signatures", () => {
+    const shaped = shapeRelatedFilesPayload(
+      {
+        projectPath: "/repo",
+        dbPath: "/repo/.scythe-context/index.sqlite",
+        path: "src/index.ts",
+        symbols: [
+          {
+            name: "main",
+            kind: "function",
+            line: 10,
+            signature: "export function main() { /* long signature */ }",
+            exported: true,
+          },
+        ],
+        imports: [{ specifier: "./config.js", resolvedPath: "src/config.ts", line: 1 }],
+        importedBy: [{ path: "src/cli.ts", specifier: "./index.js", line: 2 }],
+      },
+      "compact",
+    );
+
+    expect(shaped).toMatchObject({
+      responseMode: "compact",
+      path: "src/index.ts",
+      counts: {
+        symbols: 1,
+        imports: 1,
+        importedBy: 1,
+      },
+      symbols: [{ name: "main", kind: "function", line: 10, exported: true }],
+    });
+    expect(shaped).not.toHaveProperty("dbPath");
+    expect(JSON.stringify(shaped)).not.toContain("long signature");
+    expect(shaped).toHaveProperty("responseStats.estimatedOutputTokens");
+  });
+
+  it("keeps raw related file metadata in full mode", () => {
+    const shaped = shapeRelatedFilesPayload(
+      {
+        path: "src/index.ts",
+        symbols: [{ name: "main", signature: "export function main()" }],
+      },
+      "full",
+    );
+
+    expect(shaped).toMatchObject({
+      symbols: [{ name: "main", signature: "export function main()" }],
+    });
+    expect(shaped).toHaveProperty("responseStats.estimatedOutputTokens");
+  });
+
   it("compacts reindex output for routine Codex use", () => {
     const shaped = shapeReindexPayload(
       {

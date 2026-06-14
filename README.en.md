@@ -252,7 +252,7 @@ Use `PWD/p` only if you intentionally run a Windows Node process and need WSL to
 
 `repo_context_pack(mode="hybrid")` and `repo_semantic_search(mode="hybrid")` degrade to keyword-only results when query embedding is unavailable, returning `effectiveMode: "keyword"` and `fallback.reason: "embedding_unavailable"`. `mode="semantic"` does not degrade and returns `status: "embedding_unavailable"` because pure semantic search requires query embedding. Use `rg` / direct file reads for exact strings, known paths, or small targeted checks.
 
-To control Codex token usage, `repo_reindex` returns a compact summary by default, including stats, skipped summary, embedding stats, and estimated output tokens. Use `repo_reindex(response_mode="full")` only when you need the complete skipped file list or raw provider capability details.
+To control Codex token usage, `repo_index_status`, `repo_related_files`, and `repo_reindex` return compact summaries by default, including decision-oriented details and estimated output tokens. Use `response_mode="full"` only when you need full diagnostics, the complete skipped file list, or raw provider capability details.
 
 `repo_context_pack` and `repo_semantic_search` also support `response_mode`:
 

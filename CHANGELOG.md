@@ -20,6 +20,7 @@ This project follows semantic versioning before npm publication where practical.
 - Add `response_mode` for token-efficient search/context-pack output, response token estimates, and benchmark output-token efficiency metrics.
 - Add focused response-shaping tests for `paths_only`, `compact`, and `snippets` output modes.
 - Add compact/full `repo_reindex` response modes with skipped-file summaries and output token estimates.
+- Add compact/full `repo_index_status` and `repo_related_files` response modes.
 
 ### Changed
 
@@ -30,6 +31,7 @@ This project follows semantic versioning before npm publication where practical.
 - Move response-shaping logic out of MCP tool registration and keep compacted snippet truncation flags accurate.
 - Resolve the benchmark script root path with `fileURLToPath` for better Windows compatibility.
 - Make `repo_reindex` default output shorter by hiding raw skipped-file lists and provider cache keys unless `response_mode=full` is requested.
+- Make index status and related-file lookups default to shorter decision-oriented output.
 
 ## [0.1.6] - 2026-06-14
 

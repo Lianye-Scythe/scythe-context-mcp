@@ -1,5 +1,6 @@
 export type ResponseMode = "paths_only" | "compact" | "snippets";
 export type ReindexResponseMode = "compact" | "full";
+export type ToolResponseMode = "compact" | "full";
 
 export interface ResponseStats {
   estimatedJsonChars: number;
@@ -121,6 +122,78 @@ export function shapeReindexPayload(payloadInput: object, mode: ReindexResponseM
     shaped.recommendedNextActions = actions;
   }
 
+  return withResponseStats(shaped);
+}
+
+export function shapeIndexStatusPayload(payloadInput: object, mode: ToolResponseMode): Record<string, unknown> {
+  const payload = payloadInput as Record<string, unknown>;
+  if (mode === "full") return withResponseStats(payload);
+
+  const index = payload.index as Record<string, unknown> | undefined;
+  const freshness = payload.freshness as Record<string, unknown> | undefined;
+  const shaped: Record<string, unknown> = {
+    projectPath: payload.projectPath,
+    indexPath: payload.indexPath,
+    status: payload.status,
+    responseMode: mode,
+    index: index
+      ? {
+          exists: index.exists,
+          files: index.files,
+          chunks: index.chunks,
+          ftsRows: index.ftsRows,
+          symbols: index.symbols,
+          dependencies: index.dependencies,
+          embeddingSets: index.embeddingSets,
+        }
+      : undefined,
+    freshness: freshness
+      ? {
+          checked: freshness.checked,
+          status: freshness.status,
+          staleFiles: freshness.staleFiles,
+          newFiles: freshness.newFiles,
+          modifiedFiles: freshness.modifiedFiles,
+          metadataChangedFiles: freshness.metadataChangedFiles,
+          missingFiles: freshness.missingFiles,
+          skippedFiles: freshness.skippedFiles,
+          samples: freshness.samples,
+        }
+      : undefined,
+    recommendedNextActions: payload.recommendedNextActions,
+  };
+  return withResponseStats(shaped);
+}
+
+function compactSymbol(symbol: Record<string, unknown>): Record<string, unknown> {
+  return {
+    name: symbol.name,
+    kind: symbol.kind,
+    line: symbol.line,
+    exported: symbol.exported,
+  };
+}
+
+export function shapeRelatedFilesPayload(payloadInput: object, mode: ToolResponseMode): Record<string, unknown> {
+  const payload = payloadInput as Record<string, unknown>;
+  if (mode === "full") return withResponseStats(payload);
+
+  const symbols = Array.isArray(payload.symbols) ? (payload.symbols as Array<Record<string, unknown>>) : [];
+  const imports = Array.isArray(payload.imports) ? (payload.imports as Array<Record<string, unknown>>) : [];
+  const importedBy = Array.isArray(payload.importedBy) ? (payload.importedBy as Array<Record<string, unknown>>) : [];
+  const shaped: Record<string, unknown> = {
+    projectPath: payload.projectPath,
+    path: payload.path,
+    responseMode: mode,
+    counts: {
+      symbols: symbols.length,
+      imports: imports.length,
+      importedBy: importedBy.length,
+    },
+    symbols: symbols.map(compactSymbol),
+    imports,
+    importedBy,
+  };
   return withResponseStats(shaped);
 }
 

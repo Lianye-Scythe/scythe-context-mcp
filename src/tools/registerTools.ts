@@ -21,7 +21,13 @@ import {
 } from "../providers/capabilities.js";
 import { buildGeminiEndpoint, GeminiEmbeddingError, GeminiEmbeddingProvider, normalizeGeminiBaseUrl } from "../providers/gemini.js";
 import { runRepoDoctor } from "./doctor.js";
-import { shapeContextPackPayload, shapeReindexPayload, shapeSemanticPayload } from "./responseShape.js";
+import {
+  shapeContextPackPayload,
+  shapeIndexStatusPayload,
+  shapeReindexPayload,
+  shapeRelatedFilesPayload,
+  shapeSemanticPayload,
+} from "./responseShape.js";
 
 function asJsonText(value: unknown) {
   return {
@@ -34,6 +40,7 @@ type EffectiveSearchMode = SearchMode | "keyword";
 
 const responseModeSchema = z.enum(["paths_only", "compact", "snippets"]);
 const reindexResponseModeSchema = z.enum(["compact", "full"]);
+const toolResponseModeSchema = z.enum(["compact", "full"]);
 
 interface EmbeddingFailureDetails {
   type: string;
@@ -197,9 +204,10 @@ export function registerTools(server: McpServer, config: AppConfig): void {
       description: "Show Scythe Context configuration and current index status.",
       inputSchema: {
         project_path: z.string().optional(),
+        response_mode: toolResponseModeSchema.default("compact"),
       },
     },
-    async ({ project_path }) => {
+    async ({ project_path, response_mode }) => {
       const projectPath = path.resolve(project_path || config.defaultProjectPath);
       const dbPath = path.join(projectPath, config.indexDirName, "index.sqlite");
       const index = readDetailedIndexStatus(dbPath);
@@ -208,48 +216,53 @@ export function registerTools(server: McpServer, config: AppConfig): void {
         dbPath,
         limits: { maxFileBytes: config.indexing.maxFileBytes },
       });
-      return asJsonText({
-        projectPath,
-        indexPath: path.join(projectPath, config.indexDirName),
-        index,
-        recommendedNextActions: recommendedNextActions(index, {
-          desiredDimensions: expectedDimensions,
-          freshness,
-        }),
-        freshness,
-        status: "usable_mvp",
-        implemented: [
-          "mcp_server",
-          "gemini_embedding_provider",
-          "config",
-          "file_scanner",
-          "chunker",
-          "reindex_dry_run",
-          "sqlite_schema",
-          "persistent_metadata_index",
-          "embedding_index_writer",
-          "semantic_vector_search",
-          "symbol_graph",
-          "related_files",
-          "context_budgeting",
-          "context_packer",
-          "multi_hop_related_files",
-          "related_snippet_packing",
-          "local_code_aware_reranker",
-          "provider_capability_cache",
-          "repo_doctor",
-        ],
-        pending: ["tree_sitter_symbols"],
-        indexing: config.indexing,
-        search: config.search,
-        gemini: {
-          baseUrl: config.gemini.baseUrl,
-          model: config.gemini.model,
-          outputDimensionality: config.gemini.outputDimensionality,
-          authMode: config.gemini.authMode,
-          hasApiKey: Boolean(config.gemini.apiKey),
-        },
-      });
+      return asJsonText(
+        shapeIndexStatusPayload(
+          {
+            projectPath,
+            indexPath: path.join(projectPath, config.indexDirName),
+            index,
+            recommendedNextActions: recommendedNextActions(index, {
+              desiredDimensions: expectedDimensions,
+              freshness,
+            }),
+            freshness,
+            status: "usable_mvp",
+            implemented: [
+              "mcp_server",
+              "gemini_embedding_provider",
+              "config",
+              "file_scanner",
+              "chunker",
+              "reindex_dry_run",
+              "sqlite_schema",
+              "persistent_metadata_index",
+              "embedding_index_writer",
+              "semantic_vector_search",
+              "symbol_graph",
+              "related_files",
+              "context_budgeting",
+              "context_packer",
+              "multi_hop_related_files",
+              "related_snippet_packing",
+              "local_code_aware_reranker",
+              "provider_capability_cache",
+              "repo_doctor",
+            ],
+            pending: ["tree_sitter_symbols"],
+            indexing: config.indexing,
+            search: config.search,
+            gemini: {
+              baseUrl: config.gemini.baseUrl,
+              model: config.gemini.model,
+              outputDimensionality: config.gemini.outputDimensionality,
+              authMode: config.gemini.authMode,
+              hasApiKey: Boolean(config.gemini.apiKey),
+            },
+          },
+          response_mode,
+        ),
+      );
     },
   );
 
@@ -527,9 +540,10 @@ export function registerTools(server: McpServer, config: AppConfig): void {
         path: z.string().min(1),
         project_path: z.string().optional(),
         max_results: z.number().int().positive().max(100).default(16),
+        response_mode: toolResponseModeSchema.default("compact"),
       },
     },
-    async ({ path: filePath, project_path, max_results }) => {
+    async ({ path: filePath, project_path, max_results, response_mode }) => {
       const projectPath = path.resolve(project_path || config.defaultProjectPath);
       const dbPath = path.join(projectPath, config.indexDirName, "index.sqlite");
       if (!fs.existsSync(dbPath)) {
@@ -541,15 +555,20 @@ export function registerTools(server: McpServer, config: AppConfig): void {
         });
       }
 
-      return asJsonText({
-        projectPath,
-        dbPath,
-        ...readRelatedFiles({
-          dbPath,
-          filePath,
-          maxResults: max_results,
-        }),
-      });
+      return asJsonText(
+        shapeRelatedFilesPayload(
+          {
+            projectPath,
+            dbPath,
+            ...readRelatedFiles({
+              dbPath,
+              filePath,
+              maxResults: max_results,
+            }),
+          },
+          response_mode,
+        ),
+      );
     },
   );
 
