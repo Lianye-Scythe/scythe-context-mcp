@@ -6,6 +6,8 @@ This project follows semantic versioning before npm publication where practical.
 
 ## [Unreleased]
 
+## [0.1.7] - 2026-06-14
+
 ### Added
 
 - Add `npm run bench:context:hybrid` for explicit Gemini-backed benchmark runs.

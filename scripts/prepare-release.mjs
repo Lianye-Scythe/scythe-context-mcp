@@ -61,6 +61,19 @@ function updateChangelog(version) {
   fs.writeFileSync(changelogPath, updated);
 }
 
+function updateCliVersion(version) {
+  const cliPath = "src/cli.ts";
+  const cli = fs.readFileSync(cliPath, "utf8");
+  const updated = cli.replace(
+    /^export const PACKAGE_VERSION = "\d+\.\d+\.\d+";/m,
+    `export const PACKAGE_VERSION = "${version}";`,
+  );
+  if (updated === cli) {
+    throw new Error(`${cliPath} must contain an export const PACKAGE_VERSION declaration`);
+  }
+  fs.writeFileSync(cliPath, updated);
+}
+
 function main() {
   const target = process.argv[2];
   if (!target || target === "--help" || target === "-h") {
@@ -74,11 +87,12 @@ function main() {
   if (version === current) throw new Error(`package.json is already at ${version}`);
 
   execFileSync("npm", ["version", version, "--no-git-tag-version"], { stdio: "inherit" });
+  updateCliVersion(version);
   updateChangelog(version);
 
   console.log(`\nPrepared release ${version}. Next steps:`);
   console.log("  npm run verify");
-  console.log("  git add package.json package-lock.json CHANGELOG.md");
+  console.log("  git add package.json package-lock.json src/cli.ts CHANGELOG.md");
   console.log(`  git commit -m "Release ${version}"`);
   console.log("  git push origin main");
   console.log(`  git tag v${version}`);

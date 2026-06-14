@@ -1,6 +1,6 @@
 {
   "name": "scythe-context-mcp",
-  "version": "0.1.6",
+  "version": "0.1.7",
   "description": "Local MCP context engine for Codex with Gemini Embedding 2 support.",
   "type": "module",
   "license": "Apache-2.0",
