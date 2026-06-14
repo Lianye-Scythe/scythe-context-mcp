@@ -14,6 +14,7 @@ This project follows semantic versioning before npm publication where practical.
 ### Changed
 
 - Refresh README feature status and workflow guidance after the experimental opt-in tree-sitter extractor release.
+- Clarify first-run diagnostics after clean install, including expected index-missing warnings and native install-script warnings.
 
 ## [0.1.10] - 2026-06-14
 

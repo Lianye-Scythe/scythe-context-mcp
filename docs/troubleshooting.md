@@ -13,6 +13,7 @@ After configuring the MCP server and restarting Codex:
    - Use the default compact output first.
    - It does not call the Gemini endpoint.
    - It checks runtime, native modules, environment, WSL interop hints, provider capability cache, and index health.
+   - On a brand-new repo, `repo_doctor` may report a warning because the index does not exist yet. Run `repo_reindex({ "dry_run": false })`, then run `repo_doctor` again.
 3. Run `repo_index_status`.
    - If metadata is missing or stale, run `repo_reindex({ "dry_run": false })`.
    - Add `index_embeddings=true` only when semantic or hybrid search needs vectors.
@@ -68,6 +69,14 @@ GEMINI_OUTPUT_DIMENSIONALITY = "1536"
 Use `PWD/p` only when deliberately running a Windows Node process that must receive a Windows-readable converted path. That mode is not recommended for directly indexing WSL repositories because SQLite locking and native module boundaries are easier to break.
 
 ## Common Failures
+
+### npm Install Script Warnings
+
+Fresh installs can print npm warnings about install scripts for native dependencies such as `better-sqlite3`. This is expected for packages that load native SQLite bindings.
+
+- If installation completes and `scythe-context-mcp --version` works, continue with `repo_doctor`.
+- If native module loading fails later, run `repo_doctor` and check the native module section.
+- Do not copy `node_modules` between Windows and WSL. Reinstall in the same environment that runs the MCP server.
 
 ### MCP Tools Do Not Appear
 
