@@ -21,8 +21,9 @@ The spike should answer one question:
 
 Current npm versions checked on 2026-06-14:
 
-- `tree-sitter`: `0.25.0`
+- `tree-sitter-cli`: `0.26.9`
 - `web-tree-sitter`: `0.26.9`
+- `tree-sitter`: `0.25.0` Node native binding package
 - `tree-sitter-javascript`: `0.25.0`
 - `tree-sitter-typescript`: `0.23.2`
 

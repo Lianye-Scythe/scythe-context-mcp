@@ -11,12 +11,19 @@ Environment:
 
 This experiment compares dependency routes for a future optional tree-sitter-backed TS/JS structure extractor. It does not change runtime dependencies.
 
+Tree-sitter has multiple JavaScript-facing packages with different version lines. In this document:
+
+- `tree-sitter-cli` and `web-tree-sitter` track the current official `0.26.x` line.
+- The npm package named `tree-sitter` is the Node native binding package, and its latest tested version was `0.25.0`.
+- Grammar packages such as `tree-sitter-javascript` and `tree-sitter-typescript` have their own release cadence and peer dependency ranges.
+
 ## Tested Packages
 
 Current npm metadata checked during the experiment:
 
-- `tree-sitter@0.25.0`
+- `tree-sitter-cli@0.26.9`
 - `web-tree-sitter@0.26.9`
+- `tree-sitter@0.25.0` Node native binding package
 - `tree-sitter-javascript@0.25.0`
 - `tree-sitter-typescript@0.23.2`
 
@@ -26,7 +33,7 @@ Important peer dependency mismatch:
 - `tree-sitter-typescript@0.23.2` peer-optional dependency: `tree-sitter ^0.21.0`
 - `tree-sitter-typescript@0.23.2` depends on `tree-sitter-javascript ^0.23.1`
 
-That means the newest JavaScript grammar and newest TypeScript grammar do not align cleanly on the native `tree-sitter` runtime version.
+That means the newest JavaScript grammar and newest TypeScript grammar do not align cleanly on the native `tree-sitter` npm binding version. This does not mean the official Tree-sitter project is stuck on `0.25.0`; the official CLI and web binding were already at `0.26.9`.
 
 ## Install Results
 
@@ -60,7 +67,7 @@ Both routes are fast enough after installation. The main decision is installatio
 
 ## Decision
 
-Prefer a WASM-first optional extractor for the next implementation step.
+Prefer a WASM-first optional extractor for the next implementation step, using `web-tree-sitter@0.26.9` plus language grammar `.wasm` assets.
 
 Reasons:
 
@@ -90,4 +97,3 @@ Implement the tree-sitter extractor behind an explicit opt-in flag using `web-tr
 - parse/load error: fallback to regex extractor;
 - no structural chunking change;
 - no embedding cache churn for unchanged files.
-
