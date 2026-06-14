@@ -518,6 +518,82 @@ describe("response shaping", () => {
     expect(String(result.snippet).length).toBeLessThan(longSnippet.length);
   });
 
+  it("keeps compact context packs decision-oriented without diagnostic ranking fields", () => {
+    const shaped = shapeContextPackPayload(
+      {
+        query: "find config loader",
+        projectPath: "/repo",
+        mode: "hybrid",
+        effectiveMode: "keyword",
+        rerankMode: "auto",
+        rerankApplied: true,
+        relatedDepth: 1,
+        relatedSeedCount: 1,
+        includeRelatedSnippets: false,
+        primaryResults: [
+          {
+            path: "src/config.ts",
+            startLine: 1,
+            endLine: 20,
+            matchTypes: ["keyword"],
+            matchReason: "keyword/path match",
+            grepKeywords: ["config"],
+            score: 12.5,
+            keywordScore: 8.25,
+            snippet: longSnippet,
+            snippetTruncated: false,
+          },
+        ],
+        relatedFiles: [
+          {
+            sourcePath: "src/index.ts",
+            role: "imported_by",
+            depth: 1,
+            via: "src/config.ts",
+            symbols: [
+              {
+                name: "main",
+                kind: "function",
+                line: 12,
+                signature: "export async function main()",
+                exported: true,
+              },
+            ],
+            imports: [{ specifier: "./config.js", resolvedPath: "src/config.ts", line: 3 }],
+            importedBy: [{ path: "src/cli.ts", specifier: "./index.js", line: 2 }],
+          },
+        ],
+        relatedSnippets: [],
+        suggestedPaths: ["src/config.ts", "src/index.ts"],
+        context: { usedContextChars: 900 },
+      },
+      "compact",
+    );
+
+    const [result] = shaped.primaryResults as Array<Record<string, unknown>>;
+    const [related] = shaped.relatedFiles as Array<Record<string, unknown>>;
+
+    expect(result).toMatchObject({
+      path: "src/config.ts",
+      startLine: 1,
+      endLine: 20,
+      matchReason: "keyword/path match",
+    });
+    expect(result).not.toHaveProperty("score");
+    expect(result).not.toHaveProperty("keywordScore");
+    expect(result).not.toHaveProperty("grepKeywords");
+    expect(String(result.snippet).length).toBeLessThanOrEqual(240);
+    expect(related).toMatchObject({
+      sourcePath: "src/index.ts",
+      role: "imported_by",
+      counts: { symbols: 1, imports: 1, importedBy: 1 },
+      symbols: ["function main:12 export"],
+      imports: ["src/config.ts:3"],
+      importedBy: ["src/cli.ts:2"],
+    });
+    expect(JSON.stringify(related)).not.toContain("signature");
+  });
+
   it("keeps diagnostic fields in snippets mode", () => {
     const shaped = shapeSemanticPayload(
       {

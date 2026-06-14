@@ -279,20 +279,53 @@ function compactSearchResult(result: Record<string, unknown>, mode: ResponseMode
     endLine: result.endLine,
     matchTypes: result.matchTypes,
     matchReason: result.matchReason,
-    grepKeywords: result.grepKeywords,
+    ...(mode === "compact" ? {} : { grepKeywords: result.grepKeywords }),
   };
 
   if (mode === "paths_only") return base;
 
-  const compacted = compactSnippet(result.snippet, mode === "compact" ? 360 : 1200);
-  return {
+  const compacted = compactSnippet(result.snippet, mode === "compact" ? 240 : 1200);
+  const shaped: Record<string, unknown> = {
     ...base,
-    score: result.score,
-    distance: result.distance,
-    keywordScore: result.keywordScore,
     snippet: compacted.snippet,
     snippetTruncated: Boolean(result.snippetTruncated) || compacted.truncated,
   };
+  if (mode === "snippets") {
+    shaped.score = result.score;
+    shaped.distance = result.distance;
+    shaped.keywordScore = result.keywordScore;
+  }
+  return shaped;
+}
+
+function compactRelatedSymbols(symbols: unknown[]): string[] {
+  return symbols.map((symbol) => {
+    const record = symbol as Record<string, unknown>;
+    const kind = typeof record.kind === "string" ? record.kind : "symbol";
+    const name = typeof record.name === "string" ? record.name : "unknown";
+    const line = typeof record.line === "number" ? `:${record.line}` : "";
+    const exported = record.exported ? " export" : "";
+    return `${kind} ${name}${line}${exported}`;
+  });
+}
+
+function compactImports(imports: unknown[]): string[] {
+  return imports.map((item) => {
+    const record = item as Record<string, unknown>;
+    const resolvedPath = typeof record.resolvedPath === "string" ? record.resolvedPath : undefined;
+    const specifier = typeof record.specifier === "string" ? record.specifier : undefined;
+    const line = typeof record.line === "number" ? `:${record.line}` : "";
+    return `${resolvedPath ?? specifier ?? "unknown"}${line}`;
+  });
+}
+
+function compactImportedBy(importedBy: unknown[]): string[] {
+  return importedBy.map((item) => {
+    const record = item as Record<string, unknown>;
+    const path = typeof record.path === "string" ? record.path : "unknown";
+    const line = typeof record.line === "number" ? `:${record.line}` : "";
+    return `${path}${line}`;
+  });
 }
 
 function compactRelatedFile(file: Record<string, unknown>, mode: ResponseMode): Record<string, unknown> {
@@ -306,6 +339,22 @@ function compactRelatedFile(file: Record<string, unknown>, mode: ResponseMode): 
   const symbols = Array.isArray(file.symbols) ? file.symbols.slice(0, limit) : [];
   const imports = Array.isArray(file.imports) ? file.imports.slice(0, limit) : [];
   const importedBy = Array.isArray(file.importedBy) ? file.importedBy.slice(0, limit) : [];
+  if (mode === "compact") {
+    return {
+      sourcePath,
+      role,
+      depth,
+      via,
+      counts: {
+        symbols: Array.isArray(file.symbols) ? file.symbols.length : 0,
+        imports: Array.isArray(file.imports) ? file.imports.length : 0,
+        importedBy: Array.isArray(file.importedBy) ? file.importedBy.length : 0,
+      },
+      symbols: compactRelatedSymbols(symbols),
+      imports: compactImports(imports),
+      importedBy: compactImportedBy(importedBy),
+    };
+  }
   return {
     sourcePath,
     role,

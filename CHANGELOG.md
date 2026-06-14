@@ -11,6 +11,10 @@ This project follows semantic versioning before npm publication where practical.
 - Add benchmark response-mode comparison for `paths_only`, `compact`, and `snippets` context-pack output token costs.
 - Add benchmark response payload token breakdowns for context-pack response sections.
 
+### Changed
+
+- Make compact search/context-pack responses more token-efficient by shortening snippets, omitting ranking diagnostics, and summarizing related-file metadata.
+
 ## [0.1.7] - 2026-06-14
 
 ### Added

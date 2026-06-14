@@ -77,7 +77,7 @@ The current MCP output is optimized for Codex use:
 - JSON text responses are deterministic and easy to inspect.
 - `repo_context_pack` is the preferred single-call workflow for code lookup.
 - `max_context_chars` and `max_related_context_chars` keep output bounded.
-- `suggestedPaths`, line ranges, `matchReason`, `grepKeywords`, symbols, imports, reverse imports, and related snippets give Codex actionable next steps without forcing whole-file reads.
+- `suggestedPaths`, line ranges, `matchReason`, compact symbols/imports, and optional related snippets give Codex actionable next steps without forcing whole-file reads.
 
 ### Tool policy
 
