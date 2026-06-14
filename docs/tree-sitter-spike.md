@@ -118,6 +118,8 @@ npm run spike:tree-sitter
 
 The initial skeleton intentionally reports `Parser wired: no`. It exists to keep the extractor interface, fixture cases, and measurement output stable before adding a parser dependency.
 
+See [Tree-sitter Dependency Experiment](./tree-sitter-dependency-experiment.md) for the first dependency comparison. The current recommendation is to prefer a WASM-first optional extractor and avoid required native parser dependencies.
+
 ## Default Decision
 
 The default recommendation is:
