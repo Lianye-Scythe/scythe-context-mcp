@@ -1,4 +1,4 @@
-export const PACKAGE_VERSION = "0.1.10";
+export const PACKAGE_VERSION = "0.1.11";
 
 export type CliCommand =
   | { kind: "serve" }
