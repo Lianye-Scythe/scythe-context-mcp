@@ -148,3 +148,47 @@ The default recommendation is:
 - **Do not change chunk boundaries until benchmark evidence shows it improves Codex context quality enough to justify embedding cache churn.**
 
 This fits the project goal: improve Codex efficiency and reduce token waste without making installation or indexing less reliable.
+
+## 2026-06-15 Dogfood Spike Result
+
+The WASM extractor was tested against this repository using temporary grammar assets extracted from:
+
+- `tree-sitter-javascript@0.25.0`
+- `tree-sitter-typescript@0.23.2`
+- `web-tree-sitter@0.26.9`
+
+The grammar packages include usable `.wasm` files:
+
+- `tree-sitter-javascript.wasm`
+- `tree-sitter-typescript.wasm`
+- `tree-sitter-tsx.wasm`
+
+They also include large native prebuilds and parser sources, so depending on those packages directly would increase package/install weight unless the WASM assets are copied or packaged separately.
+
+Local extractor comparison:
+
+| Mode | Parser wired | Candidate TS/JS files | Changed files | Symbols | Dependencies | Elapsed |
+| --- | --- | ---: | ---: | ---: | ---: | ---: |
+| Regex fallback baseline | no | 61 | 0 | 463 | 266 | 83ms |
+| WASM tree-sitter | yes | 61 | 22 | 398 | 257 | 214ms |
+
+Benchmark gate comparison:
+
+| Mode | hit@5 | MRR | paths_only out tok | compact out tok | snippets out tok |
+| --- | ---: | ---: | ---: | ---: | ---: |
+| Regex default | 1.00 | 0.86 | 759 | 1956 | 6356 |
+| WASM tree-sitter symbols | 1.00 | 0.85 | 769 | 1988 | 7609 |
+
+Result:
+
+- WASM tree-sitter ran successfully and remained optional.
+- It did not improve retrieval quality on this repo; MRR dropped from `0.86` to `0.85`.
+- It increased output-token estimates, especially `snippets`.
+- It extracted fewer symbols/dependencies than the current regex extractor for this codebase.
+- It increased local spike elapsed time from about `83ms` to `214ms`.
+
+Decision:
+
+- **Keep tree-sitter experimental opt-in.**
+- **Do not make it default or invest in packaging grammar assets yet.**
+- Revisit only if future dogfood cases show regex extraction causing repeated misses, or if a refined tree-sitter extractor improves hit@1/MRR without increasing token output.
