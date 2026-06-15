@@ -263,10 +263,10 @@ To control Codex token usage, `repo_index_status`, `repo_related_files`, `repo_r
 `repo_context_pack` and `repo_semantic_search` also support `response_mode`:
 
 - `compact`: default mode with short snippets, decision-oriented related metadata, suggested paths, and estimated output tokens.
-- `paths_only`: first-pass scouting mode with paths, line ranges, and match reasons only.
+- `paths_only`: first-pass scouting mode with paths, line ranges, match reasons, and compact related-path summaries.
 - `snippets`: fuller snippets, ranking scores, and metadata when more context or ranking diagnostics are needed.
 
-Prefer `repo_context_pack(response_mode="paths_only")` or the default `compact` mode first, then let Codex read specific files or small ranges directly. Use `repo_semantic_search(response_mode="snippets")` when you need ranking scores or fuller snippets for ranking diagnostics.
+Prefer `repo_context_pack(response_mode="paths_only")` first, then let Codex read specific files or small ranges directly. Use the default `compact` mode when short snippets help with the edit. Use `repo_semantic_search(response_mode="snippets")` when you need ranking scores or fuller snippets for ranking diagnostics.
 
 ## Feature Status
 

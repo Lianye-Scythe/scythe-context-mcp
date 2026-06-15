@@ -30,7 +30,7 @@ const server = new McpServer(
   },
   {
     instructions:
-      "Scythe Context is a token-efficient code-context MCP server for Codex. Use it for unknown file locations, semantic/code-intent search, or related files/imports/snippets. Prefer repo_context_pack(response_mode=paths_only or compact) first, then read specific files/ranges. Use rg/direct reads for exact strings, known paths, or small checks. Start with repo_index_status; repo_reindex(dry_run=false) only if metadata is missing/stale. Set index_embeddings=true only when semantic vectors are needed; chunk text goes to the configured endpoint.",
+      "Scythe Context is a token-efficient code-context MCP server for Codex. Start with repo_index_status. For unknown files or code-intent lookup, use repo_context_pack(response_mode=paths_only) first, then read exact files/ranges; use compact when short snippets help and snippets only for ranking/debug detail. Use rg/direct reads for exact strings, known paths, or small checks. Run repo_reindex(dry_run=false) only if metadata is missing/stale. Set index_embeddings=true only when semantic vectors are needed; chunk text goes to the configured endpoint.",
   },
 );
 

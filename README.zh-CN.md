@@ -263,10 +263,10 @@ GEMINI_OUTPUT_DIMENSIONALITY = "1536"
 `repo_context_pack` 与 `repo_semantic_search` 也支持 `response_mode`：
 
 - `compact`：默认模式，返回短 snippets、决策导向 related metadata、suggested paths 与估算输出 token。
-- `paths_only`：第一轮探索用，只返回路径、行号与 match reason，适合先找要读的文件。
+- `paths_only`：第一轮探索用，只返回路径、行号、match reason 与精简关联路径摘要，适合先找要读的文件。
 - `snippets`：需要更多上下文或 ranking 诊断时使用，保留较完整 snippets、分数与 metadata。
 
-建议先用 `repo_context_pack(response_mode="paths_only")` 或默认 `compact` 找到候选文件，再用 Codex 直接读特定文件或小范围片段。需要排名分数或较完整片段来排查 ranking 时，再使用 `repo_semantic_search(response_mode="snippets")`。
+建议先用 `repo_context_pack(response_mode="paths_only")` 找到候选文件，再用 Codex 直接读特定文件或小范围片段；如果短片段能直接帮助修改，再使用默认 `compact`。需要排名分数或较完整片段来排查 ranking 时，再使用 `repo_semantic_search(response_mode="snippets")`。
 
 ## 功能状态
 

@@ -302,7 +302,7 @@ function compactSearchResult(result: Record<string, unknown>, mode: ResponseMode
     endLine: result.endLine,
     matchTypes: result.matchTypes,
     matchReason: result.matchReason,
-    ...(mode === "compact" ? {} : { grepKeywords: result.grepKeywords }),
+    ...(mode === "snippets" ? { grepKeywords: result.grepKeywords } : {}),
   };
 
   if (mode === "paths_only") return base;
@@ -319,6 +319,22 @@ function compactSearchResult(result: Record<string, unknown>, mode: ResponseMode
     shaped.keywordScore = result.keywordScore;
   }
   return shaped;
+}
+
+function compactContextSummary(context: unknown, mode: ResponseMode): unknown {
+  if (mode !== "paths_only" || !context || typeof context !== "object" || Array.isArray(context)) return context;
+  const record = context as Record<string, unknown>;
+  const summary: Record<string, unknown> = {};
+  for (const key of [
+    "primaryResultCount",
+    "relatedFileCount",
+    "relatedSnippetCount",
+    "truncatedResults",
+    "truncatedRelatedSnippets",
+  ]) {
+    if (record[key] !== undefined) summary[key] = record[key];
+  }
+  return summary;
 }
 
 function compactRelatedSymbols(symbols: unknown[]): string[] {
@@ -404,7 +420,7 @@ export function shapeSemanticPayload(payload: Record<string, unknown>, mode: Res
     resultCount: payload.resultCount,
     responseMode: mode,
     results,
-    context: payload.context,
+    context: compactContextSummary(payload.context, mode),
   };
   if (mode === "snippets") {
     shaped.dbPath = payload.dbPath;
@@ -448,7 +464,7 @@ export function shapeContextPackPayload(payload: Record<string, unknown>, mode: 
     relatedFiles,
     relatedSnippets,
     suggestedPaths: payload.suggestedPaths,
-    context: payload.context,
+    context: compactContextSummary(payload.context, mode),
   };
   if (mode === "snippets") {
     shaped.dbPath = payload.dbPath;

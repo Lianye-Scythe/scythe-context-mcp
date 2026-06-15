@@ -500,7 +500,14 @@ describe("response shaping", () => {
         ],
         relatedSnippets: [{ path: "src/index.ts", snippet: longSnippet }],
         suggestedPaths: ["src/config.ts", "src/index.ts"],
-        context: { usedContextChars: 900 },
+        context: {
+          usedContextChars: 900,
+          primaryResultCount: 1,
+          relatedFileCount: 1,
+          relatedSnippetCount: 0,
+          truncatedResults: 0,
+          truncatedRelatedSnippets: 0,
+        },
       },
       "paths_only",
     );
@@ -525,6 +532,15 @@ describe("response shaping", () => {
       ],
       relatedSnippets: [],
     });
+    expect(shaped.context).toEqual({
+      primaryResultCount: 1,
+      relatedFileCount: 1,
+      relatedSnippetCount: 0,
+      truncatedResults: 0,
+      truncatedRelatedSnippets: 0,
+    });
+    expect(JSON.stringify(shaped)).not.toContain("grepKeywords");
+    expect(JSON.stringify(shaped)).not.toContain("usedContextChars");
     expect(JSON.stringify(shaped)).not.toContain(longSnippet);
     expect(shaped).not.toHaveProperty("dbPath");
     expect(shaped).toHaveProperty("responseStats.estimatedOutputTokens");

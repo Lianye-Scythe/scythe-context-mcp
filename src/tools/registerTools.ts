@@ -455,7 +455,7 @@ export function registerTools(server: McpServer, config: AppConfig): void {
     {
       title: "Repo Semantic Search",
       description:
-        "Debug raw semantic or hybrid ranking over indexed chunks. Prefer repo_context_pack for normal task lookup; use response_mode=snippets when ranking scores or fuller snippets are needed.",
+        "Debug raw semantic or hybrid ranking over indexed chunks. Prefer repo_context_pack for normal lookup; use paths_only to scout cheaply and snippets only when scores or fuller snippets are needed.",
       inputSchema: {
         query: z.string().min(1),
         project_path: z.string().optional(),
@@ -570,7 +570,7 @@ export function registerTools(server: McpServer, config: AppConfig): void {
     "repo_related_files",
     {
       title: "Repo Related Files",
-      description: "Show symbols, imports, and reverse imports for an indexed file.",
+      description: "Show compact symbols, imports, and reverse imports for one indexed file after a candidate path is known.",
       inputSchema: {
         path: z.string().min(1),
         project_path: z.string().optional(),
@@ -620,7 +620,8 @@ export function registerTools(server: McpServer, config: AppConfig): void {
     "repo_context_pack",
     {
       title: "Repo Context Pack",
-      description: "Preferred task-oriented code lookup. Search code, pack primary snippets, compact related metadata, and suggested paths.",
+      description:
+        "Preferred task-oriented code lookup for unknown file locations. Use response_mode=paths_only for first-pass scouting, compact for short snippets, and snippets for ranking/debug detail.",
       inputSchema: {
         query: z.string().min(1),
         project_path: z.string().optional(),
