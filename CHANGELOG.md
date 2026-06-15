@@ -6,6 +6,14 @@ This project follows semantic versioning before npm publication where practical.
 
 ## [Unreleased]
 
+## [0.1.13] - 2026-06-15
+
+### Changed
+
+- Make `repo_context_pack(response_mode="paths_only")` and `repo_semantic_search(response_mode="paths_only")` leaner by omitting grep keyword diagnostics and snippet-budget fields from first-pass scouting output.
+- Tighten Codex-facing server and tool descriptions so Codex scouts unknown files with `paths_only`, uses `compact` when short snippets help, and reserves `snippets` for ranking or debug detail.
+- Compact routine diagnostics by shortening all-OK `repo_doctor` output, hiding ignored-only skipped-file samples in compact `repo_reindex` output, and omitting provider capability timestamps from compact `gemini_embedding_probe` output.
+
 ## [0.1.12] - 2026-06-15
 
 ### Changed
