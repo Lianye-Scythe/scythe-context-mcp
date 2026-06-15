@@ -10,6 +10,7 @@ This project follows semantic versioning before npm publication where practical.
 
 - Add troubleshooting and first-run check documentation for Codex, WSL, native modules, provider setup, and safe diagnostics.
 - Add release process documentation for preparing versions, local verification, tagging, GitHub Releases, and npm publication checks.
+- Add repository support, conduct, and Dependabot configuration for public GitHub maintenance.
 
 ### Changed
 
