@@ -6,6 +6,8 @@ This project follows semantic versioning before npm publication where practical.
 
 ## [Unreleased]
 
+## [0.1.11] - 2026-06-15
+
 ### Added
 
 - Add troubleshooting and first-run check documentation for Codex, WSL, native modules, provider setup, and safe diagnostics.
