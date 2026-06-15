@@ -6,6 +6,8 @@ This project follows semantic versioning before npm publication where practical.
 
 ## [Unreleased]
 
+## [0.1.12] - 2026-06-15
+
 ### Changed
 
 - Update GitHub Actions dependencies to `actions/checkout@v6` and `actions/setup-node@v6`.
