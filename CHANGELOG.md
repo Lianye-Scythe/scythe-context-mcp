@@ -6,6 +6,12 @@ This project follows semantic versioning before npm publication where practical.
 
 ## [Unreleased]
 
+### Changed
+
+- Update GitHub Actions dependencies to `actions/checkout@v6` and `actions/setup-node@v6`.
+- Update `better-sqlite3` to `12.10.1`.
+- Update development Node.js type definitions to `@types/node@25.9.3`.
+
 ## [0.1.11] - 2026-06-15
 
 ### Added
