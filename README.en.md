@@ -272,7 +272,7 @@ Prefer `repo_context_pack(response_mode="paths_only")` first, then let Codex rea
 
 Implemented: repo scanning, chunking, SQLite metadata, SQLite FTS5, sqlite-vec, Gemini Embedding 2 provider, semantic/keyword/hybrid search, keyword-only fallback when embeddings fail, local code-aware reranker, lightweight symbol/dependency graph, experimental opt-in tree-sitter extractor, related-file lookup, `repo_context_pack`, provider diagnostics, provider capability cache, index freshness diagnostics, and `repo_doctor`.
 
-Next: focus on first-run diagnostics, Codex/WSL troubleshooting, release maintenance docs, and real usage feedback. Tree-sitter remains experimental opt-in until benchmark or user evidence shows clear value.
+Next: keep collecting dogfood feedback and prioritize ranking / output issues that affect Codex file-finding efficiency or token use. Tree-sitter remains experimental opt-in until benchmark or user evidence shows clear value.
 
 ## Privacy and Local Files
 
@@ -291,6 +291,7 @@ Do not include API keys, proxy tokens, private source snippets, or index databas
 - [Tech Stack](docs/tech-stack.md)
 - [Codex Integration Review](docs/codex-integration.md)
 - [Context Search Benchmark](docs/benchmark.md)
+- [Dogfood Evaluation](docs/dogfood.md)
 - [Troubleshooting and first-run checks](docs/troubleshooting.md)
 - [Release process](docs/release.md)
 

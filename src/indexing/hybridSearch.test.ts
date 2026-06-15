@@ -268,4 +268,72 @@ describe("searchKeywordOnly", () => {
 
     expect(results.map((result) => result.path)).toContain("package.json");
   });
+
+  it("downranks benchmark fixtures for runtime behavior queries", async () => {
+    await fs.mkdir(path.join(tempDir, "src", "tools"), { recursive: true });
+    await fs.mkdir(path.join(tempDir, "benchmarks"), { recursive: true });
+    await fs.writeFile(
+      path.join(tempDir, "src", "tools", "registerTools.ts"),
+      "export function embeddingUnavailablePayload() { return 'context pack degrade to keyword results when query embedding is unavailable in hybrid mode'; }\n",
+    );
+    await fs.writeFile(
+      path.join(tempDir, "benchmarks", "context-search-cases.json"),
+      JSON.stringify([
+        {
+          query: "context pack should degrade to keyword results when query embedding is unavailable in hybrid mode",
+          expectedPaths: ["src/tools/registerTools.ts"],
+        },
+      ]),
+    );
+    const metadata = await persistentReindexMetadata({
+      projectPath: tempDir,
+      indexDirName: ".scythe-context",
+      vectorDimensions: 1536,
+      maxFileBytes: 4096,
+      targetChunkChars: 300,
+      chunkOverlapChars: 0,
+      maxChunksPerFile: 10,
+    });
+
+    const results = searchKeywordOnly({
+      dbPath: metadata.dbPath,
+      query: "context pack should degrade to keyword results when query embedding is unavailable in hybrid mode",
+      maxResults: 5,
+      maxSnippetChars: 180,
+    });
+
+    expect(results[0].path).toBe("src/tools/registerTools.ts");
+    expect(results.map((result) => result.path)).toContain("benchmarks/context-search-cases.json");
+  });
+
+  it("keeps benchmark files competitive for benchmark-intent queries", async () => {
+    await fs.mkdir(path.join(tempDir, "src", "tools"), { recursive: true });
+    await fs.mkdir(path.join(tempDir, "benchmarks"), { recursive: true });
+    await fs.writeFile(
+      path.join(tempDir, "src", "tools", "registerTools.ts"),
+      "export const fallback = 'context pack query embedding unavailable hybrid mode';\n",
+    );
+    await fs.writeFile(
+      path.join(tempDir, "benchmarks", "context-search-cases.json"),
+      "benchmark case suite context pack query embedding unavailable hybrid mode expected paths\n",
+    );
+    const metadata = await persistentReindexMetadata({
+      projectPath: tempDir,
+      indexDirName: ".scythe-context",
+      vectorDimensions: 1536,
+      maxFileBytes: 4096,
+      targetChunkChars: 300,
+      chunkOverlapChars: 0,
+      maxChunksPerFile: 10,
+    });
+
+    const results = searchKeywordOnly({
+      dbPath: metadata.dbPath,
+      query: "benchmark case suite for context pack query embedding unavailable hybrid mode",
+      maxResults: 5,
+      maxSnippetChars: 180,
+    });
+
+    expect(results[0].path).toBe("benchmarks/context-search-cases.json");
+  });
 });

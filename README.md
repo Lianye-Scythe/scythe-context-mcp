@@ -272,7 +272,7 @@ GEMINI_OUTPUT_DIMENSIONALITY = "1536"
 
 已完成：repo 掃描、chunking、SQLite metadata、SQLite FTS5、sqlite-vec、Gemini Embedding 2 provider、semantic/keyword/hybrid search、embedding 失敗時的 keyword-only fallback、local code-aware reranker、輕量 symbol/dependency graph、experimental opt-in tree-sitter extractor、related-file lookup、`repo_context_pack`、provider diagnostics、provider capability cache、index freshness diagnostics、`repo_doctor`。
 
-下一步：優先改善安裝後診斷、Codex/WSL troubleshooting、release 維護文件與實際使用回饋；tree-sitter 維持 experimental opt-in，等 benchmark 或使用者回饋證明有明確收益再提高投入。
+下一步：持續整理真實 dogfood 使用回饋，優先處理會影響 Codex 找檔效率或 token 消耗的 ranking / output 問題；tree-sitter 維持 experimental opt-in，等 benchmark 或使用者回饋證明有明確收益再提高投入。
 
 ## 隱私與本機檔案
 
@@ -291,6 +291,7 @@ GEMINI_OUTPUT_DIMENSIONALITY = "1536"
 - [技術棧](docs/tech-stack.md)
 - [Codex 整合審查](docs/codex-integration.md)
 - [Context search benchmark](docs/benchmark.md)
+- [Dogfood evaluation](docs/dogfood.md)
 - [Troubleshooting and first-run checks](docs/troubleshooting.md)
 - [Release process](docs/release.md)
 
