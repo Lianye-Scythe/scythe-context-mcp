@@ -6,6 +6,17 @@ This project follows semantic versioning before npm publication where practical.
 
 ## [Unreleased]
 
+## [0.1.14] - 2026-06-15
+
+### Added
+
+- Add a dogfood evaluation document that compares MCP-first lookup with direct `rg` search across real maintenance tasks in this repository.
+
+### Changed
+
+- Tune local code-aware reranking so benchmark fixtures are downranked for runtime-behavior queries unless the query explicitly asks about benchmarks, gates, suites, or cases.
+- Document the 2026-06-15 WASM tree-sitter dogfood spike results and keep tree-sitter as experimental opt-in because it did not improve retrieval quality or token efficiency on this repository.
+
 ## [0.1.13] - 2026-06-15
 
 ### Changed
