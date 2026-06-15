@@ -46,7 +46,6 @@ describe("response shaping", () => {
         {
           name: "node_runtime",
           status: "ok",
-          summary: "Node is supported.",
         },
         {
           name: "gemini_config",
@@ -56,6 +55,7 @@ describe("response shaping", () => {
       ],
     });
     expect((shaped.checks as Array<Record<string, unknown>>)[0]).not.toHaveProperty("details");
+    expect((shaped.checks as Array<Record<string, unknown>>)[0]).not.toHaveProperty("summary");
     expect(shaped).toHaveProperty("responseStats.estimatedOutputTokens");
   });
 
@@ -98,6 +98,8 @@ describe("response shaping", () => {
           dimensions: 1536,
           authMode: "bearer",
           outputDimensionality: "supported",
+          lastProbeAt: "2026-06-15T00:00:00.000Z",
+          lastSuccessAt: "2026-06-15T00:00:00.000Z",
         },
         model: "gemini-embedding-2",
         dimensions: 1536,
@@ -127,6 +129,8 @@ describe("response shaping", () => {
     expect(shaped).not.toHaveProperty("sample");
     expect(JSON.stringify(shaped)).not.toContain("provider-secret-cache-key");
     expect(JSON.stringify(shaped)).not.toContain("baseUrlHash");
+    expect(JSON.stringify(shaped)).not.toContain("lastProbeAt");
+    expect(JSON.stringify(shaped)).not.toContain("lastSuccessAt");
     expect(JSON.stringify(shaped)).not.toContain("embedContent");
   });
 
@@ -420,7 +424,28 @@ describe("response shaping", () => {
     expect(shaped).not.toHaveProperty("dbPath");
     expect(JSON.stringify(shaped)).not.toContain("provider-secret-cache-key");
     expect(JSON.stringify(shaped)).not.toContain("baseUrlHash");
+    expect(JSON.stringify(shaped)).not.toContain("lastSuccessAt");
     expect(shaped).toHaveProperty("responseStats.estimatedOutputTokens");
+  });
+
+  it("omits ignored-only skipped samples in compact reindex output", () => {
+    const shaped = shapeReindexPayload(
+      {
+        projectPath: "/repo",
+        dryRun: true,
+        stats: { scannedFiles: 2, indexedFiles: 1, skippedFiles: 1, chunks: 1, bytes: 10 },
+        skipped: [{ relativePath: "local/benchmark/result.json", reason: "ignored" }],
+      },
+      "compact",
+    );
+
+    expect(shaped).toMatchObject({
+      skippedSummary: {
+        total: 1,
+        byReason: { ignored: 1 },
+      },
+    });
+    expect(shaped.skippedSummary as Record<string, unknown>).not.toHaveProperty("samples");
   });
 
   it("keeps raw reindex details in full mode", () => {

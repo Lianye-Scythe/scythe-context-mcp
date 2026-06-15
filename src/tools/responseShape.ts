@@ -77,15 +77,19 @@ function summarizeSkipped(skipped: unknown): Record<string, unknown> {
     const reason = typeof item.reason === "string" ? item.reason : "unknown";
     byReason[reason] = (byReason[reason] ?? 0) + 1;
   }
-  return {
-    total: skippedFiles.length,
-    byReason,
-    samples: skippedFiles.slice(0, 5).map((item) => ({
+  const actionableSamples = skippedFiles
+    .filter((item) => item.reason !== "ignored")
+    .slice(0, 5)
+    .map((item) => ({
       relativePath: item.relativePath,
       reason: item.reason,
       size: item.size,
       detail: item.detail,
-    })),
+    }));
+  return {
+    total: skippedFiles.length,
+    byReason,
+    ...(actionableSamples.length > 0 ? { samples: actionableSamples } : {}),
   };
 }
 
@@ -99,9 +103,6 @@ function compactProviderCapabilities(capabilities: unknown): unknown {
     authMode: record.authMode,
     batchEmbedding: record.batchEmbedding,
     outputDimensionality: record.outputDimensionality,
-    lastProbeAt: record.lastProbeAt,
-    lastSuccessAt: record.lastSuccessAt,
-    lastFailureAt: record.lastFailureAt,
     lastErrorType: record.lastErrorType,
     lastHttpStatus: record.lastHttpStatus,
     lastRetryable: record.lastRetryable,
@@ -241,6 +242,12 @@ export function shapeDoctorPayload(payloadInput: object, mode: ToolResponseMode)
     responseMode: mode,
     checkSummary,
     checks: checks.map((check) => {
+      if (check.status === "ok") {
+        return {
+          name: check.name,
+          status: check.status,
+        };
+      }
       const compactCheck: Record<string, unknown> = {
         name: check.name,
         status: check.status,
