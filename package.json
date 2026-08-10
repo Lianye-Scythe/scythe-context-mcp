@@ -64,7 +64,7 @@
   },
   "dependencies": {
     "@modelcontextprotocol/sdk": "^1.29.0",
-    "better-sqlite3": "^12.10.1",
+    "better-sqlite3": "^13.0.3",
     "dotenv": "^17.4.2",
     "fast-glob": "^3.3.3",
     "ignore": "^7.0.5",
