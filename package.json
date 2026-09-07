@@ -64,12 +64,12 @@
   },
   "dependencies": {
     "@modelcontextprotocol/sdk": "^1.29.0",
-    "better-sqlite3": "^12.10.1",
+    "better-sqlite3": "^13.0.3",
     "dotenv": "^17.4.2",
     "fast-glob": "^3.3.3",
     "ignore": "^7.0.5",
     "sqlite-vec": "^0.1.9",
-    "web-tree-sitter": "^0.26.9",
+    "web-tree-sitter": "^0.27.0",
     "zod": "^4.4.3"
   },
   "devDependencies": {
