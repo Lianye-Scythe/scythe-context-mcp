@@ -1,4 +1,6 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
+import { createServer, type Server } from "node:http";
+import type { AddressInfo } from "node:net";
 import { buildGeminiEndpoint, GeminiEmbeddingError, GeminiEmbeddingProvider, normalizeGeminiBaseUrl } from "./gemini.js";
 
 const baseConfig = {
@@ -11,8 +13,15 @@ const baseConfig = {
   apiKeyQueryParam: "key",
 };
 
-afterEach(() => {
+const servers: Server[] = [];
+
+afterEach(async () => {
   vi.unstubAllGlobals();
+  for (const server of servers.splice(0)) {
+    const closed = new Promise<void>((resolve, reject) => server.close((error) => error ? reject(error) : resolve()));
+    server.closeAllConnections();
+    await closed;
+  }
 });
 
 describe("Gemini URL compatibility", () => {
@@ -39,6 +48,38 @@ describe("Gemini URL compatibility", () => {
 });
 
 describe("GeminiEmbeddingProvider diagnostics", () => {
+  it.each([
+    ["query", false],
+    ["query", true],
+    ["batch", false],
+    ["batch", true],
+  ] as const)("times out a stalled %s request (headers sent: %s)", async (kind, sendHeaders) => {
+    let requests = 0;
+    const server = createServer((_request, response) => {
+      requests += 1;
+      if (sendHeaders) {
+        response.writeHead(200, { "content-type": "application/json" });
+        response.write('{"embedding":');
+      }
+      // Leave the response open to verify both connection and body deadlines.
+    });
+    servers.push(server);
+    await new Promise<void>((resolve) => server.listen(0, "127.0.0.1", resolve));
+    const provider = new GeminiEmbeddingProvider({
+      ...baseConfig,
+      baseUrl: `http://127.0.0.1:${(server.address() as AddressInfo).port}`,
+      requestTimeoutMs: 250,
+    });
+    const input = { kind: "query" as const, text: "hello" };
+    const request = kind === "batch" ? provider.embedBatch([input]) : provider.embed(input);
+    await expect(request).rejects.toMatchObject({
+      name: "GeminiEmbeddingError",
+      message: "Gemini embedding request timed out after 250 ms",
+      retryable: true,
+    });
+    expect(requests).toBe(1);
+  });
+
   it("redacts secrets and marks retryable HTTP failures", async () => {
     vi.stubGlobal(
       "fetch",

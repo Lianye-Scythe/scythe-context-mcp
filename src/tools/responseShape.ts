@@ -455,6 +455,21 @@ export function shapeContextPackPayload(payload: Record<string, unknown>, mode: 
             snippetTruncated: Boolean(record.snippetTruncated) || compacted.truncated,
           };
         });
+  let suggestedPaths = payload.suggestedPaths;
+  let suggestedPathsTruncated = 0;
+  if (mode === "paths_only" && Array.isArray(suggestedPaths)) {
+    const seen = new Set([
+      ...primaryResults.map((result) => result.path),
+      ...relatedFiles.map((file) => file.sourcePath),
+    ]);
+    const extraPaths = suggestedPaths.filter((candidate): candidate is string => {
+      if (typeof candidate !== "string" || seen.has(candidate)) return false;
+      seen.add(candidate);
+      return true;
+    });
+    suggestedPaths = extraPaths.slice(0, 10);
+    suggestedPathsTruncated = Math.max(0, extraPaths.length - 10);
+  }
   const shaped: Record<string, unknown> = {
     query: payload.query,
     projectPath: payload.projectPath,
@@ -470,7 +485,8 @@ export function shapeContextPackPayload(payload: Record<string, unknown>, mode: 
     primaryResults,
     relatedFiles,
     relatedSnippets,
-    suggestedPaths: payload.suggestedPaths,
+    suggestedPaths,
+    ...(suggestedPathsTruncated > 0 ? { suggestedPathsTruncated } : {}),
     context: compactContextSummary(payload.context, mode),
   };
   if (mode === "snippets") {

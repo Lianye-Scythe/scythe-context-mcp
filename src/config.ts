@@ -6,6 +6,7 @@ import type { RerankMode } from "./indexing/hybridSearch.js";
 
 export type GeminiAuthMode = "x-goog-api-key" | "bearer" | "query";
 export type StructureExtractorMode = "regex" | "tree-sitter";
+export const DEFAULT_GEMINI_REQUEST_TIMEOUT_MS = 10_000;
 
 export interface AppConfig {
   defaultProjectPath: string;
@@ -33,6 +34,7 @@ export interface AppConfig {
     authMode: GeminiAuthMode;
     apiKeyHeader: string;
     apiKeyQueryParam: string;
+    requestTimeoutMs?: number;
   };
 }
 
@@ -66,6 +68,14 @@ function authModeFromEnv(value: string | undefined): GeminiAuthMode {
     return value;
   }
   throw new Error("GEMINI_AUTH_MODE must be one of: x-goog-api-key, bearer, query");
+}
+
+function geminiRequestTimeoutFromEnv(): number {
+  const value = numberFromEnv("GEMINI_REQUEST_TIMEOUT_MS", DEFAULT_GEMINI_REQUEST_TIMEOUT_MS)!;
+  if (!Number.isInteger(value) || value > 2_147_483_647) {
+    throw new Error("GEMINI_REQUEST_TIMEOUT_MS must be an integer between 1 and 2147483647");
+  }
+  return value;
 }
 
 function rerankModeFromEnv(value: string | undefined): RerankMode {
@@ -131,6 +141,7 @@ export function loadConfig(): AppConfig {
       authMode: authModeFromEnv(process.env.GEMINI_AUTH_MODE),
       apiKeyHeader: process.env.GEMINI_API_KEY_HEADER || "x-goog-api-key",
       apiKeyQueryParam: process.env.GEMINI_API_KEY_QUERY_PARAM || "key",
+      requestTimeoutMs: geminiRequestTimeoutFromEnv(),
     },
   };
 }

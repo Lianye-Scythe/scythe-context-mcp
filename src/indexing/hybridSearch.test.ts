@@ -229,6 +229,28 @@ describe("searchKeywordOnly", () => {
     expect(results[0].path).toBe("SECURITY.md");
   });
 
+  it("routes setup examples to docs while retaining explicit test lookup", async () => {
+    await fs.mkdir(path.join(tempDir, "src"), { recursive: true });
+    await fs.mkdir(path.join(tempDir, "docs"), { recursive: true });
+    await fs.writeFile(path.join(tempDir, "docs", "setup.md"), "Setup examples timeout configuration.\n");
+    await fs.writeFile(path.join(tempDir, "src", "config.ts"), "export const settings = 'setup examples timeout configuration';\n");
+    await fs.writeFile(path.join(tempDir, "src", "config.test.ts"), "export const checks = 'setup examples timeout configuration';\n");
+    const metadata = await persistentReindexMetadata({
+      projectPath: tempDir,
+      indexDirName: ".scythe-context",
+      vectorDimensions: 3,
+      maxFileBytes: 4096,
+      targetChunkChars: 200,
+      chunkOverlapChars: 0,
+      maxChunksPerFile: 10,
+    });
+    const options = { dbPath: metadata.dbPath, maxResults: 5, maxSnippetChars: 160 };
+    const docs = searchKeywordOnly({ ...options, query: "setup examples timeout configuration" });
+    expect(docs[0].path).toBe("docs/setup.md");
+    const tests = searchKeywordOnly({ ...options, query: "test examples timeout configuration" });
+    expect(tests[0].path).toBe("src/config.test.ts");
+  });
+
   it("prioritizes package manifests for npm package maintenance queries", async () => {
     await fs.mkdir(path.join(tempDir, "scripts"), { recursive: true });
     await fs.mkdir(path.join(tempDir, "docs"), { recursive: true });

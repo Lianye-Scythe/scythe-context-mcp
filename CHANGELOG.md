@@ -6,6 +6,21 @@ This project follows semantic versioning before npm publication where practical.
 
 ## [Unreleased]
 
+### Added
+
+- Add explicit `mode="keyword"` to both search tools for local FTS, symbol, and dependency lookup without embedding requests or vectors.
+- Add `GEMINI_REQUEST_TIMEOUT_MS` (default 10000) to bound each embedding request, including response body reads. Hybrid search falls back locally on timeout; semantic search reports a retryable error.
+- Add real MCP client/server and local HTTP timeout tests, plus a reproducible Codex task A/B evaluation protocol.
+
+### Changed
+
+- Upgrade `@modelcontextprotocol/sdk` to 1.32.1 and refresh the affected transitive security patches in the npm lockfile.
+- Replace `fast-glob` with Node directory traversal to remove the unpatched `braces` dependency chain while preserving scanner behavior.
+- Pin install-script approvals for the existing SQLite driver and esbuild so clean installs work with npm script blocking; document dependency reachability and security maintenance.
+- Default `repo_context_pack` output to `paths_only`; preserve the hybrid search default and explicit compact/snippets output.
+- Deduplicate `paths_only` suggested paths against primary/related files and limit extra suggestions to 10, reporting omitted paths when capped.
+- Prefer documentation over source/test metadata for explicit documentation lookup without code or test intent.
+
 ## [0.1.14] - 2026-06-15
 
 ### Added

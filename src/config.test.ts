@@ -5,6 +5,7 @@ const ORIGINAL_PWD = process.env.PWD;
 
 const MANAGED_ENV = [
   "SCYTHE_CONTEXT_DEFAULT_PROJECT",
+  "GEMINI_REQUEST_TIMEOUT_MS",
   "SCYTHE_CONTEXT_INDEX_DIR",
   "SCYTHE_CONTEXT_MAX_FILE_BYTES",
   "SCYTHE_CONTEXT_TARGET_CHUNK_CHARS",
@@ -114,6 +115,17 @@ describe("loadConfig", () => {
 
     expect(config.search.rerankMode).toBe("auto");
     expect(config.structure.extractorMode).toBe("regex");
+    expect(config.gemini.requestTimeoutMs).toBe(10_000);
+  });
+
+  it("supports a configurable embedding request timeout", () => {
+    process.env.GEMINI_REQUEST_TIMEOUT_MS = "2500";
+    expect(loadConfig().gemini.requestTimeoutMs).toBe(2500);
+  });
+
+  it.each(["0", "-1", "NaN", "Infinity", "1.5", "2147483648"])("rejects invalid embedding timeout %s", (value) => {
+    process.env.GEMINI_REQUEST_TIMEOUT_MS = value;
+    expect(() => loadConfig()).toThrow("GEMINI_REQUEST_TIMEOUT_MS");
   });
 
   it("rejects invalid rerank mode values", () => {

@@ -226,7 +226,7 @@ Use `PWD/p` only if you intentionally run a Windows Node process and need WSL to
    repo_doctor
    ```
 
-4. Build embeddings only when semantic search or context packs need vectors:
+4. Build embeddings only for semantic or hybrid search; `mode="keyword"` needs metadata only:
 
    ```text
    repo_reindex({ "dry_run": false, "index_embeddings": true })
@@ -256,17 +256,25 @@ Use `PWD/p` only if you intentionally run a Windows Node process and need WSL to
 | `gemini_embedding_probe` | Tests Gemini or proxy compatibility and returns endpoint, latency, error classification, and remediation hints. |
 | `repo_doctor` | Checks Node runtime, native modules, Gemini env, provider capability cache, WSL interop, and index health without calling external APIs. |
 
+`repo_context_pack(mode="keyword")` and `repo_semantic_search(mode="keyword")` use local FTS, symbols, and dependency ranking directly, without embedding API requests, an API key, or indexed vectors. The search mode still defaults to `hybrid`.
+
+`GEMINI_REQUEST_TIMEOUT_MS` defaults to `10000` and limits each embedding HTTP request, including reading its response body. Hybrid falls back to keyword on timeout; semantic reports an error. This is a per-request deadline, not a deadline for the entire indexing job.
+
+In `paths_only`, `suggestedPaths` contains only extra paths absent from primary results and related files, capped at 10. `suggestedPathsTruncated` reports the number omitted when the cap is reached. `compact`/`snippets` keep the complete suggested paths.
+
+Use the [Codex task A/B evaluation](docs/codex-evaluation.md) to measure actual GPT‑6.1 Sol task outcomes; retrieval hit rates do not establish edit success rates.
+
 `repo_context_pack(mode="hybrid")` and `repo_semantic_search(mode="hybrid")` degrade to keyword-only results when query embedding is unavailable, returning `effectiveMode: "keyword"` and `fallback.reason: "embedding_unavailable"`. `mode="semantic"` does not degrade and returns `status: "embedding_unavailable"` because pure semantic search requires query embedding. Use `rg` / direct file reads for exact strings, known paths, or small targeted checks.
 
 To control Codex token usage, `repo_index_status`, `repo_related_files`, `repo_reindex`, `repo_doctor`, and `gemini_embedding_probe` return compact summaries by default, including decision-oriented details and estimated output tokens. Use `response_mode="full"` only when you need full diagnostics, the complete skipped file list, vector samples, or raw provider capability details.
 
 `repo_context_pack` and `repo_semantic_search` also support `response_mode`:
 
-- `compact`: default mode with short snippets, decision-oriented related metadata, suggested paths, and estimated output tokens.
-- `paths_only`: first-pass scouting mode with paths, line ranges, match reasons, and compact related-path summaries.
+- `compact`: short snippets, decision-oriented related metadata, suggested paths, and estimated output tokens; still the default for `repo_semantic_search`.
+- `paths_only`: the default for `repo_context_pack`, for first-pass scouting with paths, line ranges, match reasons, and compact related-path summaries.
 - `snippets`: fuller snippets, ranking scores, and metadata when more context or ranking diagnostics are needed.
 
-Prefer `repo_context_pack(response_mode="paths_only")` first, then let Codex read specific files or small ranges directly. Use the default `compact` mode when short snippets help with the edit. Use `repo_semantic_search(response_mode="snippets")` when you need ranking scores or fuller snippets for ranking diagnostics.
+Prefer `repo_context_pack(response_mode="paths_only")` first, then let Codex read specific files or small ranges directly. Select `compact` explicitly when short snippets help with the edit. Use `repo_semantic_search(response_mode="snippets")` when you need ranking scores or fuller snippets for ranking diagnostics.
 
 ## Feature Status
 

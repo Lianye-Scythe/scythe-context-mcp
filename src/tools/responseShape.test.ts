@@ -571,6 +571,21 @@ describe("response shaping", () => {
     expect(shaped).toHaveProperty("responseStats.estimatedOutputTokens");
   });
 
+  it("deduplicates and bounds extra suggested paths only in paths_only mode", () => {
+    const extraPaths = Array.from({ length: 12 }, (_, index) => `src/extra-${index}.ts`);
+    const payload = {
+      primaryResults: [{ path: "src/main.ts" }],
+      relatedFiles: [{ sourcePath: "src/related.ts" }],
+      suggestedPaths: ["src/main.ts", "src/related.ts", extraPaths[0], ...extraPaths],
+    };
+    const shaped = shapeContextPackPayload(payload, "paths_only");
+    expect(shaped.suggestedPaths).toEqual(extraPaths.slice(0, 10));
+    expect(shaped.suggestedPathsTruncated).toBe(2);
+    for (const mode of ["compact", "snippets"] as const) {
+      expect(shapeContextPackPayload(payload, mode).suggestedPaths).toEqual(payload.suggestedPaths);
+    }
+  });
+
   it("marks compacted snippets as truncated", () => {
     const shaped = shapeSemanticPayload(
       {

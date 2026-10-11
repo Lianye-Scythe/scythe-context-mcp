@@ -21,7 +21,7 @@
 | `@modelcontextprotocol/sdk` | MCP server / stdio transport | 用最新 1.x 穩定版 |
 | `zod` | MCP tool input schema | 用 v4；MCP SDK 支援 v3/v4 |
 | `dotenv` | 本機 `.env` 載入 | 只用於 dev/local |
-| `fast-glob` | repo scanner | Phase 1 使用 |
+| Node `fs.readdir` | repo scanner | 保留 root-scoped built-in ignores、隱藏檔與不跟隨 symlink 的行為；不依賴 glob 套件 |
 | `ignore` | `.gitignore` 規則 | Phase 1 使用 |
 | `typescript` | typecheck/build | 用目前穩定版 |
 | `tsx` | dev runner | 只用於開發 |

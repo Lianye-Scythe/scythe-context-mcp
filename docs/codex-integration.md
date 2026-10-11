@@ -76,8 +76,9 @@ The current MCP output is optimized for Codex use:
 
 - JSON text responses are deterministic and easy to inspect.
 - `repo_context_pack` is the preferred single-call workflow for code lookup.
+- Use `mode=keyword` for local FTS/symbol/dependency lookup without embedding requests; hybrid remains the default search mode.
 - Use `repo_context_pack(response_mode=paths_only)` for first-pass scouting, then read exact files/ranges directly.
-- Use the default `compact` mode when short snippets help with the edit; reserve `snippets` mode for ranking/debug detail.
+- Select `compact` explicitly when short snippets help with the edit; reserve `snippets` mode for ranking/debug detail.
 - `repo_semantic_search` is for raw semantic/hybrid ranking diagnostics; use `response_mode=snippets` when scores or fuller snippets matter.
 - `max_context_chars` and `max_related_context_chars` keep output bounded.
 - `suggestedPaths`, line ranges, `matchReason`, compact symbols/imports, and optional related snippets give Codex actionable next steps without forcing whole-file reads.
@@ -137,7 +138,7 @@ Recommended config should expose all tools by default during development, but `e
 
 1. Run `repo_index_status`.
 2. Run `repo_reindex(dry_run=false)` for metadata.
-3. Run `repo_reindex(dry_run=false, index_embeddings=true)` only when semantic search or context packs need vectors.
+3. Run `repo_reindex(dry_run=false, index_embeddings=true)` only when semantic or hybrid search needs vectors.
 4. Keep `max_embedding_chunks` low for the first pass on large repos.
 
 ### Context output is too large

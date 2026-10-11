@@ -1,4 +1,4 @@
-import type { AppConfig } from "../config.js";
+import { DEFAULT_GEMINI_REQUEST_TIMEOUT_MS, type AppConfig } from "../config.js";
 import type { EmbeddingProvider, EmbeddingRequest, EmbeddingResult } from "./types.js";
 
 interface GeminiEmbeddingResponse {
@@ -136,13 +136,26 @@ export class GeminiEmbeddingProvider implements EmbeddingProvider {
       headers[this.config.apiKeyHeader] = this.config.apiKey;
     }
 
-    const response = await fetch(url, {
-      method: "POST",
-      headers,
-      body: JSON.stringify(body),
-    });
-
-    const text = await response.text();
+    const timeoutMs = this.config.requestTimeoutMs ?? DEFAULT_GEMINI_REQUEST_TIMEOUT_MS;
+    const signal = AbortSignal.timeout(timeoutMs);
+    let response: Response;
+    let text: string;
+    try {
+      response = await fetch(url, {
+        method: "POST",
+        headers,
+        body: JSON.stringify(body),
+        signal,
+      });
+      text = await response.text();
+    } catch (error) {
+      if (signal.aborted) {
+        throw new GeminiEmbeddingError(`Gemini embedding request timed out after ${timeoutMs} ms`, {
+          retryable: true,
+        });
+      }
+      throw error;
+    }
     if (!response.ok) {
       throw new GeminiEmbeddingError(`Gemini embedding request failed with HTTP ${response.status}`, {
         status: response.status,

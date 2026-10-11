@@ -226,7 +226,7 @@ GEMINI_OUTPUT_DIMENSIONALITY = "1536"
    repo_doctor
    ```
 
-4. 需要语义搜索或 context pack 时，再建立 embeddings：
+4. 需要 semantic 或 hybrid 搜索时，再建立 embeddings；`mode="keyword"` 只需要 metadata：
 
    ```text
    repo_reindex({ "dry_run": false, "index_embeddings": true })
@@ -256,17 +256,25 @@ GEMINI_OUTPUT_DIMENSIONALITY = "1536"
 | `gemini_embedding_probe` | 测试 Gemini 或 proxy 兼容性，返回 endpoint、latency、错误分类与可修复建议。 |
 | `repo_doctor` | 不调用外部 API，检查 Node runtime、native modules、Gemini env、provider capability cache、WSL interop 与 index health。 |
 
+`repo_context_pack(mode="keyword")` 与 `repo_semantic_search(mode="keyword")` 直接使用本地 FTS、符号与依赖排名，不调用 embedding API，也不需要 API key 或已建立的向量。搜索模式仍默认为 `hybrid`。
+
+`GEMINI_REQUEST_TIMEOUT_MS` 默认为 `10000`，限制每次 embedding HTTP 请求（包括读取响应正文）；hybrid 超时后回退 keyword，semantic 则报告错误。这是单次请求期限，不是整批索引期限。
+
+`paths_only` 的 `suggestedPaths` 只列尚未出现在主要结果或相关文件中的额外路径，最多 10 个；超出时以 `suggestedPathsTruncated` 报告省略数量。`compact`／`snippets` 保留完整的建议路径。
+
+评估 GPT‑6.1 Sol 的实际任务收益，请按照 [Codex 任务 A/B 评估](docs/codex-evaluation.md)；搜索命中率不能直接代表修改成功率。
+
 `repo_context_pack(mode="hybrid")` 和 `repo_semantic_search(mode="hybrid")` 在 query embedding 不可用时会降级成 keyword-only 结果，并返回 `effectiveMode: "keyword"` 与 `fallback.reason: "embedding_unavailable"`。`mode="semantic"` 不会降级，会返回 `status: "embedding_unavailable"`，因为纯 semantic search 必须有 query embedding。精确字符串、已知路径或小范围检查仍建议直接用 `rg` / 直接读文件。
 
 为了控制 Codex token 消耗，`repo_index_status`、`repo_related_files`、`repo_reindex`、`repo_doctor` 与 `gemini_embedding_probe` 默认返回 compact 摘要，包含决策必要信息与估算输出 token；需要完整诊断资料、完整 skipped file list、vector sample 或 provider capability raw details 时，才使用 `response_mode="full"`。
 
 `repo_context_pack` 与 `repo_semantic_search` 也支持 `response_mode`：
 
-- `compact`：默认模式，返回短 snippets、决策导向 related metadata、suggested paths 与估算输出 token。
-- `paths_only`：第一轮探索用，只返回路径、行号、match reason 与精简关联路径摘要，适合先找要读的文件。
+- `compact`：返回短 snippets、决策导向 related metadata、suggested paths 与估算输出 token；仍是 `repo_semantic_search` 的默认模式。
+- `paths_only`：`repo_context_pack` 的默认模式；第一轮探索用，只返回路径、行号、match reason 与精简关联路径摘要，适合先找要读的文件。
 - `snippets`：需要更多上下文或 ranking 诊断时使用，保留较完整 snippets、分数与 metadata。
 
-建议先用 `repo_context_pack(response_mode="paths_only")` 找到候选文件，再用 Codex 直接读特定文件或小范围片段；如果短片段能直接帮助修改，再使用默认 `compact`。需要排名分数或较完整片段来排查 ranking 时，再使用 `repo_semantic_search(response_mode="snippets")`。
+建议先用 `repo_context_pack(response_mode="paths_only")` 找到候选文件，再用 Codex 直接读特定文件或小范围片段；如果短片段能直接帮助修改，再指定 `compact`。需要排名分数或较完整片段来排查 ranking 时，再使用 `repo_semantic_search(response_mode="snippets")`。
 
 ## 功能状态
 

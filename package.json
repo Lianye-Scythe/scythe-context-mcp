@@ -63,10 +63,9 @@
     "node": ">=24.11.0 <27"
   },
   "dependencies": {
-    "@modelcontextprotocol/sdk": "^1.29.0",
+    "@modelcontextprotocol/sdk": "^1.32.1",
     "better-sqlite3": "^12.10.1",
     "dotenv": "^17.4.2",
-    "fast-glob": "^3.3.3",
     "ignore": "^7.0.5",
     "sqlite-vec": "^0.1.9",
     "web-tree-sitter": "^0.26.9",
@@ -78,5 +77,9 @@
     "tsx": "^4.19.2",
     "typescript": "^6.0.3",
     "vitest": "^4.1.8"
+  },
+  "allowScripts": {
+    "better-sqlite3@12.10.1": true,
+    "esbuild@0.28.1": true
   }
 }

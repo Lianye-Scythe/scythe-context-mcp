@@ -39,8 +39,8 @@ function asJsonText(value: unknown) {
   };
 }
 
-type SearchMode = "hybrid" | "semantic";
-type EffectiveSearchMode = SearchMode | "keyword";
+type SearchMode = "keyword" | "hybrid" | "semantic";
+type EffectiveSearchMode = SearchMode;
 
 const responseModeSchema = z.enum(["paths_only", "compact", "snippets"]);
 const reindexResponseModeSchema = z.enum(["compact", "full"]);
@@ -137,12 +137,12 @@ function geminiCapabilityKey(config: AppConfig["gemini"], expectedDimensions: nu
 function embeddingUnavailablePayload(error: unknown) {
   return {
     status: "embedding_unavailable",
-    fallbackAvailable: "Use mode=hybrid to allow keyword-only fallback, or use rg/direct file reads for exact strings and known paths.",
+    fallbackAvailable: "Use mode=keyword for local search without embedding requests, or mode=hybrid for keyword-only fallback.",
     error: embeddingFailureDetails(error),
     recommendedNextActions: [
       "Run gemini_embedding_probe with a short test string.",
       "Verify GEMINI_API_KEY, GEMINI_BASE_URL, GEMINI_AUTH_MODE, and GEMINI_OUTPUT_DIMENSIONALITY.",
-      "Use repo_context_pack with mode=hybrid for keyword-only degraded results while embeddings are unavailable.",
+      "Use repo_context_pack with mode=keyword for local search without embedding requests.",
       "Use rg/direct file reads for exact strings, known paths, or small targeted checks.",
     ],
   };
@@ -462,7 +462,7 @@ export function registerTools(server: McpServer, config: AppConfig): void {
         max_results: z.number().int().positive().max(50).default(6),
         max_snippet_chars: z.number().int().positive().max(4000).default(800),
         max_context_chars: z.number().int().positive().max(100000).default(8000),
-        mode: z.enum(["hybrid", "semantic"]).default("hybrid"),
+        mode: z.enum(["keyword", "hybrid", "semantic"]).default("hybrid"),
         response_mode: responseModeSchema.default("compact"),
       },
     },
@@ -476,10 +476,10 @@ export function registerTools(server: McpServer, config: AppConfig): void {
               query,
               projectPath,
               status: "index_missing",
-              message: "Run repo_reindex with dry_run=false and index_embeddings=true before semantic search.",
+              message: "Run repo_reindex with dry_run=false for keyword lookup; add index_embeddings=true for semantic or hybrid search.",
               recommendedNextActions: [
                 "Run repo_index_status to confirm whether the project has an index.",
-                "Run repo_reindex with dry_run=false and index_embeddings=true before semantic search.",
+                "Run repo_reindex with dry_run=false for keyword lookup; add index_embeddings=true for semantic or hybrid search.",
               ],
             },
             response_mode,
@@ -499,45 +499,7 @@ export function registerTools(server: McpServer, config: AppConfig): void {
         | undefined;
       let rawResults: FormattableSearchResult[];
 
-      try {
-        const queryEmbedding = await embeddingProvider.embed({ kind: "query", text: query });
-        if (queryEmbedding.dimensions !== dimensions) {
-          throw new Error(`Query embedding dimensions mismatch: expected ${dimensions}, got ${queryEmbedding.dimensions}`);
-        }
-        rawResults = searchIndexedChunks({
-          dbPath,
-          query,
-          dimensions,
-          queryVector: queryEmbedding.vector,
-          maxResults: max_results,
-          maxSnippetChars: max_snippet_chars,
-          mode,
-          rerankMode: config.search.rerankMode,
-        });
-      } catch (error) {
-        if (mode === "semantic") {
-          return asJsonText(
-            shapeToolErrorPayload(
-              {
-                query,
-                projectPath,
-                dbPath,
-                dimensions,
-                mode,
-                ...embeddingUnavailablePayload(error),
-              },
-              response_mode,
-            ),
-          );
-        }
-
-        effectiveMode = "keyword";
-        fallback = {
-          reason: "embedding_unavailable",
-          fromMode: mode,
-          toMode: "keyword",
-          error: embeddingFailureDetails(error),
-        };
+      if (mode === "keyword") {
         rawResults = searchKeywordOnlyChunks({
           dbPath,
           query,
@@ -545,6 +507,54 @@ export function registerTools(server: McpServer, config: AppConfig): void {
           maxSnippetChars: max_snippet_chars,
           rerankMode: config.search.rerankMode,
         });
+      } else {
+        try {
+          const queryEmbedding = await embeddingProvider.embed({ kind: "query", text: query });
+          if (queryEmbedding.dimensions !== dimensions) {
+            throw new Error(`Query embedding dimensions mismatch: expected ${dimensions}, got ${queryEmbedding.dimensions}`);
+          }
+          rawResults = searchIndexedChunks({
+            dbPath,
+            query,
+            dimensions,
+            queryVector: queryEmbedding.vector,
+            maxResults: max_results,
+            maxSnippetChars: max_snippet_chars,
+            mode,
+            rerankMode: config.search.rerankMode,
+          });
+        } catch (error) {
+          if (mode === "semantic") {
+            return asJsonText(
+              shapeToolErrorPayload(
+                {
+                  query,
+                  projectPath,
+                  dbPath,
+                  dimensions,
+                  mode,
+                  ...embeddingUnavailablePayload(error),
+                },
+                response_mode,
+              ),
+            );
+          }
+
+          effectiveMode = "keyword";
+          fallback = {
+            reason: "embedding_unavailable",
+            fromMode: mode,
+            toMode: "keyword",
+            error: embeddingFailureDetails(error),
+          };
+          rawResults = searchKeywordOnlyChunks({
+            dbPath,
+            query,
+            maxResults: max_results,
+            maxSnippetChars: max_snippet_chars,
+            rerankMode: config.search.rerankMode,
+          });
+        }
       }
 
       const formatted = formatSearchResults(query, rawResults, { maxContextChars: max_context_chars });
@@ -621,7 +631,7 @@ export function registerTools(server: McpServer, config: AppConfig): void {
     {
       title: "Repo Context Pack",
       description:
-        "Preferred task-oriented code lookup for unknown file locations. Use response_mode=paths_only for first-pass scouting, compact for short snippets, and snippets for ranking/debug detail.",
+        "Preferred task-oriented code lookup for unknown file locations. Defaults to paths_only; use compact for short snippets and snippets for ranking/debug detail. Set mode=keyword for local lookup without embedding requests.",
       inputSchema: {
         query: z.string().min(1),
         project_path: z.string().optional(),
@@ -636,8 +646,8 @@ export function registerTools(server: McpServer, config: AppConfig): void {
         max_related_snippet_chars: z.number().int().positive().max(2000).default(400),
         max_related_context_chars: z.number().int().nonnegative().max(50000).default(2500),
         related_depth: z.number().int().nonnegative().max(3).default(1),
-        mode: z.enum(["hybrid", "semantic"]).default("hybrid"),
-        response_mode: responseModeSchema.default("compact"),
+        mode: z.enum(["keyword", "hybrid", "semantic"]).default("hybrid"),
+        response_mode: responseModeSchema.default("paths_only"),
       },
     },
     async ({
@@ -666,7 +676,7 @@ export function registerTools(server: McpServer, config: AppConfig): void {
               query,
               projectPath,
               status: "index_missing",
-              message: "Run repo_reindex with dry_run=false and index_embeddings=true before building a context pack.",
+              message: "Run repo_reindex with dry_run=false before building a context pack; embeddings are optional for mode=keyword.",
               recommendedNextActions: [
                 "Run repo_index_status to confirm whether the project has an index.",
                 "Run repo_reindex with dry_run=false for metadata lookup.",
@@ -690,45 +700,7 @@ export function registerTools(server: McpServer, config: AppConfig): void {
         | undefined;
       let rawResults: FormattableSearchResult[];
 
-      try {
-        const queryEmbedding = await embeddingProvider.embed({ kind: "query", text: query });
-        if (queryEmbedding.dimensions !== dimensions) {
-          throw new Error(`Query embedding dimensions mismatch: expected ${dimensions}, got ${queryEmbedding.dimensions}`);
-        }
-        rawResults = searchIndexedChunks({
-          dbPath,
-          query,
-          dimensions,
-          queryVector: queryEmbedding.vector,
-          maxResults: max_results,
-          maxSnippetChars: max_snippet_chars,
-          mode,
-          rerankMode: config.search.rerankMode,
-        });
-      } catch (error) {
-        if (mode === "semantic") {
-          return asJsonText(
-            shapeToolErrorPayload(
-              {
-                query,
-                projectPath,
-                dbPath,
-                dimensions,
-                mode,
-                ...embeddingUnavailablePayload(error),
-              },
-              response_mode,
-            ),
-          );
-        }
-
-        effectiveMode = "keyword";
-        fallback = {
-          reason: "embedding_unavailable",
-          fromMode: mode,
-          toMode: "keyword",
-          error: embeddingFailureDetails(error),
-        };
+      if (mode === "keyword") {
         rawResults = searchKeywordOnlyChunks({
           dbPath,
           query,
@@ -736,7 +708,56 @@ export function registerTools(server: McpServer, config: AppConfig): void {
           maxSnippetChars: max_snippet_chars,
           rerankMode: config.search.rerankMode,
         });
+      } else {
+        try {
+          const queryEmbedding = await embeddingProvider.embed({ kind: "query", text: query });
+          if (queryEmbedding.dimensions !== dimensions) {
+            throw new Error(`Query embedding dimensions mismatch: expected ${dimensions}, got ${queryEmbedding.dimensions}`);
+          }
+          rawResults = searchIndexedChunks({
+            dbPath,
+            query,
+            dimensions,
+            queryVector: queryEmbedding.vector,
+            maxResults: max_results,
+            maxSnippetChars: max_snippet_chars,
+            mode,
+            rerankMode: config.search.rerankMode,
+          });
+        } catch (error) {
+          if (mode === "semantic") {
+            return asJsonText(
+              shapeToolErrorPayload(
+                {
+                  query,
+                  projectPath,
+                  dbPath,
+                  dimensions,
+                  mode,
+                  ...embeddingUnavailablePayload(error),
+                },
+                response_mode,
+              ),
+            );
+          }
+
+          effectiveMode = "keyword";
+          fallback = {
+            reason: "embedding_unavailable",
+            fromMode: mode,
+            toMode: "keyword",
+            error: embeddingFailureDetails(error),
+          };
+          rawResults = searchKeywordOnlyChunks({
+            dbPath,
+            query,
+            maxResults: max_results,
+            maxSnippetChars: max_snippet_chars,
+            rerankMode: config.search.rerankMode,
+          });
+        }
       }
+
       const relatedPaths = Array.from(new Set(rawResults.map((result) => result.path))).slice(
         0,
         Math.min(max_seed_files, max_related_files),

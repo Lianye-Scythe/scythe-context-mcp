@@ -121,6 +121,10 @@ function isTestIntent(terms: readonly string[]): boolean {
   return terms.some((term) => ["test", "tests", "spec", "regression", "fixture"].includes(term));
 }
 
+function isDocumentationLookup(terms: readonly string[]): boolean {
+  return terms.some((term) => ["readme", "docs", "documentation", "setup", "example", "examples"].includes(term));
+}
+
 function isBenchmarkIntent(terms: readonly string[]): boolean {
   return terms.some((term) => ["benchmark", "benchmarks", "bench", "gate", "gates", "suite", "suites", "case", "cases"].includes(term));
 }
@@ -273,6 +277,11 @@ function roleScore(path: string, terms: readonly string[]): number {
 
   if (role === "generated") return -2;
   if (path.startsWith("benchmarks/") && !isBenchmarkIntent(terms)) return codeIntent ? -0.7 : -0.35;
+  if (isDocumentationLookup(terms) && !codeIntent && !testIntent) {
+    if (role === "docs") return 0.9;
+    if (role === "test") return -1;
+    if (role === "source") return -0.4;
+  }
   if (role === "test") return testIntent ? 0.4 : codeIntent ? -0.85 : -0.25;
   if (role === "docs") return docsIntent ? 0.65 : codeIntent ? -0.8 : -0.15;
   if (role === "source") return docsIntent ? 0.05 : codeIntent ? 0.65 : 0.15;

@@ -38,6 +38,7 @@ Environment:
   GEMINI_API_KEY                  Gemini or Gemini-compatible API key
   GEMINI_BASE_URL                 Gemini-compatible base URL, default https://generativelanguage.googleapis.com/v1beta
   GEMINI_OUTPUT_DIMENSIONALITY    Embedding dimensions, default 1536
+  GEMINI_REQUEST_TIMEOUT_MS       Per-request deadline including response body, default 10000
   SCYTHE_CONTEXT_RERANK_MODE      auto or off, default auto
   SCYTHE_CONTEXT_STRUCTURE_EXTRACTOR  regex or tree-sitter, default regex
   SCYTHE_CONTEXT_TREE_SITTER_GRAMMAR_DIR  Optional directory containing grammar .wasm files

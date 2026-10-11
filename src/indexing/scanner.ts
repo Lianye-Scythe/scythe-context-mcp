@@ -1,6 +1,5 @@
 import fs from "node:fs/promises";
 import path from "node:path";
-import fg from "fast-glob";
 import ignore from "ignore";
 import { isProbablyBinary } from "./binary.js";
 import type { FileCandidate, IndexingLimits, ScanResult, SkippedFile } from "./types.js";
@@ -37,6 +36,35 @@ const BUILT_IN_IGNORES = [
   "*.ttf",
 ];
 
+function isBuiltInIgnored(relativePath: string): boolean {
+  return BUILT_IN_IGNORES.some((pattern) => {
+    if (pattern.endsWith("/**")) {
+      const directory = pattern.slice(0, -3);
+      return relativePath === directory || relativePath.startsWith(`${directory}/`);
+    }
+    // Existing file patterns apply at the project root, not to nested basenames.
+    if (relativePath.includes("/")) return false;
+    return pattern.startsWith("*") ? relativePath.endsWith(pattern.slice(1)) : relativePath === pattern;
+  });
+}
+
+async function listProjectFiles(projectPath: string): Promise<string[]> {
+  const files: string[] = [];
+  const directories = [""];
+  while (directories.length > 0) {
+    const directory = directories.pop()!;
+    const entries = await fs.readdir(path.join(projectPath, directory), { withFileTypes: true });
+    for (const entry of entries) {
+      const relativePath = directory ? `${directory}/${entry.name}` : entry.name;
+      if (isBuiltInIgnored(relativePath)) continue;
+      if (entry.isDirectory()) directories.push(relativePath);
+      else if (entry.isFile()) files.push(relativePath);
+      // Dirents representing symbolic links are neither traversed nor indexed.
+    }
+  }
+  return files;
+}
+
 async function loadGitignore(projectPath: string) {
   const matcher = ignore();
   try {
@@ -71,14 +99,7 @@ export async function scanProject(
 ): Promise<ScanResult> {
   const resolvedProjectPath = path.resolve(projectPath);
   const gitignore = await loadGitignore(resolvedProjectPath);
-  const entries = await fg("**/*", {
-    cwd: resolvedProjectPath,
-    dot: true,
-    onlyFiles: true,
-    followSymbolicLinks: false,
-    ignore: BUILT_IN_IGNORES,
-    unique: true,
-  });
+  const entries = await listProjectFiles(resolvedProjectPath);
 
   const files: FileCandidate[] = [];
   const skipped: SkippedFile[] = [];

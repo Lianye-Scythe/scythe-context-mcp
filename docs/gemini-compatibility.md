@@ -22,7 +22,12 @@ GEMINI_MODEL=gemini-embedding-2
 GEMINI_AUTH_MODE=x-goog-api-key
 GEMINI_API_KEY_HEADER=x-goog-api-key
 GEMINI_OUTPUT_DIMENSIONALITY=1536
+GEMINI_REQUEST_TIMEOUT_MS=10000
 ```
+
+`GEMINI_REQUEST_TIMEOUT_MS` 是每次 embedding HTTP 請求的期限，包含連線與讀取回應本文；必須是 1 到 2147483647 的整數毫秒。單筆與 batch 請求都使用這個期限，整批索引可能包含多個請求。逾時會回報可重試的 `GeminiEmbeddingError`，不會自動重試查詢；hybrid 搜尋會退回 keyword，semantic 搜尋會回報錯誤。
+
+本機查找可用 `repo_context_pack(mode="keyword")` 或 `repo_semantic_search(mode="keyword")`，完全不呼叫 provider，只需要 metadata index。
 
 ## Embedding 2 query/document 格式
 
