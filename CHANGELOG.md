@@ -6,6 +6,8 @@ This project follows semantic versioning before npm publication where practical.
 
 ## [Unreleased]
 
+## [0.1.15] - 2026-10-11
+
 ### Added
 
 - Add explicit `mode="keyword"` to both search tools for local FTS, symbol, and dependency lookup without embedding requests or vectors.
