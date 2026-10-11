@@ -3,7 +3,7 @@
 ## Development
 
 ```bash
-npm install
+npm ci
 npm test
 npm run build
 ```
@@ -23,7 +23,9 @@ npm run verify
 
 ## Documentation
 
-Update `README.md` and the relevant file in `docs/` when behavior changes. Prefer concrete Codex config examples and avoid machine-specific absolute paths except as placeholders.
+`README.md` is the canonical English entry point. Keep `README.zh-TW.md` (Traditional Chinese) and `README.zh-CN.md` (Simplified Chinese) synchronized in the same change: section order, examples, defaults, privacy behavior, limitations, and document links must agree. Use identical executable code blocks across languages; translate explanations around them.
+
+Update the relevant file in `docs/` when behavior changes. Put platform and advanced settings in `docs/setup.md` rather than expanding the quick start. Mark linked documents that are currently available only in Traditional Chinese. Prefer concrete Codex config examples and avoid machine-specific absolute paths except as placeholders.
 
 ## Release
 

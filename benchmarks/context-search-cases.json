@@ -446,7 +446,7 @@
     "expectedPaths": [
       "src/tools/registerTools.ts",
       "src/indexing/semanticSearch.ts",
-      "README.en.md"
+      "README.md"
     ],
     "notes": "Explicit semantic-only error behavior.",
     "tags": [
@@ -485,9 +485,7 @@
     "id": "mcp-tool-schema-timeouts",
     "query": "MCP config examples should show startup timeout tool timeout and enabled tools",
     "expectedPaths": [
-      "README.md",
-      "README.en.md",
-      "README.zh-CN.md",
+      "docs/setup.md",
       "docs/codex-integration.md"
     ],
     "notes": "User-facing Codex MCP configuration.",

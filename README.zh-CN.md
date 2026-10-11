@@ -5,311 +5,107 @@
 [![License: Apache-2.0](https://img.shields.io/badge/License-Apache--2.0-blue.svg)](LICENSE)
 [![Node.js >=24.11](https://img.shields.io/badge/Node.js-%3E%3D24.11-339933.svg)](package.json)
 
-[繁體中文](README.md) | [English](README.en.md) | [简体中文](README.zh-CN.md)
+[English](README.md) | [繁體中文](README.zh-TW.md) | [简体中文](README.zh-CN.md)
 
-Scythe Context MCP 是给 Codex App / Codex CLI 使用的本地代码上下文引擎。它在 repo 内建立 SQLite/sqlite-vec 索引，结合语义搜索、关键字搜索、符号/依赖关系与 context packing，让 Codex 更快拿到可操作的文件、行号、片段与相关路径。
+Scythe Context MCP 帮助 Codex 在不知道文件位置时找到代码。它在本地索引项目，返回文件路径、行号范围和相关文件；可选的 Gemini embeddings 提供语义搜索。
 
-## 核心特性
+## 什么时候适合使用
 
-- 本地优先：metadata、FTS 与向量索引都存在 repo 内的 `.scythe-context/`。
-- 混合搜索：结合 Gemini embeddings、SQLite FTS5、path/symbol ranking，避免只靠单一召回方式。
-- Codex 友好输出：返回 line ranges、snippets、match reasons、grep keywords、related files 与 suggested paths。
-- Gemini-compatible：支持官方 Gemini API，也支持第三方 v1beta proxy。
-- 可诊断：内置 provider probe、index freshness、embedding coverage 与可修复建议。
+- 适合陌生项目、按功能概念查找代码，以及跨文件追踪符号或 imports。
+- 已知路径或精确字符串时，使用 `rg` 或直接读取文件。
+- 本地关键词搜索不需要 API key；语义搜索需要 Gemini-compatible endpoint。
 
-隐私提醒：只有在执行 embedding 相关功能时，query 或 chunk text 才会发送到你配置的 Gemini-compatible endpoint。第三方 proxy 应视为可以看到这些文字。
+项目已有检索 benchmark 和集成测试，但这些结果**不能证明** MCP 能提高 GPT‑6.1 Sol 任务完成率、速度或降低整体 token 用量。请参阅 [benchmark](docs/benchmark.md) 和[任务 A/B 评估流程](docs/codex-evaluation.md)。
 
-## 快速开始
+## 快速开始：本地搜索
 
-Codex MCP 配置可以直接用 `npx -y scythe-context-mcp`，不一定要先全局安装。全局安装主要适合先确认 CLI 可执行，或在 Codex 配置中使用短命令。
+需要 Node.js 24.11+，支持范围为 `>=24.11.0 <27`；Node.js 24 是已测试的基准。Node 和 npm 应在 MCP server 所用的同一环境中运行。
 
-```bash
-npm install -g scythe-context-mcp
-scythe-context-mcp --version
-```
-
-Runtime 目标是 Node.js 24 LTS。Node 26 可能可用，但在进入 LTS 前不作为主要验收基准。
-
-从源码执行：
-
-```bash
-git clone https://github.com/Lianye-Scythe/scythe-context-mcp.git
-cd scythe-context-mcp
-npm install
-cp .env.example .env
-npm run build
-```
-
-旧项目名 `repo-beacon-mcp` 已改为 `scythe-context-mcp`。旧的 `REPO_BEACON_*` 环境变量仍作为 fallback 兼容，但新配置应改用 `SCYTHE_CONTEXT_*`。
-
-## Codex 配置
-
-Codex MCP 配置使用 `command`、`args`、`cwd`、`env` 与 `env_vars` 等字段；可参考官方文档：[Model Context Protocol](https://developers.openai.com/codex/mcp) 与 [Configuration Reference](https://developers.openai.com/codex/config-reference)。
-
-### 先选运行环境
-
-| 情境 | 建议 |
-| --- | --- |
-| Codex 和 MCP 都在 Windows | 用 Windows `node.exe` + Windows npm `npx-cli.js`。 |
-| Codex CLI 在 WSL/Linux/macOS | 用同一个环境内的 `npx` 或 `node dist/index.js`。 |
-| Codex App on Windows 打开 WSL repo | 建议用 Windows `wsl.exe` 启动 WSL Node，让 SQLite index 留在 WSL filesystem。避免 Windows Node 直接读写 WSL repo 内的 `.scythe-context/`。 |
-
-### Native Windows
-
-请先用 `where node` 和 `npm root -g` 确认你自己的 Windows Node/npm 路径；下面是 nvm4w 安装位置的示例。
-
-最小配置：
-
-```toml
-[mcp_servers.scythe_context]
-command = 'C:\nvm4w\nodejs\node.exe'
-args = ['C:\nvm4w\nodejs\node_modules\npm\bin\npx-cli.js', '-y', 'scythe-context-mcp']
-env_vars = ["GEMINI_API_KEY"]
-```
-
-如果 `scythe-context-mcp` 已全局安装且 Codex 启动时的 PATH 能找到它，可以更短：
-
-```toml
-[mcp_servers.scythe_context]
-command = "scythe-context-mcp"
-env_vars = ["GEMINI_API_KEY"]
-```
-
-### WSL/Linux/macOS
-
-Codex 和 MCP server 都在同一个 Unix-like 环境中运行时，最小配置是：
+Codex CLI 在 Linux、macOS 或 WSL 运行时，将以下配置加入 `~/.codex/config.toml`（或你配置的 Codex home）。受信任的项目可使用 `.codex/config.toml`：
 
 ```toml
 [mcp_servers.scythe_context]
 command = "npx"
 args = ["-y", "scythe-context-mcp"]
+```
+
+不必全局安装；`npx` 会在第一次使用时下载包。原生 Windows 或 Windows Codex App 搭配 WSL 项目，请改用[平台配置指南](docs/setup.md)。
+
+修改配置后重启 Codex。CLI 可通过 `/mcp` 查看连接；App 则确认 Scythe 工具已出现。
+
+请 Codex 执行以下 **MCP 工具调用，不是 shell 命令**。将项目路径换成 server 所在环境的绝对路径：
+
+```text
+repo_index_status({ "project_path": "/absolute/path/to/your/repo" })
+repo_reindex({ "project_path": "/absolute/path/to/your/repo", "dry_run": false, "index_embeddings": false })
+repo_context_pack({ "project_path": "/absolute/path/to/your/repo", "query": "where is auth token validation handled?", "mode": "keyword" })
+```
+
+只有索引不存在或过期时才运行 `repo_reindex`。它将 metadata 写入 `.scythe-context/`；`index_embeddings=false` 不会将代码块发送到 embedding endpoint。
+
+成功查找会返回包含路径和行号的 `primaryResults`。`repo_context_pack` 默认为 `response_mode="paths_only"`；接着让 Codex 读取命中的文件范围。需要短片段时指定 `response_mode="compact"`。配置失败时，先使用 `repo_doctor` 和[故障排查指南](docs/troubleshooting.md)。
+
+## 可选语义搜索与隐私
+
+将 `GEMINI_API_KEY` 保留在启动 Codex 的环境中，再通过现有 server 配置转发。不要提交 key。接着建立向量并使用 hybrid 搜索：
+
+```toml
+# Add this field to the existing [mcp_servers.scythe_context] table.
 env_vars = ["GEMINI_API_KEY"]
 ```
 
-从源码执行时：
-
-```toml
-[mcp_servers.scythe_context]
-command = "node"
-args = ["/path/to/scythe-context-mcp/dist/index.js"]
-env_vars = ["GEMINI_API_KEY"]
+```text
+repo_reindex({ "project_path": "/absolute/path/to/your/repo", "dry_run": false, "index_embeddings": true })
+repo_context_pack({ "project_path": "/absolute/path/to/your/repo", "query": "where is auth token validation handled?", "mode": "hybrid" })
 ```
 
-这里 `args` 指向 Scythe Context MCP 的 build 入口；全局配置不要把 `cwd` 固定到某个 repo。Scythe 会优先使用工具调用的 `project_path`，再使用 Codex 启动 MCP 时的 workspace `PWD` / process `cwd`。只有在项目 scoped `.codex/config.toml`，或你真的想 pin 某个 repo 时，才需要设置 `cwd` 或 `SCYTHE_CONTEXT_DEFAULT_PROJECT`。
+这些调用会将项目代码块和查询文本发送到配置的 endpoint，可能产生 provider 费用。默认为 `https://generativelanguage.googleapis.com/v1beta`、模型 `gemini-embedding-2`、1536 维。Proxy 和认证配置请参阅[配置指南](docs/setup.md)。
 
-### Windows Codex App + WSL repo
+**搜索模式默认仍是 `hybrid`，快速开始则明确指定 `keyword`。** 配置 key 后，省略 `mode` 可能将查询发送到 provider。请使用 `mode="keyword"` 避免 embedding 请求。
 
-目前 Codex App on Windows 的 WSL agent mode 可能无法可靠直接启动 WSL-side stdio MCP server。实测较稳定的做法是让 Codex 执行 Windows `wsl.exe`，再由 `wsl.exe` 在 WSL 内启动 WSL Node 与 WSL npm package。
+| 模式 | Embedding 请求 | 查询 embedding 失败时 |
+| --- | --- | --- |
+| `keyword` | 无；只需要 metadata | 不适用 |
+| `hybrid`（默认） | 发送查询；索引向量提供语义检索 | 回退到 keyword 并报告 fallback |
+| `semantic` | 发送查询；需要索引向量 | 返回错误，不回退到 keyword |
 
-先在 WSL 内安装：
+`GEMINI_REQUEST_TIMEOUT_MS` 默认为 `10000`，限制每次 embedding 请求，包括读取响应正文；不限制整个索引任务的时间。`gemini_embedding_probe` 也会将测试文本发送到 endpoint。第三方 proxy 能看到发送给它的文本。
 
-```bash
-npm install -g scythe-context-mcp
-command -v scythe-context-mcp
-scythe-context-mcp --version
-```
+索引保存在 `.scythe-context/`。请勿将该目录、旧版 `.repo-beacon/`、`.env` 或 `local/` 纳入版本控制。使用 `.gitignore` 排除不应索引的私人文件，启用 embeddings 前先确认范围。不要在公开 issue 或 log 中附上秘密、私人代码或索引数据库。
 
-然后在 Codex config 使用：
+## 工具与目前限制
 
-```toml
-[mcp_servers.scythe_context]
-command = "/mnt/c/Windows/System32/wsl.exe"
-args = ["-d", "Ubuntu", "--", "bash", "-lc", "PATH=/home/you/.nvm/current/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin exec /home/you/.nvm/current/bin/scythe-context-mcp"]
-startup_timeout_sec = 40
-tool_timeout_sec = 120
-env_vars = ["PWD", "GEMINI_API_KEY"]
-
-[mcp_servers.scythe_context.env]
-WSLENV = "PWD:GEMINI_API_KEY:GEMINI_BASE_URL:GEMINI_MODEL:GEMINI_AUTH_MODE:GEMINI_OUTPUT_DIMENSIONALITY"
-GEMINI_BASE_URL = "https://your-proxy.example.com/v1beta"
-GEMINI_MODEL = "gemini-embedding-2"
-GEMINI_AUTH_MODE = "bearer"
-GEMINI_OUTPUT_DIMENSIONALITY = "1536"
-```
-
-注意：
-
-- `Ubuntu` 要换成你的 WSL distribution 名称；可用 `wsl.exe -l -v` 查看。
-- `/home/you/.nvm/current/bin` 要换成你的 WSL Node/npm 路径；可在 WSL 内用 `which node`、`which scythe-context-mcp` 确认。
-- 不要在全局 config 固定 `cwd` 或 `SCYTHE_CONTEXT_DEFAULT_PROJECT`。这个设置会跟着 Codex 当前 workspace 走，不需要每换 repo 就改一次。
-- `WSLENV` 这里列的是要跨 WSL/Windows interop 保留的变量名，不是 key 内容。建议把 `GEMINI_API_KEY` 放在 Codex 启动环境或系统环境，并用 `env_vars` 转发；只有本机临时测试才考虑直接写在 `[mcp_servers.scythe_context.env]`。
-- 不建议用 Windows Node 直接索引 WSL repo 内的 `.scythe-context/`。SQLite 在 UNC / WSL filesystem 边界可能出现 `database is locked`，而且 native modules 也容易混到 Windows/WSL 不同平台的 binary。
-
-### 可选强化配置
-
-以下配置不是最小启动必需，但在大型 repo、首次 `npx` 下载或想固定工具面时有用：
-
-```toml
-[mcp_servers.scythe_context]
-startup_timeout_sec = 40
-tool_timeout_sec = 120
-enabled_tools = [
-  "repo_index_status",
-  "repo_reindex",
-  "repo_context_pack",
-  "repo_semantic_search",
-  "repo_related_files",
-  "gemini_embedding_probe",
-  "repo_doctor"
-]
-```
-
-`enabled = true` 和 `required = false` 通常是默认行为，不需要特别写。
-
-如果你真的想固定某一个默认项目，可以在 `[mcp_servers.scythe_context.env]` 设置 `SCYTHE_CONTEXT_DEFAULT_PROJECT`。一般多 repo 使用不需要这样做；Scythe 会优先使用工具调用的 `project_path`，再使用 `PWD`，最后才使用 MCP process 的 `cwd`。
-
-`SCYTHE_CONTEXT_RERANK_MODE` 可设为 `auto` 或 `off`。默认 `auto` 会启用 local code-aware reranker；排查 ranking 问题时可暂时设为 `off`，回到 semantic/keyword merge 的原始排序。
-
-Scythe 会在 repo-local `.scythe-context/provider-capabilities.json` 记录当前 Gemini-compatible provider 的能力观察结果，例如 batch embedding 是否可用、output dimensionality 是否符合预期，以及最近一次 probe / success / failure。这个文件不提交；`repo_reindex(index_embeddings=true)` 会使用它避免反复尝试已知不支持的 batch endpoint。
-
-### Gemini / v1beta proxy
-
-如果不填 URL/model/auth，默认会使用官方 Gemini 兼容配置：
-
-- `GEMINI_BASE_URL`: `https://generativelanguage.googleapis.com/v1beta`
-- `GEMINI_MODEL`: `gemini-embedding-2`
-- `GEMINI_AUTH_MODE`: `x-goog-api-key`
-- `GEMINI_OUTPUT_DIMENSIONALITY`: `1536`
-
-因此官方 Gemini 用户通常只需要提供 `GEMINI_API_KEY`。第三方中转站或自定义模型才需要覆盖下面这些非秘密配置：
-
-模型与 REST endpoint 可对照 Google 官方 [Gemini embeddings 文档](https://ai.google.dev/gemini-api/docs/embeddings)。
-
-```toml
-[mcp_servers.scythe_context.env]
-GEMINI_BASE_URL = "https://your-proxy.example.com/v1beta"
-GEMINI_MODEL = "gemini-embedding-2"
-GEMINI_AUTH_MODE = "bearer"
-GEMINI_OUTPUT_DIMENSIONALITY = "1536"
-```
-
-`GEMINI_API_KEY` 建议放在 Codex 启动环境或系统环境变量，并用 `env_vars = ["GEMINI_API_KEY"]` 转发给 MCP server。除非只做本机临时测试，否则不要把 key 写进会同步或会提交的 config。
-
-支持的 auth mode：
-
-- `x-goog-api-key`
-- `bearer`
-- `query`
-
-官方 Gemini 通常使用 `x-goog-api-key`；很多第三方中转站使用 `bearer`。如果中转站要求 query string key，可以使用 `query`，必要时再设置 `GEMINI_API_KEY_QUERY_PARAM`。
-
-`WSLENV` 是 WSL interop 规则，不是 Codex 专用字段。只有在 Windows Codex App + WSL repo 并通过 `wsl.exe` wrapper 或 Windows Node 跨环境启动时才需要。若使用上面的 `wsl.exe` wrapper，通常使用无 suffix 形式：
-
-```toml
-[mcp_servers.scythe_context.env]
-WSLENV = "PWD:GEMINI_API_KEY:GEMINI_BASE_URL:GEMINI_MODEL:GEMINI_AUTH_MODE:GEMINI_OUTPUT_DIMENSIONALITY"
-GEMINI_BASE_URL = "https://your-proxy.example.com/v1beta"
-GEMINI_MODEL = "gemini-embedding-2"
-GEMINI_AUTH_MODE = "bearer"
-GEMINI_OUTPUT_DIMENSIONALITY = "1536"
-```
-
-若你刻意采用 Windows Node 方案，才需要 `PWD/p` 把 WSL path 转成 Windows 可读 UNC path；但目前不建议用它直接读写 WSL repo 内的 SQLite index。
-
-## 常用工作流
-
-1. 先检查索引状态：
-
-   ```text
-   repo_index_status
-   ```
-
-2. 如果 metadata 不存在或 freshness 显示 stale：
-
-   ```text
-   repo_reindex({ "dry_run": false })
-   ```
-
-3. 第一次安装或环境异常时，先跑本地诊断：
-
-   ```text
-   repo_doctor
-   ```
-
-4. 需要 semantic 或 hybrid 搜索时，再建立 embeddings；`mode="keyword"` 只需要 metadata：
-
-   ```text
-   repo_reindex({ "dry_run": false, "index_embeddings": true })
-   ```
-
-5. 让 Codex 针对任务拿上下文：
-
-   ```text
-   repo_context_pack({ "query": "where is auth token validation handled?" })
-   ```
-
-6. 对某个命中文件展开 imports / reverse imports：
-
-   ```text
-   repo_related_files({ "path": "src/server/auth.ts" })
-   ```
-
-## MCP 工具
-
-| Tool | 用途 |
+| 工具 | 用途 |
 | --- | --- |
-| `repo_index_status` | 查看 index path、metadata/embedding coverage、freshness diagnostics 与建议动作。 |
-| `repo_reindex` | 扫描项目并写入 metadata；设置 `index_embeddings=true` 时才会调用 embedding provider。 |
-| `repo_context_pack` | 针对任务查询打包 primary snippets、match reasons、related files 与 suggested paths。 |
-| `repo_semantic_search` | 对已索引 chunks 做 hybrid 或 semantic search，主要用于排查 raw ranking；一般查找优先用 `repo_context_pack`。 |
-| `repo_related_files` | 查看单一文件的 symbols、imports、importedBy。 |
-| `gemini_embedding_probe` | 测试 Gemini 或 proxy 兼容性，返回 endpoint、latency、错误分类与可修复建议。 |
-| `repo_doctor` | 不调用外部 API，检查 Node runtime、native modules、Gemini env、provider capability cache、WSL interop 与 index health。 |
+| `repo_index_status` | 检查 metadata、embedding 覆盖率和索引新鲜度。 |
+| `repo_reindex` | 更新 metadata；只有 `index_embeddings=true` 才发送代码块建立向量。 |
+| `repo_context_pack` | 按任务查找代码；默认返回路径和行号。 |
+| `repo_semantic_search` | 检查 keyword、hybrid 或 semantic 排序；默认 compact 输出。 |
+| `repo_related_files` | 查看文件的符号、imports 和反向 imports。 |
+| `repo_doctor` | 不调用外部 API，检查本地配置和索引状态。 |
+| `gemini_embedding_probe` | 用提供的文本测试配置的 embedding endpoint。 |
 
-`repo_context_pack(mode="keyword")` 与 `repo_semantic_search(mode="keyword")` 直接使用本地 FTS、符号与依赖排名，不调用 embedding API，也不需要 API key 或已建立的向量。搜索模式仍默认为 `hybrid`。
-
-`GEMINI_REQUEST_TIMEOUT_MS` 默认为 `10000`，限制每次 embedding HTTP 请求（包括读取响应正文）；hybrid 超时后回退 keyword，semantic 则报告错误。这是单次请求期限，不是整批索引期限。
-
-`paths_only` 的 `suggestedPaths` 只列尚未出现在主要结果或相关文件中的额外路径，最多 10 个；超出时以 `suggestedPathsTruncated` 报告省略数量。`compact`／`snippets` 保留完整的建议路径。
-
-评估 GPT‑6.1 Sol 的实际任务收益，请按照 [Codex 任务 A/B 评估](docs/codex-evaluation.md)；搜索命中率不能直接代表修改成功率。
-
-`repo_context_pack(mode="hybrid")` 和 `repo_semantic_search(mode="hybrid")` 在 query embedding 不可用时会降级成 keyword-only 结果，并返回 `effectiveMode: "keyword"` 与 `fallback.reason: "embedding_unavailable"`。`mode="semantic"` 不会降级，会返回 `status: "embedding_unavailable"`，因为纯 semantic search 必须有 query embedding。精确字符串、已知路径或小范围检查仍建议直接用 `rg` / 直接读文件。
-
-为了控制 Codex token 消耗，`repo_index_status`、`repo_related_files`、`repo_reindex`、`repo_doctor` 与 `gemini_embedding_probe` 默认返回 compact 摘要，包含决策必要信息与估算输出 token；需要完整诊断资料、完整 skipped file list、vector sample 或 provider capability raw details 时，才使用 `response_mode="full"`。
-
-`repo_context_pack` 与 `repo_semantic_search` 也支持 `response_mode`：
-
-- `compact`：返回短 snippets、决策导向 related metadata、suggested paths 与估算输出 token；仍是 `repo_semantic_search` 的默认模式。
-- `paths_only`：`repo_context_pack` 的默认模式；第一轮探索用，只返回路径、行号、match reason 与精简关联路径摘要，适合先找要读的文件。
-- `snippets`：需要更多上下文或 ranking 诊断时使用，保留较完整 snippets、分数与 metadata。
-
-建议先用 `repo_context_pack(response_mode="paths_only")` 找到候选文件，再用 Codex 直接读特定文件或小范围片段；如果短片段能直接帮助修改，再指定 `compact`。需要排名分数或较完整片段来排查 ranking 时，再使用 `repo_semantic_search(response_mode="snippets")`。
-
-## 功能状态
-
-已完成：repo 扫描、chunking、SQLite metadata、SQLite FTS5、sqlite-vec、Gemini Embedding 2 provider、semantic/keyword/hybrid search、embedding 失败时的 keyword-only fallback、local code-aware reranker、轻量 symbol/dependency graph、experimental opt-in tree-sitter extractor、related-file lookup、`repo_context_pack`、provider diagnostics、provider capability cache、index freshness diagnostics、`repo_doctor`。
-
-下一步：持续整理真实 dogfood 使用反馈，优先处理会影响 Codex 找文件效率或 token 消耗的 ranking / output 问题；tree-sitter 维持 experimental opt-in，等 benchmark 或用户反馈证明有明确收益再提高投入。
-
-## 隐私与本地文件
-
-- `.scythe-context/`: 默认索引目录，不提交。
-- `.repo-beacon/`: 旧索引目录名称，仍被 ignore。
-- `local/`: 私密 API 测试文件、参考 HTML、截图等本地资料，不提交。
-- `.env`: 本地配置，不提交。
-
-不要把 API key、proxy token、私有代码片段或 index database 放进 issue、PR 或公开 logs。
+符号和 imports 默认使用 regex 提取；tree-sitter 为实验功能，需要另行配置 grammar。相关文件结果是导航线索，并非完整的运行时调用图。文件变更后需要更新索引；embedding 覆盖率可能不完整。
 
 ## 文档
 
-- [架构设计](docs/architecture.md)
-- [开发计划](docs/development-plan.md)
-- [Gemini 兼容性](docs/gemini-compatibility.md)
-- [技术栈](docs/tech-stack.md)
-- [Codex 集成审查](docs/codex-integration.md)
-- [Context search benchmark](docs/benchmark.md)
-- [Dogfood evaluation](docs/dogfood.md)
-- [Troubleshooting and first-run checks](docs/troubleshooting.md)
-- [Release process](docs/release.md)
+- [平台配置与高级配置](docs/setup.md)
+- [故障排查](docs/troubleshooting.md)
+- [检索 benchmark](docs/benchmark.md) · [实际使用评估](docs/dogfood.md)
+- [Codex 任务 A/B 评估流程（繁体中文）](docs/codex-evaluation.md)
+- [架构（繁体中文）](docs/architecture.md) · [Gemini provider 细节（繁体中文）](docs/gemini-compatibility.md)
+- [贡献指南](CONTRIBUTING.md) · [发布流程](docs/release.md) · [更新记录](CHANGELOG.md)
 
-## 开发与发布检查
+## 开发
+
+请在运行 Node 的环境安装依赖，尤其是 Windows 和 WSL：
 
 ```bash
-npm test
+git clone https://github.com/Lianye-Scythe/scythe-context-mcp.git
+cd scythe-context-mcp
+npm ci
 npm run build
-npm audit --omit=dev
-npm pack --dry-run
+npm run verify
 ```
 
-确认 package 不包含 `.env`、`.scythe-context/`, `.repo-beacon/`, `local/`, API key 或私密参考文件。
+从源码配置 MCP 时，让 `node` 指向 `dist/index.js` 的绝对路径；请参阅[配置指南](docs/setup.md)。用户可见行为变更时，请同步更新三种语言的 README。

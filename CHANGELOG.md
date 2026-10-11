@@ -6,6 +6,12 @@ This project follows semantic versioning before npm publication where practical.
 
 ## [Unreleased]
 
+### Documentation
+
+- Make the main README English-first, with synchronized Traditional Chinese and Simplified Chinese versions.
+- Lead with local keyword search without an API key; explain optional remote embeddings, defaults, privacy, and current evidence limits.
+- Move platform and advanced configuration into an English setup guide and document translation maintenance rules.
+
 ## [0.1.15] - 2026-10-11
 
 ### Added
