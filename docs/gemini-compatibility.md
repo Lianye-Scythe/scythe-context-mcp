@@ -1,218 +1,68 @@
-# Gemini Embedding 2 與第三方 v1beta 中轉站相容設計
+# Gemini-Compatible Provider
 
-## 官方 Gemini REST 格式
+Status: current adapter behavior, reviewed against version 0.1.15 on 2026-10-11. This guide describes what Scythe sends and validates; endpoint/model availability and data retention depend on the provider. Use [setup](setup.md#gemini--v1beta-proxy) for Codex configuration. Local `mode="keyword"` search requires none of these provider settings.
 
-官方 Gemini Embedding 2 REST endpoint：
+## Defaults and request format
 
-```text
-POST https://generativelanguage.googleapis.com/v1beta/models/gemini-embedding-2:embedContent
-```
+| Setting | Default |
+| --- | --- |
+| `GEMINI_BASE_URL` | `https://generativelanguage.googleapis.com/v1beta` |
+| `GEMINI_MODEL` | `gemini-embedding-2` |
+| `GEMINI_AUTH_MODE` | `x-goog-api-key` |
+| `GEMINI_API_KEY_HEADER` | `x-goog-api-key` |
+| `GEMINI_API_KEY_QUERY_PARAM` | `key` |
+| `GEMINI_OUTPUT_DIMENSIONALITY` | `1536` |
+| `GEMINI_REQUEST_TIMEOUT_MS` | `10000` |
 
-官方 key header：
+`GEMINI_API_KEY` is required for provider calls. The adapter uses REST methods `models/{model}:embedContent` and `models/{model}:batchEmbedContents`, with text under `content.parts` and an `output_dimensionality` field. A model name may include the `models/` prefix.
 
-```text
-x-goog-api-key: $GEMINI_API_KEY
-```
-
-Scythe Context 預設設定：
-
-```env
-GEMINI_BASE_URL=https://generativelanguage.googleapis.com/v1beta
-GEMINI_MODEL=gemini-embedding-2
-GEMINI_AUTH_MODE=x-goog-api-key
-GEMINI_API_KEY_HEADER=x-goog-api-key
-GEMINI_OUTPUT_DIMENSIONALITY=1536
-GEMINI_REQUEST_TIMEOUT_MS=10000
-```
-
-`GEMINI_REQUEST_TIMEOUT_MS` 是每次 embedding HTTP 請求的期限，包含連線與讀取回應本文；必須是 1 到 2147483647 的整數毫秒。單筆與 batch 請求都使用這個期限，整批索引可能包含多個請求。逾時會回報可重試的 `GeminiEmbeddingError`，不會自動重試查詢；hybrid 搜尋會退回 keyword，semantic 搜尋會回報錯誤。
-
-本機查找可用 `repo_context_pack(mode="keyword")` 或 `repo_semantic_search(mode="keyword")`，完全不呼叫 provider，只需要 metadata index。
-
-## Embedding 2 query/document 格式
-
-Gemini Embedding 2 不用 `task_type` 欄位，而是在文字中加 task prefix。
-
-查詢：
+Scythe formats query and document text before sending it:
 
 ```text
 task: code retrieval | query: {query}
+title: {path or title} | text: {chunk}
 ```
 
-文件 chunk：
+The adapter uses these prefixes rather than a `task_type` field. Check [Google's embeddings documentation](https://ai.google.dev/gemini-api/docs/embeddings) for the current API contract; proxies must accept the format used by this adapter.
 
-```text
-title: {path or symbol} | text: {chunk}
-```
+## URL normalization and authentication
 
-Scythe Context 的 `GeminiEmbeddingProvider` 會自動套用這個格式。
+A base URL may include a path prefix. Trailing slashes are removed; `/v1beta` is appended unless the last path segment is already `v1` or `v1beta`. Query strings and fragments in the base URL are discarded. Do not put credentials in the base URL.
 
-## Output dimensionality
+| Mode | Credential placement |
+| --- | --- |
+| `x-goog-api-key` | Header named by `GEMINI_API_KEY_HEADER`. |
+| `bearer` | `Authorization: Bearer ...`. |
+| `query` | Query parameter named by `GEMINI_API_KEY_QUERY_PARAM`. |
 
-預設使用 1536 維：
+A custom header does not automatically add `Bearer `. If the provider requires Bearer authentication, choose `bearer`. Query authentication places the credential in the request URL; avoid sharing URLs or unredacted diagnostics. Configuration examples live in [setup](setup.md#gemini--v1beta-proxy).
 
-```env
-GEMINI_OUTPUT_DIMENSIONALITY=1536
-```
+## Dimensions and cached embeddings
 
-建議：
+Choose dimensions supported by the endpoint and model. Scythe defaults to 1536; it validates vector lengths against the expected dimensions. Larger dimensions increase vector size but are not an established accuracy improvement for every repository.
 
-- `768`: 省空間，速度快，適合非常小的個人 repo 或低成本模式。
-- `1536`: Scythe Context 預設，精度與成本較平衡。
-- `3072`: 最高精度，但索引體積與相似度計算成本較高。
+Changing provider, endpoint, model, or dimensions requires appropriate vectors for that configuration. Build them explicitly with `repo_reindex(index_embeddings=true)` and inspect coverage with `repo_index_status`. Do not assume old vectors can be reused with a different model.
 
-## 第三方 v1beta 中轉站
+## Batch compatibility
 
-很多中轉站會保留 Google v1beta path：
+The embedding writer tries batch requests unless recorded capabilities indicate batch is unsupported. Batch failures can fall back to individual requests; results report `batchFallbacks`. Observations are stored in repo-local `.scythe-context/provider-capabilities.json` and keyed by provider, endpoint, model, dimensions, and auth mode.
 
-```text
-POST https://proxy.example.com/v1beta/models/gemini-embedding-2:embedContent
-```
+A successful single request does not prove batch support or compatibility for every input. This cache records observed behavior, not a provider certification.
 
-這種情況只要改：
+## Timeouts and failure behavior
 
-```env
-GEMINI_BASE_URL=https://proxy.example.com/v1beta
-GEMINI_API_KEY=proxy-key
-```
+`GEMINI_REQUEST_TIMEOUT_MS` must be an integer from 1 to 2147483647 milliseconds. Each single or batch request uses this deadline, including reading the response body. An indexing pass may contain many requests and is not limited to this duration.
 
-`GEMINI_BASE_URL` 會先正規化，支援下列形式：
+Timeouts return a retryable `GeminiEmbeddingError`. Query requests are not automatically retried. Hybrid search falls back to local keyword results with `fallback.reason="embedding_unavailable"`; semantic search returns `status="embedding_unavailable"` without keyword fallback.
 
-```text
-https://proxy.example.com
-https://proxy.example.com/
-https://proxy.example.com/v1beta
-https://proxy.example.com/v1beta/
-https://proxy.example.com/gemini
-https://proxy.example.com/gemini/v1beta/
-```
+## Diagnostics and privacy
 
-如果 URL 最後不是 `v1` 或 `v1beta`，Scythe Context 會自動補上 `/v1beta`。如果中轉站已經給完整 `/v1beta` 或 `/v1`，則不會重複追加。
-
-如果中轉站使用 Bearer token：
-
-```env
-GEMINI_AUTH_MODE=bearer
-```
-
-會送出：
-
-```text
-Authorization: Bearer proxy-key
-```
-
-如果中轉站使用 query key：
-
-```env
-GEMINI_AUTH_MODE=query
-GEMINI_API_KEY_QUERY_PARAM=key
-```
-
-會送出：
-
-```text
-...?key=proxy-key
-```
-
-如果中轉站自訂 header：
-
-```env
-GEMINI_AUTH_MODE=x-goog-api-key
-GEMINI_API_KEY_HEADER=Authorization
-```
-
-注意：這種模式會送 `Authorization: {key}`，不會自動加 `Bearer `；需要 Bearer 時應使用 `GEMINI_AUTH_MODE=bearer`。
-
-## Batch 相容性
-
-官方 batch endpoint：
-
-```text
-POST /v1beta/models/gemini-embedding-2:batchEmbedContents
-```
-
-部分中轉站可能只支援 `embedContent`，不支援 batch。Phase 2 實作索引時需要：
-
-1. 優先嘗試 batch。
-2. 如果 batch request 失敗，索引流程 fallback 到逐筆 `embedContent`。
-3. 把 batch 支援狀態寫入 provider capability cache，避免每次重試已知不支援的 batch endpoint。
-
-目前 `embedBatch` 已按官方 batch 格式送出，`repo_reindex(index_embeddings=true)` 的 embedding writer 會在 batch 失敗時 fallback 到單筆 embedding，並在結果中回報 `batchFallbacks`。支援狀態會寫入 `.scythe-context/provider-capabilities.json`；後續同一 repo、同一 provider/model/dimensionality/auth 設定會直接使用已知能力。
-
-## Codex MCP 設定範例
-
-以下範例只示範 Gemini provider 參數。全域 MCP config 不要把 `cwd` 固定到某個 repo；只有 project-scoped `.codex/config.toml` 或刻意 pin 單一 repo 時才需要設定 `cwd` 或 `SCYTHE_CONTEXT_DEFAULT_PROJECT`。
-
-官方 Gemini：
-
-```toml
-[mcp_servers.scythe_context]
-command = "node"
-args = ["/path/to/scythe-context-mcp/dist/index.js"]
-env_vars = ["GEMINI_API_KEY"]
-
-[mcp_servers.scythe_context.env]
-GEMINI_BASE_URL = "https://generativelanguage.googleapis.com/v1beta"
-GEMINI_AUTH_MODE = "x-goog-api-key"
-GEMINI_OUTPUT_DIMENSIONALITY = "1536"
-```
-
-Bearer 中轉站：
-
-```toml
-[mcp_servers.scythe_context]
-command = "node"
-args = ["/path/to/scythe-context-mcp/dist/index.js"]
-env_vars = ["GEMINI_API_KEY"]
-
-[mcp_servers.scythe_context.env]
-GEMINI_BASE_URL = "https://proxy.example.com/v1beta"
-GEMINI_AUTH_MODE = "bearer"
-GEMINI_OUTPUT_DIMENSIONALITY = "1536"
-```
-
-Query key 中轉站：
-
-```toml
-[mcp_servers.scythe_context]
-command = "node"
-args = ["/path/to/scythe-context-mcp/dist/index.js"]
-env_vars = ["GEMINI_API_KEY"]
-
-[mcp_servers.scythe_context.env]
-GEMINI_BASE_URL = "https://proxy.example.com/v1beta"
-GEMINI_AUTH_MODE = "query"
-GEMINI_API_KEY_QUERY_PARAM = "key"
-GEMINI_OUTPUT_DIMENSIONALITY = "1536"
-```
-
-## 測試方式
-
-啟動 MCP 後呼叫：
+Use the following MCP call only when you intend to send the test text to the configured endpoint:
 
 ```text
 gemini_embedding_probe({ "text": "find code that handles payment logging" })
 ```
 
-成功時應回：
+The default output reports status, latency, dimensions, compatibility observations, and remediation hints. Full diagnostics can include provider response snippets; review them before sharing. Scythe redacts the configured API key from provider snippets, but that is not a guarantee that every field is safe to publish.
 
-```json
-{
-  "status": "ok",
-  "latencyMs": 123,
-  "model": "gemini-embedding-2",
-  "dimensions": 1536,
-  "dimensionsMatchExpected": true,
-  "sample": [0.01, -0.02]
-}
-```
-
-失敗時會回傳 `status: "embedding_probe_failed"`、HTTP status、retryable 判斷、截斷後的 response snippet 與可修復建議；不會回傳 API key。
-
-如果失敗，優先檢查：
-
-1. `GEMINI_BASE_URL` 是否是正確中轉站根路徑；可帶或不帶 `/v1beta`。
-2. 中轉站是否真的支援 `models/{model}:embedContent`。
-3. auth 是 header、Bearer 還是 query。
-4. 中轉站是否支援 `output_dimensionality`。
-5. 模型名稱是否要用 `gemini-embedding-2` 或 `models/gemini-embedding-2`。
+Metadata indexing and keyword queries stay local. Embedding indexing sends repository chunks; hybrid/semantic searches send queries; probes send test text. Third-party services may see or retain that text. See [troubleshooting](troubleshooting.md#embedding-probe-fails) and the [security policy](../SECURITY.md).

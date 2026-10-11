@@ -89,11 +89,12 @@ repo_context_pack({ "project_path": "/absolute/path/to/your/repo", "query": "whe
 
 ## 文档
 
+- [文档索引](docs/README.md)
 - [平台配置与高级配置](docs/setup.md)
 - [故障排查](docs/troubleshooting.md)
 - [检索 benchmark](docs/benchmark.md) · [实际使用评估](docs/dogfood.md)
 - [Codex 任务 A/B 评估流程（繁体中文）](docs/codex-evaluation.md)
-- [架构（繁体中文）](docs/architecture.md) · [Gemini provider 细节（繁体中文）](docs/gemini-compatibility.md)
+- [架构（英文）](docs/architecture.md) · [Gemini provider 细节（英文）](docs/gemini-compatibility.md)
 - [贡献指南](CONTRIBUTING.md) · [发布流程](docs/release.md) · [更新记录](CHANGELOG.md)
 
 ## 开发

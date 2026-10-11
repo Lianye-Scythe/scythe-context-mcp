@@ -8,6 +8,9 @@ This project follows semantic versioning before npm publication where practical.
 
 ### Documentation
 
+- Add a documentation index, current English architecture/provider guides, and an explicitly marked archive of early designs and experiments.
+- Consolidate platform configuration in the setup guide and improve GitHub repository discovery and issue entry points.
+
 - Make the main README English-first, with synchronized Traditional Chinese and Simplified Chinese versions.
 - Lead with local keyword search without an API key; explain optional remote embeddings, defaults, privacy, and current evidence limits.
 - Move platform and advanced configuration into an English setup guide and document translation maintenance rules.

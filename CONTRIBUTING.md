@@ -25,7 +25,7 @@ npm run verify
 
 `README.md` is the canonical English entry point. Keep `README.zh-TW.md` (Traditional Chinese) and `README.zh-CN.md` (Simplified Chinese) synchronized in the same change: section order, examples, defaults, privacy behavior, limitations, and document links must agree. Use identical executable code blocks across languages; translate explanations around them.
 
-Update the relevant file in `docs/` when behavior changes. Put platform and advanced settings in `docs/setup.md` rather than expanding the quick start. Mark linked documents that are currently available only in Traditional Chinese. Prefer concrete Codex config examples and avoid machine-specific absolute paths except as placeholders.
+Update the relevant file in `docs/` when behavior changes. Put platform and advanced settings in `docs/setup.md` rather than expanding the quick start. Mark linked documents that are currently available only in Traditional Chinese. Keep `docs/README.md` up to date; put historical plans and experiments in `docs/archive/` with dates and a status notice. Prefer concrete Codex config examples and avoid machine-specific absolute paths except as placeholders.
 
 ## Release
 

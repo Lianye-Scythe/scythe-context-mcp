@@ -34,45 +34,15 @@ For global Codex config, do not set a fixed `cwd` or `SCYTHE_CONTEXT_DEFAULT_PRO
 
 ## Windows Codex App with WSL Repos
 
-Current Codex App WSL behavior can make direct WSL-side stdio MCP startup unreliable. The recommended workaround is:
+Follow the [tested WSL wrapper configuration](setup.md#windows-codex-app--wsl-repo). Keep Node, installed dependencies, and the SQLite index in WSL. The guide covers PATH, project detection, and variable forwarding.
 
-1. Install Scythe Context inside WSL:
-
-   ```bash
-   npm install -g scythe-context-mcp
-   command -v scythe-context-mcp
-   scythe-context-mcp --version
-   ```
-
-2. Configure Codex on Windows to launch Windows `wsl.exe`, and let `wsl.exe` start the WSL binary.
-3. Keep the WSL Node/npm bin directory first in the wrapper `PATH`.
-4. Forward `PWD` and secrets with `env_vars`, and preserve cross-boundary variables with `WSLENV`.
-
-For wrapper mode, use no suffixes:
-
-```toml
-[mcp_servers.scythe_context]
-command = "/mnt/c/Windows/System32/wsl.exe"
-args = ["-d", "Ubuntu", "--", "bash", "-lc", "PATH=/home/you/.nvm/current/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin exec /home/you/.nvm/current/bin/scythe-context-mcp"]
-startup_timeout_sec = 40
-tool_timeout_sec = 120
-env_vars = ["PWD", "GEMINI_API_KEY"]
-
-[mcp_servers.scythe_context.env]
-WSLENV = "PWD:GEMINI_API_KEY:GEMINI_BASE_URL:GEMINI_MODEL:GEMINI_AUTH_MODE:GEMINI_OUTPUT_DIMENSIONALITY"
-GEMINI_BASE_URL = "https://your-proxy.example.com/v1beta"
-GEMINI_MODEL = "gemini-embedding-2"
-GEMINI_AUTH_MODE = "bearer"
-GEMINI_OUTPUT_DIMENSIONALITY = "1536"
-```
-
-Use `PWD/p` only when deliberately running a Windows Node process that must receive a Windows-readable converted path. That mode is not recommended for directly indexing WSL repositories because SQLite locking and native module boundaries are easier to break.
+For optional embeddings, follow [provider configuration](setup.md#gemini--v1beta-proxy). Use local keyword search while diagnosing provider failures.
 
 ## Common Failures
 
 ### npm Install Script Warnings
 
-Fresh installs can print npm warnings about install scripts for native dependencies such as `better-sqlite3`. This is expected for packages that load native SQLite bindings.
+Fresh installs can print npm warnings about install scripts for native dependencies such as `better-sqlite3`. Follow your package manager’s script policy; native SQLite bindings may require a reviewed install script. See the [dated dependency review](dependency-security.md) for this repository’s approvals.
 
 - If installation completes and `scythe-context-mcp --version` works, continue with `repo_doctor`.
 - If native module loading fails later, run `repo_doctor` and check the native module section.

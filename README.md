@@ -89,11 +89,12 @@ The default symbol/import extractor uses regex; tree-sitter is experimental and 
 
 ## Documentation
 
+- [Documentation index](docs/README.md)
 - [Platform setup and advanced configuration](docs/setup.md)
 - [Troubleshooting](docs/troubleshooting.md)
 - [Retrieval benchmark](docs/benchmark.md) · [Dogfood evaluation](docs/dogfood.md)
 - [Codex task A/B protocol (Traditional Chinese)](docs/codex-evaluation.md)
-- [Architecture (Traditional Chinese)](docs/architecture.md) · [Gemini provider details (Traditional Chinese)](docs/gemini-compatibility.md)
+- [Architecture](docs/architecture.md) · [Gemini provider details](docs/gemini-compatibility.md)
 - [Contributing](CONTRIBUTING.md) · [Release process](docs/release.md) · [Changelog](CHANGELOG.md)
 
 ## Development

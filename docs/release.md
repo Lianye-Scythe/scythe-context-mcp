@@ -6,7 +6,7 @@ This project publishes through GitHub Actions after a `vX.Y.Z` tag is pushed. Th
 
 - Work from `main`.
 - The worktree must be clean.
-- GitHub Actions must have `NPM_TOKEN` configured for npm publish.
+- npm must have the GitHub Actions Trusted Publisher configured for this repository and `publish.yml`; see [Contributing](../CONTRIBUTING.md#release). The workflow publishes through OIDC.
 - Do not include `.env`, `.scythe-context/`, `.repo-beacon/`, `local/`, API keys, proxy tokens, or private reference files.
 
 ## Prepare a Patch Release

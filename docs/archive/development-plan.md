@@ -1,5 +1,7 @@
 # 開發設計方案
 
+> Historical record. Archived on 2026-10-11. Versions, plans, and results below describe the original work and are not current installation instructions. See the [documentation index](../README.md) and [current architecture](../architecture.md).
+
 ## Phase 0: 初始化與設計
 
 狀態：已完成。

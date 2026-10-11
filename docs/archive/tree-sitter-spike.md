@@ -1,5 +1,7 @@
 # Tree-sitter Spike Plan
 
+> Historical record. Archived on 2026-10-11. Versions, plans, and results below describe the original work and are not current installation instructions. See the [documentation index](../README.md) and [current architecture](../architecture.md).
+
 This document defines a small, reversible spike for deciding whether Scythe Context should adopt tree-sitter for symbol extraction and/or code-aware chunking.
 
 ## Goal

@@ -4,7 +4,8 @@ For setup or usage problems, start with:
 
 - [Troubleshooting and first-run checks](docs/troubleshooting.md)
 - [Gemini compatibility](docs/gemini-compatibility.md)
-- [Codex integration review](docs/codex-integration.md)
+- [Setup and platform configuration](docs/setup.md)
+- [Documentation index](docs/README.md)
 
 Before opening an issue, run the compact diagnostics when possible:
 
@@ -13,7 +14,7 @@ repo_doctor
 repo_index_status
 ```
 
-For Gemini or proxy problems, also run:
+For Gemini or proxy problems, run the following only when you intend to send the test text to the configured endpoint:
 
 ```text
 gemini_embedding_probe({ "text": "short diagnostic test" })

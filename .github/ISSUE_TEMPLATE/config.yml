@@ -1,0 +1,8 @@
+blank_issues_enabled: true
+contact_links:
+  - name: Setup and troubleshooting
+    url: https://github.com/Lianye-Scythe/scythe-context-mcp/blob/main/docs/README.md
+    about: Start with the platform setup and troubleshooting guides before opening an issue.
+  - name: Security reporting
+    url: https://github.com/Lianye-Scythe/scythe-context-mcp/blob/main/SECURITY.md
+    about: Follow the security policy for sensitive reports; do not post credentials or private source publicly.

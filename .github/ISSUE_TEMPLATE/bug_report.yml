@@ -41,7 +41,7 @@ body:
     id: version
     attributes:
       label: Version or commit
-      placeholder: "0.1.0 or commit hash"
+      placeholder: "x.y.z or commit hash"
   - type: input
     id: node
     attributes:
@@ -56,9 +56,24 @@ body:
         - Codex CLI
         - Codex IDE extension
         - Other
+  - type: input
+    id: environment
+    attributes:
+      label: Operating system and server environment
+      description: Where do Codex and the MCP Node process run?
+      placeholder: "Windows App + WSL Ubuntu, native Windows, Linux, or macOS"
+  - type: dropdown
+    id: search_mode
+    attributes:
+      label: Search mode
+      options:
+        - Not applicable
+        - keyword
+        - hybrid (default)
+        - semantic
   - type: textarea
     id: logs
     attributes:
       label: Relevant diagnostics
-      description: Paste redacted `repo_index_status`, `gemini_embedding_probe`, or terminal output.
+      description: Paste redacted `repo_doctor`, `repo_index_status`, or error output. Provider probes send test text remotely; use them only when appropriate.
       render: text

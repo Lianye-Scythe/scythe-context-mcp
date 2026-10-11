@@ -168,4 +168,4 @@ Use `response_mode="full"` for detailed diagnostics from `repo_index_status`, `r
 
 The project was renamed from `repo-beacon-mcp`. Legacy `REPO_BEACON_*` variables remain fallback aliases; use `SCYTHE_CONTEXT_*` for new setups.
 
-See [troubleshooting](troubleshooting.md) for startup, native-module, provider, and index failures. Detailed [Gemini provider notes](gemini-compatibility.md) are currently in Traditional Chinese.
+See [troubleshooting](troubleshooting.md) for startup, native-module, provider, and index failures. See [Gemini provider details](gemini-compatibility.md) for request formats, dimensions, batch handling, and privacy.

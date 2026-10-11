@@ -1,5 +1,7 @@
 # Tree-sitter Dependency Experiment
 
+> Historical record. Archived on 2026-10-11. Versions, plans, and results below describe the original work and are not current installation instructions. See the [documentation index](../README.md) and [current architecture](../architecture.md).
+
 Date: 2026-06-14
 
 Environment:
