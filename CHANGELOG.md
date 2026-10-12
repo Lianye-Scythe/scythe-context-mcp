@@ -6,6 +6,13 @@ This project follows semantic versioning before npm publication where practical.
 
 ## [Unreleased]
 
+### Maintenance
+
+- Update SQLite to the N-API-based better-sqlite3 13.0.3 and web-tree-sitter to 0.27.1.
+- Update TypeScript to 7.0.2, Node types to 26.6.5, tsx to 4.23.15, and Vitest to 5.0.4; refresh the lockfile and reviewed install-script approval.
+- Update checkout and setup-node to v7. Consolidate stale Dependabot proposals on current main.
+- Schedule routine dependency PRs monthly, group patch/minor updates, and keep major migrations and merging under review.
+
 ### Documentation
 
 - Add a documentation index, current English architecture/provider guides, and an explicitly marked archive of early designs and experiments.

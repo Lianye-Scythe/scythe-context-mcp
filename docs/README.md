@@ -21,6 +21,7 @@ Setup is the source for configuration examples. Troubleshooting links to those e
 - [Retrieval benchmark](benchmark.md): method, metrics, and recorded results.
 - [Dogfood evaluation](dogfood.md): repository-specific observations, not a controlled model productivity study.
 - [Codex task A/B protocol](codex-evaluation.md) (Traditional Chinese): how to measure real task outcomes.
+- [Dependency maintenance policy and PR cleanup](dependency-maintenance.md): automation scope and the 2026-10-12 dependency update.
 - [Dependency security maintenance](dependency-security.md): audit and dependency review dated 2026-10-11.
 
 Dates and environment details limit what these records establish. They are not general guarantees of speed, task completion, or ongoing security.

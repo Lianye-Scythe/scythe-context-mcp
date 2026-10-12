@@ -64,22 +64,22 @@
   },
   "dependencies": {
     "@modelcontextprotocol/sdk": "^1.32.1",
-    "better-sqlite3": "^12.10.1",
+    "better-sqlite3": "^13.0.3",
     "dotenv": "^17.4.2",
     "ignore": "^7.0.5",
     "sqlite-vec": "^0.1.9",
-    "web-tree-sitter": "^0.26.9",
+    "web-tree-sitter": "^0.27.1",
     "zod": "^4.4.3"
   },
   "devDependencies": {
     "@types/better-sqlite3": "^7.6.13",
-    "@types/node": "^25.9.3",
-    "tsx": "^4.19.2",
-    "typescript": "^6.0.3",
-    "vitest": "^4.1.8"
+    "@types/node": "^26.6.5",
+    "tsx": "^4.23.15",
+    "typescript": "^7.0.2",
+    "vitest": "^5.0.4"
   },
   "allowScripts": {
-    "better-sqlite3@12.10.1": true,
-    "esbuild@0.28.1": true
+    "esbuild@0.28.1": true,
+    "better-sqlite3@13.0.3": true
   }
 }

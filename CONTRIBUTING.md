@@ -27,6 +27,10 @@ npm run verify
 
 Update the relevant file in `docs/` when behavior changes. Put platform and advanced settings in `docs/setup.md` rather than expanding the quick start. Mark linked documents that are currently available only in Traditional Chinese. Keep `docs/README.md` up to date; put historical plans and experiments in `docs/archive/` with dates and a status notice. Prefer concrete Codex config examples and avoid machine-specific absolute paths except as placeholders.
 
+## Dependency Updates
+
+Dependabot opens grouped patch/minor update PRs monthly; major updates remain separate. Merging and publishing remain reviewed actions. Follow the [dependency maintenance policy](docs/dependency-maintenance.md), including current-commit CI, migration notes, script review, full audit, and benchmark checks.
+
 ## Release
 
 Releases are intended to publish from GitHub Actions, not from a local shell.
