@@ -6,9 +6,11 @@ This project follows semantic versioning before npm publication where practical.
 
 ## [Unreleased]
 
+## [0.1.16] - 2026-10-12
+
 ### Maintenance
 
-- Update SQLite to the N-API-based better-sqlite3 13.0.3 and web-tree-sitter to 0.27.1.
+- Update the SQLite driver to N-API-based better-sqlite3 13.0.3 and web-tree-sitter to 0.27.1.
 - Update TypeScript to 7.0.2, Node types to 26.6.5, tsx to 4.23.15, and Vitest to 5.0.4; refresh the lockfile and reviewed install-script approval.
 - Update checkout and setup-node to v7. Consolidate stale Dependabot proposals on current main.
 - Schedule routine dependency PRs monthly, group patch/minor updates, and keep major migrations and merging under review.
@@ -17,7 +19,6 @@ This project follows semantic versioning before npm publication where practical.
 
 - Add a documentation index, current English architecture/provider guides, and an explicitly marked archive of early designs and experiments.
 - Consolidate platform configuration in the setup guide and improve GitHub repository discovery and issue entry points.
-
 - Make the main README English-first, with synchronized Traditional Chinese and Simplified Chinese versions.
 - Lead with local keyword search without an API key; explain optional remote embeddings, defaults, privacy, and current evidence limits.
 - Move platform and advanced configuration into an English setup guide and document translation maintenance rules.
