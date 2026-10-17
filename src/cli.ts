@@ -1,6 +1,6 @@
 import type { OperationName } from "./core/operations.js";
 
-export const PACKAGE_VERSION = "0.1.18";
+export const PACKAGE_VERSION = "0.1.19";
 
 export const CLI_OPERATIONS = {
   status: "repo_index_status",

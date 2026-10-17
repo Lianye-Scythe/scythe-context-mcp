@@ -6,6 +6,8 @@ This project follows semantic versioning before npm publication where practical.
 
 ## [Unreleased]
 
+## [0.1.19] - 2026-10-18
+
 ### Added
 
 - Add basic local import navigation for Python flat/src packages and relative imports, Go packages within the nearest go.mod module, and conventional Cargo file modules through crate/self/super paths. Preserve unresolved imports and existing JS/TS resolution.
