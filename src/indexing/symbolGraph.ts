@@ -1,5 +1,10 @@
+import { extractCSharpGraph, extractCSharpProjectGraph } from "./csharp.js";
+import { cppPath, extractCppGraph } from "./cpp.js";
 import { extractLanguageImports } from "./languageImports.js";
 export type SymbolKind =
+  | "namespace"
+  | "method"
+  | "record"
   | "class"
   | "const"
   | "enum"
@@ -22,7 +27,7 @@ export interface ExtractedSymbol {
 export interface ExtractedDependency {
   specifier: string;
   line: number;
-  kind?: "python_from" | "rust_module" | "unresolved";
+  kind?: "python_from" | "rust_module" | "cpp_include" | "unresolved";
   importedNames?: string[];
 }
 
@@ -89,6 +94,9 @@ function extractDependenciesFromLine(patterns: RegExp[], line: string, lineNumbe
 }
 
 export function extractFileGraph(relativePath: string, content: string): ExtractedFileGraph {
+  if (cppPath.test(relativePath)) return extractCppGraph(content);
+  if (/\.cs$/i.test(relativePath)) return extractCSharpGraph(content);
+  if (/\.csproj$/i.test(relativePath)) return extractCSharpProjectGraph(content);
   const symbols: ExtractedSymbol[] = [];
   const languageImports = extractLanguageImports(relativePath, content);
   const dependencies: ExtractedDependency[] = languageImports ?? [];

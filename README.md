@@ -19,16 +19,20 @@ The project has retrieval benchmarks and integration tests. These do **not** est
 
 ## Language support
 
-The target repository can use JS/TS, Python, Go, Rust, or other text-based languages; only Scythe itself requires Node.js. Starting with 0.1.19, local import navigation additionally supports Python flat/`src` packages and relative imports, Go packages within the nearest `go.mod` module, and conventional Cargo file modules with anchored Rust paths. After upgrading to 0.1.19, run `scythe-context index --project /absolute/path/to/repo` once, even if the index reports fresh, to populate the new import links. MCP users can instead call `repo_reindex` with `dry_run=false` and `index_embeddings=false` on the upgraded server. No new embeddings are required. Parsing is conservative and does not provide compiler-level symbol resolution. See [language support and limits](docs/language-support.md).
+The target repository can use JS/TS, Python, Go, Rust, C#, C++, or other text-based languages; only Scythe itself requires Node.js. Starting with 0.1.19, local import navigation additionally supports Python flat/`src` packages and relative imports, Go packages within the nearest `go.mod` module, and conventional Cargo file modules with anchored Rust paths. After upgrading to 0.1.20, run `scythe-context index --project /absolute/path/to/repo` once, even if the index reports fresh, to populate the new import links. MCP users can instead call `repo_reindex` with `dry_run=false` and `index_embeddings=false` on the upgraded server. No new embeddings are required. Parsing is conservative and does not provide compiler-level symbol resolution. See [language support and limits](docs/language-support.md).
+
+Version 0.1.20 adds C# structure and project-reference navigation: namespace, type and common method declarations, plus literal `.csproj` `ProjectReference` links. C# `using` directives remain unresolved namespace/type hints rather than file imports. This reads source/project files without requiring or running the .NET SDK. See the same language guide for limitations.
+
+Version 0.1.20 also adds basic C++ navigation: namespaces, class/struct/enum declarations, common functions/methods, and exact file-relative quoted `#include` links. System headers and macro includes stay unresolved. No C++ toolchain is required; compiler include paths and build configuration are not evaluated.
 
 ## CLI + Skill (same package)
 
 Starting with 0.1.18, the `scythe-context-mcp` npm package provides both a `scythe-context` CLI and the existing MCP entrypoint. Install once and choose CLI + Skill, MCP, or both. For a source checkout, run `npm run build` and substitute `node /absolute/path/to/scythe-context-mcp/dist/command.js` for `scythe-context` below.
 
 ```bash
-npm install -g scythe-context-mcp@0.1.19
+npm install -g scythe-context-mcp@0.1.20
 scythe-context status
-# Run when metadata is missing/stale, or once after upgrading to 0.1.19:
+# Run when metadata is missing/stale, or once after upgrading to 0.1.20:
 scythe-context index
 scythe-context search "where is auth token validation handled?"
 scythe-context context "where is auth token validation handled?" --format compact

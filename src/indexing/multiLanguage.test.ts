@@ -35,9 +35,11 @@ afterEach(async () => {
 });
 
 const cases = [
+  { language: "cpp", query: "validate_token", path: "src/auth.hpp", symbol: "validate_token", line: 4, importer: "src/checkout.cpp", module: "auth.hpp", importLine: 1, next: "src/storage.hpp", ignored: "build/generated.cpp" },
   { language: "python", query: "validate_token", path: "src/shop/auth.py", symbol: "validate_token", line: 1, importer: "src/shop/service.py", module: ".auth", importLine: 1, next: "src/shop/storage.py", ignored: ".venv/generated.py" },
   { language: "go", query: "ValidateToken", path: "internal/auth/token.go", symbol: "ValidateToken", line: 5, importer: "cmd/server/main.go", module: "example.com/shop/internal/auth", importLine: 5, next: "internal/store/store.go", ignored: "vendor/generated.go" },
   { language: "rust", query: "validate_token", path: "src/auth/mod.rs", symbol: "validate_token", line: 4, importer: "src/auth/token.rs", module: "super::validate_token", importLine: 1, next: "src/storage.rs", ignored: "target/generated.rs" },
+  { language: "csharp", query: "ValidateToken", path: "src/Shop.Core/TokenValidator.cs", symbol: "ValidateToken", line: 6, importer: "src/Shop.Api/Shop.Api.csproj", module: "..\\Shop.Core\\Shop.Core.csproj", importLine: 3, next: "src/Shop.Storage/Shop.Storage.csproj", navigationPath: "src/Shop.Core/Shop.Core.csproj", ignored: "src/Shop.Core/obj/Generated.cs" },
 ];
 
 describe("multi-language repository workflow", () => {
@@ -49,7 +51,8 @@ describe("multi-language repository workflow", () => {
     const result = await reindex(projectPath);
     const relations = readRelatedFiles({ dbPath: result.dbPath, filePath: example.path, maxResults: 30 });
     expect(relations.symbols).toContainEqual(expect.objectContaining({ name: example.symbol, line: example.line }));
-    expect(relations.importedBy).toContainEqual({ path: example.importer, specifier: example.module, line: example.importLine });
+    const navigation = example.navigationPath ? readRelatedFiles({ dbPath: result.dbPath, filePath: example.navigationPath, maxResults: 30 }) : relations;
+    expect(navigation.importedBy).toContainEqual({ path: example.importer, specifier: example.module, line: example.importLine });
     const graph = readRelatedFileGraph({ dbPath: result.dbPath, seedPaths: [example.importer], maxDepth: 2, maxFiles: 20, maxResultsPerFile: 30 });
     expect(graph.map((node) => node.path)).toContain(example.next);
     const db = new Database(result.dbPath, { readonly: true });
@@ -104,6 +107,48 @@ describe("multi-language repository workflow", () => {
     await fs.rm(path.join(projectPath, "internal/auth/session.go"));
     await reindex(projectPath);
     expect(localImports().map((item) => item.resolvedPath)).toEqual(["internal/auth/token.go"]);
+    expect(chunkIds()).toEqual(ids);
+  });
+
+  it("refreshes C++ include edges after target removal and preserves unchanged chunks", async () => {
+    const projectPath = await project("cpp");
+    const result = await reindex(projectPath);
+    const related = () => readRelatedFiles({ dbPath: result.dbPath, filePath: "src/checkout.cpp", maxResults: 30 });
+    const chunkIds = () => {
+      const db = new Database(result.dbPath, { readonly: true });
+      try { return db.prepare("select chunks.id from chunks join files on files.id = chunks.file_id where files.path = ? order by chunks.id").all("src/checkout.cpp"); }
+      finally { db.close(); }
+    };
+    const ids = chunkIds();
+    expect(related().imports).toEqual([
+      { specifier: "auth.hpp", line: 1, resolvedPath: "src/auth.hpp" },
+      { specifier: "string", line: 2, resolvedPath: null },
+    ]);
+    await fs.rm(path.join(projectPath, "src/auth.hpp"));
+    await reindex(projectPath);
+    expect(related().imports.every((item) => item.resolvedPath === null)).toBe(true);
+    expect(chunkIds()).toEqual(ids);
+  });
+
+  it("retains C# using hints and refreshes project edges without replacing unchanged source chunks", async () => {
+    const projectPath = await project("csharp");
+    const result = await reindex(projectPath);
+    const related = (filePath: string) => readRelatedFiles({ dbPath: result.dbPath, filePath, maxResults: 30 });
+    expect(related("src/Shop.Core/TokenValidator.cs").imports).toEqual([
+      { specifier: "System", line: 1, resolvedPath: null }, { specifier: "Shop.Storage", line: 2, resolvedPath: null },
+    ]);
+    const chunkIds = () => {
+      const db = new Database(result.dbPath, { readonly: true });
+      try { return db.prepare("select chunks.id from chunks join files on files.id = chunks.file_id where files.path = ? order by chunks.id").all("src/Shop.Core/TokenValidator.cs"); }
+      finally { db.close(); }
+    };
+    const ids = chunkIds();
+    expect(related("src/Shop.Core/Shop.Core.csproj").imports[0].resolvedPath).toBe("src/Shop.Storage/Shop.Storage.csproj");
+    await fs.rm(path.join(projectPath, "src/Shop.Storage/Shop.Storage.csproj"));
+    await reindex(projectPath);
+    expect(related("src/Shop.Core/Shop.Core.csproj").imports).toEqual([
+      { specifier: "../Shop.Storage/Shop.Storage.csproj", resolvedPath: null, line: 3 },
+    ]);
     expect(chunkIds()).toEqual(ids);
   });
 

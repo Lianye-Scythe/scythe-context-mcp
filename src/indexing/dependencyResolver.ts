@@ -1,4 +1,5 @@
 import path from "node:path";
+import { cppPath } from "./cpp.js";
 import { extractFileGraph, resolveDependencyPath, type ExtractedDependency } from "./symbolGraph.js";
 
 export type DependencyResolver = (fromPath: string, dependency: ExtractedDependency) => string[];
@@ -116,6 +117,20 @@ export function createDependencyResolver(activePaths: ReadonlySet<string>, manif
     .map(([file, content]) => [file, new Set(extractFileGraph(file, content).symbols.map((symbol) => symbol.name))]));
   return (fromPath, dependency) => {
     if (dependency.kind === "unresolved") return [];
+    if (cppPath.test(fromPath)) {
+      if (dependency.kind !== "cpp_include" || /[\\:\x00-\x1f]|^\//.test(dependency.specifier)) return [];
+      const target = path.posix.normalize(path.posix.join(path.posix.dirname(fromPath), dependency.specifier));
+      return target !== ".." && !target.startsWith("../") && activePaths.has(target) ? [target] : [];
+    }
+    if (/\.cs$/i.test(fromPath)) return [];
+    if (/\.csproj$/i.test(fromPath)) {
+      const reference = dependency.specifier.replace(/\\/g, "/");
+      if (!/\.csproj$/i.test(reference) || /[$@]\(|[*?;:%]|^\//.test(reference)) return [];
+      const target = path.posix.normalize(path.posix.join(path.posix.dirname(fromPath), reference));
+      if (target === ".." || target.startsWith("../") || !activePaths.has(target)) return [];
+      return [target];
+    }
+
     if (fromPath.endsWith(".py")) return pythonDependencies(fromPath, dependency, activePaths);
     if (fromPath.endsWith(".go")) return goDependencies(fromPath, dependency.specifier, modules, packages);
     if (fromPath.endsWith(".rs")) return rustDependencies(fromPath, dependency, activePaths, rustManifests, rootSymbols);

@@ -1,6 +1,6 @@
 # Architecture
 
-Status: current implementation, reviewed against version 0.1.19 on 2026-10-18. Start with [setup](setup.md) for installation or the [documentation index](README.md) for other guides. Early proposals are preserved in the [archive](archive/README.md).
+Status: current implementation as of 0.1.20, including C# structure/project-reference and C++ structure/include support. Start with [setup](setup.md) for installation or the [documentation index](README.md) for other guides. Early proposals are preserved in the [archive](archive/README.md).
 
 ## Responsibilities
 
@@ -20,6 +20,8 @@ src/
   config.ts              Environment settings and project selection
   tools/                 MCP registration adapter, diagnostics, response shaping
   indexing/              Scanning, chunking, indexing, retrieval, related files
+    cpp.ts               C++ declarations and local quoted include hints
+    csharp.ts            C# declarations, using hints, and literal project references
     languageImports.ts   Python, Go, and Rust import statement extraction
     dependencyResolver.ts  Local module/package-to-file resolution
     experimental/        Optional tree-sitter structure extraction

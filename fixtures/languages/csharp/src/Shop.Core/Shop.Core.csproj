@@ -1,0 +1,5 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <ItemGroup>
+    <ProjectReference Include="../Shop.Storage/Shop.Storage.csproj" />
+  </ItemGroup>
+</Project>

@@ -6,6 +6,18 @@ This project follows semantic versioning before npm publication where practical.
 
 ## [Unreleased]
 
+### Added
+
+- Add basic C++ namespace/type/function/method extraction and exact file-relative quoted include navigation, with unresolved system/macro hints, fixtures, CLI/MCP parity, and documented compiler/build-system limits.
+- Add basic C# namespace, type, constructor, and method extraction, including partial/record types and generic/async methods; preserve using directives as unresolved namespace/type hints.
+- Add literal local .csproj ProjectReference navigation without executing MSBuild. Conditional/dynamic/missing/outside-root references remain unresolved, and literal removal entries invalidate matching links.
+- Add C# fixtures and regression coverage for exact declaration/reference lines, test-file ranking, project traversal and removal, unchanged source chunk ids, and CLI/MCP keyword parity; document C# coverage and limitations in all three READMEs.
+
+### Upgrade
+
+- After upgrading to 0.1.20, refresh each existing project's metadata once, even if status reports fresh: `scythe-context index --project /absolute/path/to/repo`. MCP users can call `repo_reindex` with `dry_run=false` and `index_embeddings=false` on the upgraded server. No new embeddings or schema migration are required.
+- C# and C++ support provides basic source navigation, without Roslyn/Clang binding, MSBuild/CMake evaluation, compiler include paths, or macro expansion. See [language support and limits](https://github.com/Lianye-Scythe/scythe-context-mcp/blob/v0.1.20/docs/language-support.md).
+
 ## [0.1.19] - 2026-10-18
 
 ### Added
