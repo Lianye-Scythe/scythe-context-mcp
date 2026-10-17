@@ -16,6 +16,7 @@ let mcp: McpServer;
 let upstream: Server;
 let requests: number;
 let respondWithVectors: boolean;
+let responseVector: number[];
 
 async function callTool(name: string, args: Record<string, unknown>) {
   const result = await client.callTool({ name, arguments: { project_path: projectPath, ...args } });
@@ -30,13 +31,14 @@ beforeEach(async () => {
   await fs.writeFile(path.join(projectPath, "auth.ts"), "export function validateToken(token: string) { return token.length > 0; }\n");
   requests = 0;
   respondWithVectors = false;
+  responseVector = [1, 0, 0];
   upstream = createServer((request, response) => {
     requests += 1;
     if (respondWithVectors) {
       response.writeHead(200, { "content-type": "application/json" });
       response.end(JSON.stringify(request.url?.endsWith(":batchEmbedContents")
-        ? { embeddings: [{ values: [1, 0, 0] }] }
-        : { embedding: { values: [1, 0, 0] } }));
+        ? { embeddings: [{ values: responseVector }] }
+        : { embedding: { values: responseVector } }));
     }
   });
   await new Promise<void>((resolve) => upstream.listen(0, "127.0.0.1", resolve));
@@ -76,6 +78,38 @@ afterEach(async () => {
 });
 
 describe("MCP search tool integration", () => {
+  it.each(["repo_context_pack", "repo_semantic_search"])("%s reports a missing index before contacting the provider", async (name) => {
+    const missingProject = path.join(projectPath, "missing");
+    const payload = await callTool(name, { project_path: missingProject, query: "validateToken" });
+    expect(payload.status).toBe("index_missing");
+    expect(payload.projectPath).toBe(missingProject);
+    expect(payload).not.toHaveProperty("fallback");
+    expect(requests).toBe(0);
+  });
+
+  it.each([
+    ["repo_context_pack", "hybrid"],
+    ["repo_context_pack", "semantic"],
+    ["repo_semantic_search", "hybrid"],
+    ["repo_semantic_search", "semantic"],
+  ])("%s preserves %s behavior on embedding dimension mismatch", async (name, mode) => {
+    respondWithVectors = true;
+    responseVector = [1, 0];
+    const payload = await callTool(name, { query: "validateToken", mode });
+    const expectedError = { type: "Error", message: "Query embedding dimensions mismatch: expected 3, got 2", retryable: false };
+    if (mode === "hybrid") {
+      expect(payload.effectiveMode).toBe("keyword");
+      expect(payload.fallback).toMatchObject({ reason: "embedding_unavailable", fromMode: "hybrid", toMode: "keyword", error: expectedError });
+      expect((payload.primaryResults ?? payload.results)[0].path).toBe("auth.ts");
+    } else {
+      expect(payload.status).toBe("embedding_unavailable");
+      expect(payload.error).toMatchObject(expectedError);
+      expect(payload).not.toHaveProperty("fallback");
+      expect(payload).not.toHaveProperty("primaryResults");
+      expect(payload).not.toHaveProperty("results");
+    }
+    expect(requests).toBe(1);
+  });
   it.each([
     ["repo_context_pack", "hybrid"],
     ["repo_context_pack", "semantic"],

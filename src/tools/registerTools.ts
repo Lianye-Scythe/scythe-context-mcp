@@ -21,6 +21,7 @@ import {
   type ProviderCapabilityUpdate,
 } from "../providers/capabilities.js";
 import { buildGeminiEndpoint, GeminiEmbeddingError, GeminiEmbeddingProvider, normalizeGeminiBaseUrl } from "../providers/gemini.js";
+import type { EmbeddingProvider } from "../providers/types.js";
 import { runRepoDoctor } from "./doctor.js";
 import {
   shapeContextPackPayload,
@@ -97,6 +98,56 @@ function searchKeywordOnlyChunks(options: {
     maxSnippetChars: options.maxSnippetChars,
     rerankMode: options.rerankMode,
   });
+}
+
+interface SearchFallback {
+  reason: "embedding_unavailable";
+  fromMode: SearchMode;
+  toMode: "keyword";
+  error: EmbeddingFailureDetails;
+}
+
+type SearchExecutionResult =
+  | {
+      ok: true;
+      rawResults: FormattableSearchResult[];
+      effectiveMode: EffectiveSearchMode;
+      fallback?: SearchFallback;
+    }
+  | { ok: false; error: unknown };
+
+async function executeSearch(options: {
+  dbPath: string;
+  query: string;
+  dimensions: number;
+  maxResults: number;
+  maxSnippetChars: number;
+  mode: SearchMode;
+  rerankMode: AppConfig["search"]["rerankMode"];
+}, embeddingProvider: EmbeddingProvider): Promise<SearchExecutionResult> {
+  if (options.mode === "keyword") {
+    return { ok: true, rawResults: searchKeywordOnlyChunks(options), effectiveMode: "keyword" };
+  }
+
+  try {
+    const queryEmbedding = await embeddingProvider.embed({ kind: "query", text: options.query });
+    if (queryEmbedding.dimensions !== options.dimensions) {
+      throw new Error(`Query embedding dimensions mismatch: expected ${options.dimensions}, got ${queryEmbedding.dimensions}`);
+    }
+    const rawResults = searchIndexedChunks({ ...options, queryVector: queryEmbedding.vector });
+    return { ok: true, rawResults, effectiveMode: options.mode };
+  } catch (error) {
+    if (options.mode === "semantic") return { ok: false, error };
+
+    const fallback: SearchFallback = {
+      reason: "embedding_unavailable",
+      fromMode: options.mode,
+      toMode: "keyword",
+      error: embeddingFailureDetails(error),
+    };
+    const rawResults = searchKeywordOnlyChunks(options);
+    return { ok: true, rawResults, effectiveMode: "keyword", fallback };
+  }
 }
 
 function rerankApplied(mode: EffectiveSearchMode, rerankMode: AppConfig["search"]["rerankMode"]): boolean {
@@ -488,74 +539,31 @@ export function registerTools(server: McpServer, config: AppConfig): void {
       }
 
       const dimensions = expectedDimensions;
-      let effectiveMode: EffectiveSearchMode = mode;
-      let fallback:
-        | {
-            reason: "embedding_unavailable";
-            fromMode: SearchMode;
-            toMode: "keyword";
-            error: EmbeddingFailureDetails;
-          }
-        | undefined;
-      let rawResults: FormattableSearchResult[];
-
-      if (mode === "keyword") {
-        rawResults = searchKeywordOnlyChunks({
-          dbPath,
-          query,
-          maxResults: max_results,
-          maxSnippetChars: max_snippet_chars,
-          rerankMode: config.search.rerankMode,
-        });
-      } else {
-        try {
-          const queryEmbedding = await embeddingProvider.embed({ kind: "query", text: query });
-          if (queryEmbedding.dimensions !== dimensions) {
-            throw new Error(`Query embedding dimensions mismatch: expected ${dimensions}, got ${queryEmbedding.dimensions}`);
-          }
-          rawResults = searchIndexedChunks({
-            dbPath,
-            query,
-            dimensions,
-            queryVector: queryEmbedding.vector,
-            maxResults: max_results,
-            maxSnippetChars: max_snippet_chars,
-            mode,
-            rerankMode: config.search.rerankMode,
-          });
-        } catch (error) {
-          if (mode === "semantic") {
-            return asJsonText(
-              shapeToolErrorPayload(
-                {
-                  query,
-                  projectPath,
-                  dbPath,
-                  dimensions,
-                  mode,
-                  ...embeddingUnavailablePayload(error),
-                },
-                response_mode,
-              ),
-            );
-          }
-
-          effectiveMode = "keyword";
-          fallback = {
-            reason: "embedding_unavailable",
-            fromMode: mode,
-            toMode: "keyword",
-            error: embeddingFailureDetails(error),
-          };
-          rawResults = searchKeywordOnlyChunks({
-            dbPath,
-            query,
-            maxResults: max_results,
-            maxSnippetChars: max_snippet_chars,
-            rerankMode: config.search.rerankMode,
-          });
-        }
+      const search = await executeSearch({
+        dbPath,
+        query,
+        dimensions,
+        maxResults: max_results,
+        maxSnippetChars: max_snippet_chars,
+        mode,
+        rerankMode: config.search.rerankMode,
+      }, embeddingProvider);
+      if (!search.ok) {
+        return asJsonText(
+          shapeToolErrorPayload(
+            {
+              query,
+              projectPath,
+              dbPath,
+              dimensions,
+              mode,
+              ...embeddingUnavailablePayload(search.error),
+            },
+            response_mode,
+          ),
+        );
       }
+      const { rawResults, effectiveMode, fallback } = search;
 
       const formatted = formatSearchResults(query, rawResults, { maxContextChars: max_context_chars });
 
@@ -689,74 +697,31 @@ export function registerTools(server: McpServer, config: AppConfig): void {
       }
 
       const dimensions = expectedDimensions;
-      let effectiveMode: EffectiveSearchMode = mode;
-      let fallback:
-        | {
-            reason: "embedding_unavailable";
-            fromMode: SearchMode;
-            toMode: "keyword";
-            error: EmbeddingFailureDetails;
-          }
-        | undefined;
-      let rawResults: FormattableSearchResult[];
-
-      if (mode === "keyword") {
-        rawResults = searchKeywordOnlyChunks({
-          dbPath,
-          query,
-          maxResults: max_results,
-          maxSnippetChars: max_snippet_chars,
-          rerankMode: config.search.rerankMode,
-        });
-      } else {
-        try {
-          const queryEmbedding = await embeddingProvider.embed({ kind: "query", text: query });
-          if (queryEmbedding.dimensions !== dimensions) {
-            throw new Error(`Query embedding dimensions mismatch: expected ${dimensions}, got ${queryEmbedding.dimensions}`);
-          }
-          rawResults = searchIndexedChunks({
-            dbPath,
-            query,
-            dimensions,
-            queryVector: queryEmbedding.vector,
-            maxResults: max_results,
-            maxSnippetChars: max_snippet_chars,
-            mode,
-            rerankMode: config.search.rerankMode,
-          });
-        } catch (error) {
-          if (mode === "semantic") {
-            return asJsonText(
-              shapeToolErrorPayload(
-                {
-                  query,
-                  projectPath,
-                  dbPath,
-                  dimensions,
-                  mode,
-                  ...embeddingUnavailablePayload(error),
-                },
-                response_mode,
-              ),
-            );
-          }
-
-          effectiveMode = "keyword";
-          fallback = {
-            reason: "embedding_unavailable",
-            fromMode: mode,
-            toMode: "keyword",
-            error: embeddingFailureDetails(error),
-          };
-          rawResults = searchKeywordOnlyChunks({
-            dbPath,
-            query,
-            maxResults: max_results,
-            maxSnippetChars: max_snippet_chars,
-            rerankMode: config.search.rerankMode,
-          });
-        }
+      const search = await executeSearch({
+        dbPath,
+        query,
+        dimensions,
+        maxResults: max_results,
+        maxSnippetChars: max_snippet_chars,
+        mode,
+        rerankMode: config.search.rerankMode,
+      }, embeddingProvider);
+      if (!search.ok) {
+        return asJsonText(
+          shapeToolErrorPayload(
+            {
+              query,
+              projectPath,
+              dbPath,
+              dimensions,
+              mode,
+              ...embeddingUnavailablePayload(search.error),
+            },
+            response_mode,
+          ),
+        );
       }
+      const { rawResults, effectiveMode, fallback } = search;
 
       const relatedPaths = Array.from(new Set(rawResults.map((result) => result.path))).slice(
         0,

@@ -8,6 +8,8 @@ This project follows semantic versioning before npm publication where practical.
 
 ### Maintenance
 
+- Share keyword, embedding validation, and hybrid fallback execution between both search tools while preserving their schemas and response formatting; add index-missing and dimension-mismatch regression coverage.
+
 - Update dotenv to 18.0.8, ignore to 7.0.12, zod to 4.6.7, SQLite type definitions to 9.6.0, and Vitest to 5.0.5.
 - Verify dotenv 18 environment loading and MCP stdio startup; document a complete direct-dependency freshness check alongside vulnerability review.
 
