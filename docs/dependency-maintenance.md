@@ -8,7 +8,9 @@ Actions use full release tags so patch/minor updates are visible in reviewed PRs
 
 This automates discovery and PR creation, not merging or npm publication. Security alerts/updates have separate GitHub settings and scheduling; the monthly version-update interval does not replace security triage. Review security fixes promptly when notified. No repository security settings were changed by this maintenance slice.
 
-Before merging, inspect upstream compatibility notes and install scripts, restore dependencies with `npm ci`, and run `npm run verify` plus `npm run bench:gate`. Confirm CI belongs to the current PR commit. Treat native SQLite, parser, compiler, and GitHub Action major updates as explicit migrations rather than assuming older CI results still apply.
+Before merging, check **all** direct dependencies with `npm outdated` and live registry metadata, not only the packages named by a pending PR. Record any deliberately retained versions and their concrete reasons. A clean `npm audit` does not mean dependencies are current.
+
+Inspect upstream compatibility notes and install scripts, restore dependencies with `npm ci`, and run `npm run verify` plus `npm run bench:gate`. Confirm CI belongs to the current PR commit. Treat native SQLite, parser, compiler, and GitHub Action major updates as explicit migrations rather than assuming older CI results still apply.
 
 Automatic merging is not enabled. It can be considered later for narrowly scoped patch updates after reliable Windows/WSL and provider workflow coverage exists. Do not auto-publish a new npm release merely because a dependency PR passes CI.
 
@@ -43,3 +45,19 @@ setup-node v7 removes the dummy `NODE_AUTH_TOKEN` fallback. Upstream explicitly 
 - [checkout releases](https://github.com/actions/checkout/releases)
 
 The [2026-10-11 dependency security record](dependency-security.md) describes the previous maintenance slice and its historical versions.
+
+## Full direct-dependency review on 2026-10-17
+
+| Dependency | Previous lockfile version | Reviewed update |
+| --- | --- | --- |
+| dotenv | 17.4.2 | 18.0.8 |
+| ignore | 7.0.5 | 7.0.12 |
+| zod | 4.4.3 | 4.6.7 |
+| @types/better-sqlite3 | 7.6.13 | 9.6.0 |
+| Vitest | 5.0.4 | 5.0.5 |
+
+All twelve direct dependencies were compared with live metadata from the configured npm registry. These five were behind; the remaining seven already matched their latest stable releases. None of the selected releases was deprecated. No changed installed package introduced a preinstall, install, or postinstall script, and the existing pinned script approvals remained unchanged.
+
+The [dotenv 18 changelog](https://github.com/motdotla/dotenv/blob/v18.0.8/CHANGELOG.md) describes the new CLI, logging changes, and removal of vault/preloading features. This project uses `import "dotenv/config"`, which remains supported. A fresh MCP process was launched from a temporary directory containing a synthetic `.env`: the configured default project and file-size limit were honored, stdio initialization succeeded, metadata indexing succeeded, and keyword context lookup returned the expected file. No embedding endpoint was called. Existing repository credentials were not used for that check.
+
+SQLite type-definition versions do not need to match the driver version numerically. The updated declarations passed the TypeScript build against better-sqlite3 13.0.3. Existing tests and the retrieval benchmark also passed. Full npm audit reported zero vulnerabilities and `npm outdated` reported no outdated direct dependencies on the review date. These are dated observations, not a guarantee about future registry changes.

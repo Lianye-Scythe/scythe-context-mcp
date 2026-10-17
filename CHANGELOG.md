@@ -6,6 +6,11 @@ This project follows semantic versioning before npm publication where practical.
 
 ## [Unreleased]
 
+### Maintenance
+
+- Update dotenv to 18.0.8, ignore to 7.0.12, zod to 4.6.7, SQLite type definitions to 9.6.0, and Vitest to 5.0.5.
+- Verify dotenv 18 environment loading and MCP stdio startup; document a complete direct-dependency freshness check alongside vulnerability review.
+
 ## [0.1.16] - 2026-10-12
 
 ### Maintenance
