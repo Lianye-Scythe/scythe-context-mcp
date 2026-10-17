@@ -8,6 +8,7 @@ Start with the [English README](../README.md), [Traditional Chinese](../README.z
 | --- | --- |
 | Configure Codex and choose Windows, WSL, Linux, or macOS startup | [Setup and advanced configuration](setup.md) |
 | Diagnose startup, native modules, provider, or index failures | [Troubleshooting](troubleshooting.md) |
+| Check Python, Go, Rust, and JS/TS import navigation coverage | [Language support and limits](language-support.md) |
 | Understand module boundaries, indexing, and retrieval | [Architecture](architecture.md) |
 | Understand runtime and dependency choices | [Technology stack](tech-stack.md) |
 | Configure or debug embedding request compatibility | [Gemini-compatible provider](gemini-compatibility.md) |

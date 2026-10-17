@@ -372,6 +372,10 @@ describe("persistentReindexMetadata", () => {
 });
 
 describe("related path classification", () => {
+  it.each(["src/token_test.go", "src/test_token.py", "src/token_test.py"])("classifies language test files: %s", (file) => {
+    expect(classifyRelatedPath(file)).toBe("test");
+  });
+
   it("classifies common support file roles", () => {
     expect(classifyRelatedPath("src/service.ts")).toBe("source");
     expect(classifyRelatedPath("src/service.test.ts")).toBe("test");

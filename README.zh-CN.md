@@ -7,7 +7,7 @@
 
 [English](README.md) | [繁體中文](README.zh-TW.md) | [简体中文](README.zh-CN.md)
 
-Scythe Context MCP 帮助 Codex 在不知道文件位置时找到代码。它在本地索引项目，返回文件路径、行号范围和相关文件；可选的 Gemini embeddings 提供语义搜索。
+Scythe Context MCP 通过 CLI＋Skill 或 MCP，帮助 coding agent 在不知道文件位置时找到代码。它在本地索引项目，返回文件路径、行号范围和相关文件；可选的 Gemini embeddings 提供语义搜索。
 
 ## 什么时候适合使用
 
@@ -17,17 +17,21 @@ Scythe Context MCP 帮助 Codex 在不知道文件位置时找到代码。它在
 
 项目已有检索 benchmark 和集成测试，但这些结果**不能证明** MCP 能提高 GPT‑6.1 Sol 任务完成率、速度或降低整体 token 用量。请参阅 [benchmark](docs/benchmark.md) 和[任务 A/B 评估流程](docs/codex-evaluation.md)。
 
+## 语言支持
+
+目标项目可以是 JS／TS、Python、Go、Rust 或其他文本代码；只有 Scythe 本身需要 Node.js。从 0.1.19 起，本地 import 导航进一步支持 Python flat／`src` package 和相对 imports、最近一层 `go.mod` 所属的 Go packages，以及常规 Cargo 文件模块和 Rust 明确锚定的路径。升级到 0.1.19 后，即使索引显示 fresh，也请执行一次 `scythe-context index --project /absolute/path/to/repo`，补上新的 import 关联。MCP 用户也能在升级后的 server 调用 `repo_reindex`，设置 `dry_run=false`、`index_embeddings=false`。不需要重新生成 embeddings。解析采用保守方式，不等同编译器级别的符号解析。详见[语言支持与限制](docs/language-support.md)。
+
 ## CLI＋Skill（同一个包）
 
 从 0.1.18 起，同一个 `scythe-context-mcp` npm 包提供 `scythe-context` CLI 和原有 MCP 入口。安装一次后，可选择 CLI＋Skill、MCP，或同时使用。从源码使用时，先执行 `npm run build`，再将下列 `scythe-context` 换成 `node /absolute/path/to/scythe-context-mcp/dist/command.js`。
 
 ```bash
-npm install -g scythe-context-mcp@0.1.18
+npm install -g scythe-context-mcp@0.1.19
 scythe-context status
-# 仅在 metadata 索引缺失或过期时执行：
+# Run when metadata is missing/stale, or once after upgrading to 0.1.19:
 scythe-context index
-scythe-context search "登录验证在哪里处理？"
-scythe-context context "登录验证在哪里处理？" --format compact
+scythe-context search "where is auth token validation handled?"
+scythe-context context "where is auth token validation handled?" --format compact
 scythe-context related src/auth.ts
 scythe-context doctor
 ```
@@ -40,8 +44,7 @@ CLI 的 search/context 默认使用本地 `keyword` 模式，只返回路径和�
 
 包内的 [Skill](skills/scythe-context/SKILL.md) 说明何时搜索、读取文件范围、更新索引和使用 embeddings。将 `skills/scythe-context/` 复制到 agent 的技能目录即可供它发现；CLI 也必须在该 agent 的执行环境中可用。目前不会自动安装 Skill。`scythe-context` 无参数时显示 help；`scythe-context-mcp` 无参数时仍启动 MCP stdio。两个入口都接受上述子命令，也能用 `serve` 明确启动 MCP。
 
-
-## 快速开始：本地搜索
+## MCP 快速开始：本地搜索
 
 需要 Node.js 24.11+，支持范围为 `>=24.11.0 <27`；Node.js 24 是已测试的基准。Node 和 npm 应在 MCP server 所用的同一环境中运行。
 
@@ -85,12 +88,12 @@ repo_context_pack({ "project_path": "/absolute/path/to/your/repo", "query": "whe
 
 这些调用会将项目代码块和查询文本发送到配置的 endpoint，可能产生 provider 费用。默认为 `https://generativelanguage.googleapis.com/v1beta`、模型 `gemini-embedding-2`、1536 维。Proxy 和认证配置请参阅[配置指南](docs/setup.md)。
 
-**搜索模式默认仍是 `hybrid`，快速开始则明确指定 `keyword`。** 配置 key 后，省略 `mode` 可能将查询发送到 provider。请使用 `mode="keyword"` 避免 embedding 请求。
+**MCP 搜索模式默认为 `hybrid`，快速开始则明确指定 `keyword`；CLI 的 search/context 默认为 `keyword`。** 配置 key 后，省略 `mode` 可能将查询发送到 provider。请使用 `mode="keyword"` 避免 embedding 请求。
 
 | 模式 | Embedding 请求 | 查询 embedding 失败时 |
 | --- | --- | --- |
 | `keyword` | 无；只需要 metadata | 不适用 |
-| `hybrid`（默认） | 发送查询；索引向量提供语义检索 | 回退到 keyword 并报告 fallback |
+| `hybrid`（MCP 默认） | 发送查询；索引向量提供语义检索 | 回退到 keyword 并报告 fallback |
 | `semantic` | 发送查询；需要索引向量 | 返回错误，不回退到 keyword |
 
 `GEMINI_REQUEST_TIMEOUT_MS` 默认为 `10000`，限制每次 embedding 请求，包括读取响应正文；不限制整个索引任务的时间。`gemini_embedding_probe` 也会将测试文本发送到 endpoint。第三方 proxy 能看到发送给它的文本。

@@ -59,6 +59,7 @@ function tableExists(db: SqliteDatabase, name: string): boolean {
 
 export function classifyRelatedPath(path: string): RelatedPathRole {
   const normalized = path.toLowerCase();
+  if (/(?:^|\/)test_[^/]+\.py$|_test\.(?:go|py)$/.test(normalized)) return "test";
   if (/(^|\/)(test|tests|__tests__|spec|specs)(\/|$)|\.(test|spec)\.[^.]+$/.test(normalized)) return "test";
   if (/(^|\/)(__mocks__|mocks?)(\/|$)|\bmock\b/.test(normalized)) return "mock";
   if (/(^|\/)(fixtures?|samples?)(\/|$)/.test(normalized)) return "fixture";

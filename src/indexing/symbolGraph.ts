@@ -1,3 +1,4 @@
+import { extractLanguageImports } from "./languageImports.js";
 export type SymbolKind =
   | "class"
   | "const"
@@ -21,6 +22,8 @@ export interface ExtractedSymbol {
 export interface ExtractedDependency {
   specifier: string;
   line: number;
+  kind?: "python_from" | "rust_module" | "unresolved";
+  importedNames?: string[];
 }
 
 export interface ExtractedFileGraph {
@@ -43,15 +46,15 @@ const symbolPatterns: SymbolPattern[] = [
   { kind: "enum", regex: /^(\s*export\s+)?enum\s+([A-Za-z_$][\w$]*)\b/, nameGroup: 2, exportedGroup: 1 },
   { kind: "const", regex: /^(\s*export\s+)?const\s+([A-Za-z_$][\w$]*)\b/, nameGroup: 2, exportedGroup: 1 },
   { kind: "variable", regex: /^\s*(?:let|var)\s+([A-Za-z_$][\w$]*)\b/, nameGroup: 1 },
-  { kind: "function", regex: /^\s*def\s+([A-Za-z_]\w*)\b/, nameGroup: 1 },
+  { kind: "function", regex: /^\s*(?:async\s+)?def\s+([A-Za-z_]\w*)\b/, nameGroup: 1 },
   { kind: "class", regex: /^\s*class\s+([A-Za-z_]\w*)\b/, nameGroup: 1 },
   { kind: "function", regex: /^\s*func\s+(?:\([^)]*\)\s*)?([A-Za-z_]\w*)\b/, nameGroup: 1 },
   { kind: "type", regex: /^\s*type\s+([A-Za-z_]\w*)\b/, nameGroup: 1 },
-  { kind: "function", regex: /^\s*(?:pub\s+)?(?:async\s+)?fn\s+([A-Za-z_]\w*)\b/, nameGroup: 1, exportedGroup: 0 },
-  { kind: "struct", regex: /^\s*(?:pub\s+)?struct\s+([A-Za-z_]\w*)\b/, nameGroup: 1, exportedGroup: 0 },
-  { kind: "enum", regex: /^\s*(?:pub\s+)?enum\s+([A-Za-z_]\w*)\b/, nameGroup: 1, exportedGroup: 0 },
-  { kind: "trait", regex: /^\s*(?:pub\s+)?trait\s+([A-Za-z_]\w*)\b/, nameGroup: 1, exportedGroup: 0 },
-  { kind: "module", regex: /^\s*(?:pub\s+)?mod\s+([A-Za-z_]\w*)\b/, nameGroup: 1, exportedGroup: 0 },
+  { kind: "function", regex: /^\s*(?:pub(?:\([^)]*\))?\s+)?(?:async\s+)?fn\s+([A-Za-z_]\w*)\b/, nameGroup: 1, exportedGroup: 0 },
+  { kind: "struct", regex: /^\s*(?:pub(?:\([^)]*\))?\s+)?struct\s+([A-Za-z_]\w*)\b/, nameGroup: 1, exportedGroup: 0 },
+  { kind: "enum", regex: /^\s*(?:pub(?:\([^)]*\))?\s+)?enum\s+([A-Za-z_]\w*)\b/, nameGroup: 1, exportedGroup: 0 },
+  { kind: "trait", regex: /^\s*(?:pub(?:\([^)]*\))?\s+)?trait\s+([A-Za-z_]\w*)\b/, nameGroup: 1, exportedGroup: 0 },
+  { kind: "module", regex: /^\s*(?:pub(?:\([^)]*\))?\s+)?mod\s+([A-Za-z_]\w*)\b/, nameGroup: 1, exportedGroup: 0 },
 ];
 
 const javascriptImportPatterns = [
@@ -59,26 +62,6 @@ const javascriptImportPatterns = [
   /\bexport\s+[^"'`]+\s+from\s+["'`]([^"'`]+)["'`]/g,
   /\brequire\(\s*["'`]([^"'`]+)["'`]\s*\)/g,
 ];
-
-const pythonImportPatterns = [
-  /\bfrom\s+([A-Za-z_][\w.]+)\s+import\b/g,
-  /^\s*import\s+([A-Za-z_][\w.]+)/g,
-];
-
-const rustImportPatterns = [
-  /^\s*use\s+([^;]+);/g,
-  /^\s*mod\s+([A-Za-z_]\w*)\s*;/g,
-];
-
-const goImportPatterns = [/^\s*import\s+["`]([^"`]+)["`]/g, /^\s*["`]([^"`]+)["`]/g];
-
-function dependencyPatternsForPath(relativePath: string): RegExp[] {
-  if (/\.(?:js|jsx|mjs|cjs|ts|tsx|mts|cts)$/.test(relativePath)) return javascriptImportPatterns;
-  if (/\.py$/.test(relativePath)) return pythonImportPatterns;
-  if (/\.rs$/.test(relativePath)) return rustImportPatterns;
-  if (/\.go$/.test(relativePath)) return goImportPatterns;
-  return javascriptImportPatterns;
-}
 
 function normalizeSignature(line: string): string {
   return line.trim().replace(/\s+/g, " ").slice(0, 240);
@@ -107,8 +90,9 @@ function extractDependenciesFromLine(patterns: RegExp[], line: string, lineNumbe
 
 export function extractFileGraph(relativePath: string, content: string): ExtractedFileGraph {
   const symbols: ExtractedSymbol[] = [];
-  const dependencies: ExtractedDependency[] = [];
-  const dependencyPatterns = dependencyPatternsForPath(relativePath);
+  const languageImports = extractLanguageImports(relativePath, content);
+  const dependencies: ExtractedDependency[] = languageImports ?? [];
+  const dependencyPatterns = languageImports ? [] : javascriptImportPatterns;
   const lines = content.split(/\r?\n/);
 
   lines.forEach((line, index) => {

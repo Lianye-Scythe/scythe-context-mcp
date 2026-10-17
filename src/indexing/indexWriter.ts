@@ -6,7 +6,7 @@ import { resolveIndexingLimits } from "./dryRun.js";
 import { sha256Hex } from "./hash.js";
 import { scanProject } from "./scanner.js";
 import { regexStructureExtractor } from "./structureExtractor.js";
-import { resolveDependencyPath } from "./symbolGraph.js";
+import { createDependencyResolver } from "./dependencyResolver.js";
 import type { CodeStructureExtractor } from "./structureExtractor.js";
 import type { IndexingLimits, ReindexDryRunOptions, SkippedFile } from "./types.js";
 import {
@@ -51,6 +51,10 @@ export async function persistentReindexMetadata(options: PersistentReindexOption
 
   const scan = await scanProject(projectPath, limits);
   const activePathSet = new Set(scan.files.map((file) => file.relativePath));
+  const resolutionSources = new Map(await Promise.all(scan.files
+    .filter((file) => /(?:^|\/)(?:go\.mod|lib\.rs|main\.rs)$/.test(file.relativePath))
+    .map(async (file) => [file.relativePath, await fs.readFile(file.absolutePath, "utf8")] as const)));
+  const resolveDependencies = createDependencyResolver(activePathSet, resolutionSources);
   const db = new Database(dbPath);
   const structureExtractor = options.structureExtractor ?? regexStructureExtractor;
   const structureChunker = structureExtractor.chunkText ?? chunkText;
@@ -82,21 +86,22 @@ export async function persistentReindexMetadata(options: PersistentReindexOption
         });
 
         const graph = structureExtractor.extractFileGraph(input.relativePath, input.content);
+        const dependencies = graph.dependencies.flatMap((dependency) => {
+          const paths = resolveDependencies(input.relativePath, dependency);
+          return (paths.length ? paths : [null]).map((resolvedPath) => ({
+            fileId, specifier: dependency.specifier, line: dependency.line, resolvedPath,
+          }));
+        });
         replaceSymbolGraphForFile(
           db,
           fileId,
           graph.symbols.map((symbol) => ({ fileId, ...symbol })),
-          graph.dependencies.map((dependency) => ({
-            fileId,
-            specifier: dependency.specifier,
-            line: dependency.line,
-            resolvedPath: resolveDependencyPath(input.relativePath, dependency.specifier, activePathSet),
-          })),
+          dependencies,
         );
 
         if (existing?.hash === input.hash) {
           rebuildChunkFtsForFile(db, fileId, input.relativePath);
-          return graph;
+          return { ...graph, dependencyCount: dependencies.length };
         }
 
         deleteChunksForFile(db, fileId);
@@ -111,7 +116,7 @@ export async function persistentReindexMetadata(options: PersistentReindexOption
             hash: chunk.hash,
           });
         }
-        return graph;
+        return { ...graph, dependencyCount: dependencies.length };
       },
     );
 
@@ -129,7 +134,7 @@ export async function persistentReindexMetadata(options: PersistentReindexOption
       chunkCount += chunks.length;
       byteCount += file.size;
       symbolCount += graph.symbols.length;
-      dependencyCount += graph.dependencies.length;
+      dependencyCount += graph.dependencyCount;
     }
 
     const activePaths = scan.files.map((file) => file.relativePath);

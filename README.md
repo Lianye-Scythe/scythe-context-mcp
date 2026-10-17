@@ -7,7 +7,7 @@
 
 [English](README.md) | [繁體中文](README.zh-TW.md) | [简体中文](README.zh-CN.md)
 
-Scythe Context MCP helps Codex find code when the file location is unknown. It indexes a repository locally and returns file paths, line ranges, and related files. Optional Gemini embeddings add semantic search.
+Scythe Context MCP helps coding agents find code when the file location is unknown, through CLI + Skill or MCP. It indexes a repository locally and returns file paths, line ranges, and related files. Optional Gemini embeddings add semantic search.
 
 ## When to use it
 
@@ -17,14 +17,18 @@ Scythe Context MCP helps Codex find code when the file location is unknown. It i
 
 The project has retrieval benchmarks and integration tests. These do **not** establish that MCP improves GPT‑6.1 Sol task completion, speed, or total token use. See the [benchmark](docs/benchmark.md) and [task A/B protocol (Traditional Chinese)](docs/codex-evaluation.md).
 
+## Language support
+
+The target repository can use JS/TS, Python, Go, Rust, or other text-based languages; only Scythe itself requires Node.js. Starting with 0.1.19, local import navigation additionally supports Python flat/`src` packages and relative imports, Go packages within the nearest `go.mod` module, and conventional Cargo file modules with anchored Rust paths. After upgrading to 0.1.19, run `scythe-context index --project /absolute/path/to/repo` once, even if the index reports fresh, to populate the new import links. MCP users can instead call `repo_reindex` with `dry_run=false` and `index_embeddings=false` on the upgraded server. No new embeddings are required. Parsing is conservative and does not provide compiler-level symbol resolution. See [language support and limits](docs/language-support.md).
+
 ## CLI + Skill (same package)
 
 Starting with 0.1.18, the `scythe-context-mcp` npm package provides both a `scythe-context` CLI and the existing MCP entrypoint. Install once and choose CLI + Skill, MCP, or both. For a source checkout, run `npm run build` and substitute `node /absolute/path/to/scythe-context-mcp/dist/command.js` for `scythe-context` below.
 
 ```bash
-npm install -g scythe-context-mcp@0.1.18
+npm install -g scythe-context-mcp@0.1.19
 scythe-context status
-# Run only when metadata is missing or stale:
+# Run when metadata is missing/stale, or once after upgrading to 0.1.19:
 scythe-context index
 scythe-context search "where is auth token validation handled?"
 scythe-context context "where is auth token validation handled?" --format compact
@@ -40,8 +44,7 @@ For semantic retrieval, explicitly use `index --embeddings` and `search`/`contex
 
 The packaged [Skill](skills/scythe-context/SKILL.md) teaches an agent when to search, read ranges, refresh metadata, and use embeddings. Copy the `skills/scythe-context/` folder into your agent's skill directory to enable discovery; the CLI must be available in that agent's execution environment. There is no automatic skill installation. `scythe-context` without arguments shows help; `scythe-context-mcp` without arguments continues to start MCP stdio. Either entrypoint accepts the subcommands above, and `serve` explicitly starts MCP.
 
-
-## Quick start: local search
+## MCP quick start: local search
 
 Requires Node.js 24.11+ within the supported range `>=24.11.0 <27`; Node.js 24 is the tested baseline. Run Node and npm in the same environment as the MCP server.
 
@@ -85,12 +88,12 @@ repo_context_pack({ "project_path": "/absolute/path/to/your/repo", "query": "whe
 
 These calls send repository chunks and query text to the configured endpoint, which may incur provider charges. Defaults are `https://generativelanguage.googleapis.com/v1beta`, model `gemini-embedding-2`, and 1536 dimensions. For proxies and authentication settings, see [setup](docs/setup.md).
 
-**Search mode defaults to `hybrid`, even though the quick start explicitly uses `keyword`.** If a key is configured, omitting `mode` can send the query to the provider. Use `mode="keyword"` to avoid embedding requests.
+**MCP search mode defaults to `hybrid`, even though the quick start explicitly uses `keyword`; CLI search/context default to `keyword`.** If a key is configured, omitting `mode` can send the query to the provider. Use `mode="keyword"` to avoid embedding requests.
 
 | Mode | Embedding requests | If query embedding fails |
 | --- | --- | --- |
 | `keyword` | None; metadata only | Not applicable |
-| `hybrid` (default) | Sends the query; indexed vectors support semantic retrieval | Falls back to keyword and reports the fallback |
+| `hybrid` (MCP default) | Sends the query; indexed vectors support semantic retrieval | Falls back to keyword and reports the fallback |
 | `semantic` | Sends the query; requires indexed vectors | Returns an error without keyword fallback |
 
 `GEMINI_REQUEST_TIMEOUT_MS` defaults to `10000` and bounds each embedding request, including the response body. It does not limit the entire indexing job. `gemini_embedding_probe` also sends its test text to the endpoint. Third-party proxies can see the text sent to them.

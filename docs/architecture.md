@@ -1,6 +1,6 @@
 # Architecture
 
-Status: current implementation, reviewed against version 0.1.18 on 2026-10-18. Start with [setup](setup.md) for installation or the [documentation index](README.md) for other guides. Early proposals are preserved in the [archive](archive/README.md).
+Status: current implementation, reviewed against version 0.1.19 on 2026-10-18. Start with [setup](setup.md) for installation or the [documentation index](README.md) for other guides. Early proposals are preserved in the [archive](archive/README.md).
 
 ## Responsibilities
 
@@ -20,6 +20,8 @@ src/
   config.ts              Environment settings and project selection
   tools/                 MCP registration adapter, diagnostics, response shaping
   indexing/              Scanning, chunking, indexing, retrieval, related files
+    languageImports.ts   Python, Go, and Rust import statement extraction
+    dependencyResolver.ts  Local module/package-to-file resolution
     experimental/        Optional tree-sitter structure extraction
   providers/             Gemini-compatible REST adapter and capability cache
   storage/               SQLite schema and sqlite-vec integration
@@ -45,7 +47,7 @@ Tests live beside the implementation as `*.test.ts`; TypeScript excludes them fr
 4. Update file/chunk metadata and rebuild symbols/imports for changed files. Preserve unchanged chunk row ids to reuse cached embeddings.
 5. Embed chunks only when `repo_reindex(index_embeddings=true)` is requested. Batch requests may fall back to individual requests; the capability cache records observed endpoint behavior.
 
-The default regex extractor handles common declarations and imports. Optional tree-sitter extraction applies to JS/TS with configured WASM grammars, falling back to regex when unavailable. It does not replace the text chunker.
+The default regex extractor handles common declarations and imports. Language-specific extraction and local dependency resolution cover Python packages, Go module/package directories, and conventional Rust file modules; see [language support](language-support.md) for boundaries. Dependencies are recomputed during metadata reindexing even when the importing file is unchanged. Optional tree-sitter extraction applies to JS/TS with configured WASM grammars, falling back to regex when unavailable. It does not replace the text chunker.
 
 ## Storage
 

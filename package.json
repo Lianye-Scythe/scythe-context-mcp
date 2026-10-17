@@ -1,7 +1,7 @@
 {
   "name": "scythe-context-mcp",
   "version": "0.1.18",
-  "description": "Local MCP context engine for Codex with Gemini Embedding 2 support.",
+  "description": "Local code search and import navigation via CLI + Skill or MCP, with optional Gemini embeddings.",
   "type": "module",
   "license": "Apache-2.0",
   "homepage": "https://github.com/Lianye-Scythe/scythe-context-mcp#readme",
@@ -18,7 +18,12 @@
     "context-engine",
     "code-search",
     "gemini-embedding",
-    "sqlite-vec"
+    "sqlite-vec",
+    "cli",
+    "code-navigation",
+    "python",
+    "golang",
+    "rust"
   ],
   "bin": {
     "scythe-context-mcp": "dist/index.js",

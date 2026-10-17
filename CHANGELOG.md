@@ -6,6 +6,18 @@ This project follows semantic versioning before npm publication where practical.
 
 ## [Unreleased]
 
+### Added
+
+- Add basic local import navigation for Python flat/src packages and relative imports, Go packages within the nearest go.mod module, and conventional Cargo file modules through crate/self/super paths. Preserve unresolved imports and existing JS/TS resolution.
+- Extract aliased/multiline Python imports, Go import blocks, and grouped Rust use statements; classify Python and Go test filenames for navigation and ranking.
+- Add cross-language repository fixtures for source/import line numbers, duplicate test symbols, ignored artifacts, reverse imports, multi-hop navigation, and CLI/MCP keyword result parity.
+- Rebuild package edges after Go manifest changes while retaining unchanged source chunk ids. Document language coverage and the remaining parser/runtime limitations.
+
+### Upgrade
+
+- After upgrading to 0.1.19, refresh each existing project's metadata once, even if status reports fresh: `scythe-context index --project /absolute/path/to/repo`. MCP users can call `repo_reindex` with `dry_run=false` and `index_embeddings=false` on the upgraded server. No new embeddings or schema migration are required.
+- Import navigation provides source-file hints; it does not resolve compiler-level symbols, dynamic imports, Go workspaces/replacements, or Rust macros/custom module paths. See [language support and limits](https://github.com/Lianye-Scythe/scythe-context-mcp/blob/v0.1.19/docs/language-support.md).
+
 ## [0.1.18] - 2026-10-18
 
 ### Added
