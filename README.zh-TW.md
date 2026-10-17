@@ -17,6 +17,30 @@ Scythe Context MCP 協助 Codex 在不知道檔案位置時找到程式碼。它
 
 專案已有搜尋 benchmark 與整合測試，但這些結果**不能證明** MCP 能提高 GPT‑6.1 Sol 任務完成率、速度或降低整體 token 用量。請參閱 [benchmark](docs/benchmark.md) 與[任務 A/B 評估流程](docs/codex-evaluation.md)。
 
+## CLI＋Skill（同一個套件）
+
+從 0.1.18 起，同一個 `scythe-context-mcp` npm 套件提供 `scythe-context` CLI 與原有 MCP 入口。安裝一次後，可選擇 CLI＋Skill、MCP，或同時使用。從原始碼使用時，先執行 `npm run build`，再將下列 `scythe-context` 換成 `node /absolute/path/to/scythe-context-mcp/dist/command.js`。
+
+```bash
+npm install -g scythe-context-mcp@0.1.18
+scythe-context status
+# 只在 metadata 索引缺失或過期時執行：
+scythe-context index
+scythe-context search "登入驗證在哪裡處理？"
+scythe-context context "登入驗證在哪裡處理？" --format compact
+scythe-context related src/auth.ts
+scythe-context doctor
+```
+
+CLI 的 search/context 預設使用本機 `keyword` 模式，只回傳路徑與行號；MCP 維持原有的 `hybrid` 預設。兩個介面共用參數驗證、索引、搜尋、fallback 與回傳格式處理；更換介面本身不會提高檢索準確度。
+
+以 `--project /absolute/repo/path` 覆寫預設專案。搜尋加上 `--json` 可取得結構化結果；status/index/related/doctor 預設就輸出 JSON。`--format` 控制詳細程度（search/context 使用 `paths`、`compact`、`snippets`，其他命令使用 `compact`、`full`）。`--output /absolute/result.json` 將結構化結果存成檔案，只印出路徑，方便按需讀取。其他預算與選項見 `--help`。搜尋無結果或 hybrid fallback 時 exit code 為 0；操作失敗或查找時缺少索引則回傳非零。doctor 有 error 時回傳非零，只有 warning 時回傳 0。
+
+需要語意搜尋時，明確使用 `index --embeddings`，以及 `search`／`context --mode hybrid` 或 `--mode semantic`；這些操作會將 chunks 或查詢送至設定的 endpoint。`index --dry-run` 只預覽 metadata 索引，不寫入，也不呼叫 embedding。
+
+套件內的 [Skill](skills/scythe-context/SKILL.md) 說明何時搜尋、讀取檔案範圍、更新索引及使用 embeddings。將 `skills/scythe-context/` 複製至 agent 的技能目錄即可供它探索；CLI 也必須在該 agent 的執行環境中可用。目前不會自動安裝 Skill。`scythe-context` 無參數時顯示 help；`scythe-context-mcp` 無參數時仍啟動 MCP stdio。兩個入口都接受上述子命令，也能以 `serve` 明確啟動 MCP。
+
+
 ## 快速開始：本機搜尋
 
 需要 Node.js 24.11+，支援範圍為 `>=24.11.0 <27`；Node.js 24 是已測試的基準。Node 與 npm 應在 MCP server 所用的同一環境中執行。

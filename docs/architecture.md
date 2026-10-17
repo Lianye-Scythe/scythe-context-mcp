@@ -1,23 +1,29 @@
 # Architecture
 
-Status: current implementation, reviewed against version 0.1.15 on 2026-10-11. Start with [setup](setup.md) for installation or the [documentation index](README.md) for other guides. Early proposals are preserved in the [archive](archive/README.md).
+Status: current implementation, reviewed against version 0.1.18 on 2026-10-18. Start with [setup](setup.md) for installation or the [documentation index](README.md) for other guides. Early proposals are preserved in the [archive](archive/README.md).
 
 ## Responsibilities
 
-Scythe scans and indexes one target repository, retrieves code, and returns navigation context through a local MCP stdio server. Codex decides when to call tools, reads the returned file ranges, edits code, and runs validation. The embedding endpoint creates vectors when requested; its data handling is governed by that service, not by Scythe.
+Scythe scans and indexes one target repository, retrieves code, and returns navigation context through CLI commands and a local MCP stdio server. Codex decides when to call tools, reads the returned file ranges, edits code, and runs validation. The embedding endpoint creates vectors when requested; its data handling is governed by that service, not by Scythe.
 
 ## Repository map
 
 ```text
 src/
-  index.ts               MCP stdio startup and server instructions
-  cli.ts                 CLI flags and package version
+  index.ts               Legacy MCP entrypoint (no arguments starts stdio)
+  command.ts             CLI entrypoint (no arguments shows help)
+  main.ts                Shared dispatch with lazy runtime imports
+  mcp.ts                 MCP stdio startup and server instructions
+  cli.ts                 Argument parsing, help, and package version
+  cliRunner.ts           CLI execution, text output, and JSON file output
+  core/operations.ts     Shared schemas and operation workflows
   config.ts              Environment settings and project selection
-  tools/                 MCP schemas, handlers, diagnostics, response shaping
+  tools/                 MCP registration adapter, diagnostics, response shaping
   indexing/              Scanning, chunking, indexing, retrieval, related files
     experimental/        Optional tree-sitter structure extraction
   providers/             Gemini-compatible REST adapter and capability cache
   storage/               SQLite schema and sqlite-vec integration
+skills/scythe-context/    Packaged CLI usage skill
 benchmarks/              Retrieval cases and reranking profiles
 scripts/                 Build helpers, benchmark and release commands
 .github/                 CI, publication, and contribution templates
@@ -26,6 +32,10 @@ docs/                    Current guides and evaluation records
 ```
 
 Tests live beside the implementation as `*.test.ts`; TypeScript excludes them from `dist/`. Runtime dependencies, native modules, and index data belong to the environment that runs the MCP server.
+
+## Interface boundaries
+
+`core/operations.ts` owns operation schemas, defaults, validation, and execution. It does not import the MCP SDK. `tools/registerTools.ts` wraps the shared operations as MCP text responses; the CLI invokes them directly without starting or connecting to MCP. Both npm binaries ship in one package. CLI search/context explicitly select keyword and paths-only defaults; MCP retains its existing defaults. CLI errors use nonzero exit codes, and optional JSON files let agents read detailed output selectively. The packaged skill is installed separately into the consuming agent's skill directory.
 
 ## Indexing flow
 
@@ -46,7 +56,7 @@ Embedding sets distinguish provider, endpoint, model, and dimensions. Index meta
 ## Retrieval and context packing
 
 - `keyword` uses local FTS and code-aware reranking without embedding requests.
-- `hybrid`, the default mode, merges vector and keyword candidates, then applies optional local reranking. Query embedding failures fall back to keyword and report the reason.
+- `hybrid`, the MCP default mode, merges vector and keyword candidates, then applies optional local reranking. Query embedding failures fall back to keyword and report the reason.
 - `semantic` uses vector retrieval and returns an error on embedding failure.
 
 The merge uses distance/rank and keyword contributions, followed by path, symbol, dependency, and query-intent signals. It is not the fixed percentage formula proposed in the original design. See [hybridSearch.ts](../src/indexing/hybridSearch.ts) and [codeAwareReranker.ts](../src/indexing/codeAwareReranker.ts).

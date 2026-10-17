@@ -17,6 +17,30 @@ Scythe Context MCP helps Codex find code when the file location is unknown. It i
 
 The project has retrieval benchmarks and integration tests. These do **not** establish that MCP improves GPT‑6.1 Sol task completion, speed, or total token use. See the [benchmark](docs/benchmark.md) and [task A/B protocol (Traditional Chinese)](docs/codex-evaluation.md).
 
+## CLI + Skill (same package)
+
+Starting with 0.1.18, the `scythe-context-mcp` npm package provides both a `scythe-context` CLI and the existing MCP entrypoint. Install once and choose CLI + Skill, MCP, or both. For a source checkout, run `npm run build` and substitute `node /absolute/path/to/scythe-context-mcp/dist/command.js` for `scythe-context` below.
+
+```bash
+npm install -g scythe-context-mcp@0.1.18
+scythe-context status
+# Run only when metadata is missing or stale:
+scythe-context index
+scythe-context search "where is auth token validation handled?"
+scythe-context context "where is auth token validation handled?" --format compact
+scythe-context related src/auth.ts
+scythe-context doctor
+```
+
+CLI search/context default to local `keyword` mode and paths-only output. MCP retains its existing `hybrid` default. Both interfaces share validation, indexing, search, fallback, and response shaping; changing the interface does not improve retrieval accuracy by itself.
+
+Use `--project /absolute/repo/path` to override the configured project. Add `--json` for structured search/context results; status/index/related/doctor already return JSON. `--format` controls detail (`paths`, `compact`, `snippets` for search/context; `compact`, `full` for other commands). `--output /absolute/result.json` saves the structured payload and prints its path for selective reading. `--help` lists budgets and other options. Exit code 0 includes empty searches and hybrid fallback; errors and missing lookup indexes return nonzero. `doctor` returns nonzero on error, while warnings return 0.
+
+For semantic retrieval, explicitly use `index --embeddings` and `search`/`context --mode hybrid` or `--mode semantic`. These send chunks or queries to the configured endpoint. `index --dry-run` previews metadata indexing without writing or calling embeddings.
+
+The packaged [Skill](skills/scythe-context/SKILL.md) teaches an agent when to search, read ranges, refresh metadata, and use embeddings. Copy the `skills/scythe-context/` folder into your agent's skill directory to enable discovery; the CLI must be available in that agent's execution environment. There is no automatic skill installation. `scythe-context` without arguments shows help; `scythe-context-mcp` without arguments continues to start MCP stdio. Either entrypoint accepts the subcommands above, and `serve` explicitly starts MCP.
+
+
 ## Quick start: local search
 
 Requires Node.js 24.11+ within the supported range `>=24.11.0 <27`; Node.js 24 is the tested baseline. Run Node and npm in the same environment as the MCP server.

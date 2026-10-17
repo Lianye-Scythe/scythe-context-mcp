@@ -6,6 +6,12 @@ This project follows semantic versioning before npm publication where practical.
 
 ## [Unreleased]
 
+### Added
+
+- Add a `scythe-context` CLI in the existing npm package with status, index, search, context, related, and doctor commands, local keyword defaults, structured output, and optional result files.
+- Package a Scythe Context skill for selective code lookup and explicit embedding use; preserve the existing MCP binary and defaults while sharing operation schemas and workflows.
+- Cover CLI argument errors, process-level local indexing/search, import navigation, output files, explicit embeddings, and hybrid fallback alongside existing MCP integration tests.
+
 ## [0.1.17] - 2026-10-17
 
 ### Maintenance

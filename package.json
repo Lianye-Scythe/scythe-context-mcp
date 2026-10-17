@@ -21,10 +21,12 @@
     "sqlite-vec"
   ],
   "bin": {
-    "scythe-context-mcp": "dist/index.js"
+    "scythe-context-mcp": "dist/index.js",
+    "scythe-context": "dist/command.js"
   },
   "files": [
     "dist",
+    "skills",
     "README.md",
     "README.zh-TW.md",
     "README.zh-CN.md",
@@ -54,7 +56,7 @@
     "dev": "tsx src/index.ts",
     "prepack": "npm run build",
     "release:prepare": "node scripts/prepare-release.mjs",
-    "smoke": "node dist/index.js --version && node dist/index.js --help",
+    "smoke": "node dist/index.js --version && node dist/index.js --help && node dist/command.js --version && node dist/command.js --help",
     "test": "vitest run",
     "typecheck": "tsc -p tsconfig.json --noEmit",
     "verify": "npm test && npm run build && node scripts/bin-mode.mjs check && npm run smoke && npm audit --omit=dev && npm pack --dry-run"

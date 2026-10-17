@@ -3,7 +3,7 @@
     "id": "embedding-fallback",
     "query": "embedding unavailable should fall back to keyword-only context pack",
     "expectedPaths": [
-      "src/tools/registerTools.ts",
+      "src/core/operations.ts",
       "src/indexing/hybridSearch.ts"
     ],
     "notes": "Task-style query for the hybrid-to-keyword fallback path.",
@@ -130,7 +130,7 @@
     "id": "register-repo-doctor-tool",
     "query": "where is repo_doctor registered as an MCP tool",
     "expectedPaths": [
-      "src/tools/registerTools.ts",
+      "src/core/operations.ts",
       "src/tools/doctor.ts"
     ],
     "notes": "Exact tool wiring lookup.",
@@ -142,7 +142,7 @@
     "id": "server-instructions-rg-vs-context",
     "query": "server instructions tell Codex when to use Scythe Context and when rg is better",
     "expectedPaths": [
-      "src/index.ts",
+      "src/mcp.ts",
       "README.md",
       "docs/codex-integration.md"
     ],
@@ -233,7 +233,7 @@
     "query": "include related snippets for non-primary related files in context pack",
     "expectedPaths": [
       "src/indexing/relatedSnippets.ts",
-      "src/tools/registerTools.ts",
+      "src/core/operations.ts",
       "src/indexing/contextPack.test.ts"
     ],
     "notes": "Related context expansion query.",
@@ -389,7 +389,7 @@
     "expectedPaths": [
       "src/providers/capabilities.ts",
       "src/providers/capabilities.test.ts",
-      "src/tools/registerTools.ts",
+      "src/core/operations.ts",
       "src/tools/doctor.ts"
     ],
     "notes": "Provider capability persistence and diagnostics.",
@@ -402,7 +402,7 @@
     "id": "gemini-probe-writes-capabilities",
     "query": "Gemini embedding probe should cache provider capabilities after a successful single embedding request",
     "expectedPaths": [
-      "src/tools/registerTools.ts",
+      "src/core/operations.ts",
       "src/providers/capabilities.ts",
       "src/providers/gemini.ts"
     ],
@@ -430,7 +430,7 @@
     "id": "fallback-when-query-embedding-fails",
     "query": "context pack should degrade to keyword results when query embedding is unavailable in hybrid mode",
     "expectedPaths": [
-      "src/tools/registerTools.ts",
+      "src/core/operations.ts",
       "src/indexing/hybridSearch.ts",
       "README.md"
     ],
@@ -444,7 +444,7 @@
     "id": "semantic-mode-no-keyword-fallback",
     "query": "semantic search mode should return embedding unavailable instead of keyword fallback",
     "expectedPaths": [
-      "src/tools/registerTools.ts",
+      "src/core/operations.ts",
       "src/indexing/semanticSearch.ts",
       "README.md"
     ],
@@ -499,7 +499,7 @@
     "expectedPaths": [
       "src/indexing/indexStatus.ts",
       "src/indexing/indexStatus.test.ts",
-      "src/tools/registerTools.ts"
+      "src/core/operations.ts"
     ],
     "notes": "Freshness diagnostics in status tool.",
     "tags": [
@@ -565,7 +565,7 @@
     "expectedPaths": [
       "src/indexing/resultFormat.ts",
       "src/indexing/resultFormat.test.ts",
-      "src/tools/registerTools.ts"
+      "src/core/operations.ts"
     ],
     "notes": "Formatted search response budgeting.",
     "tags": [
@@ -577,7 +577,7 @@
     "query": "related snippets should obey per file and total related context budget",
     "expectedPaths": [
       "src/indexing/relatedSnippets.ts",
-      "src/tools/registerTools.ts",
+      "src/core/operations.ts",
       "src/indexing/contextPack.test.ts"
     ],
     "notes": "Secondary context packing controls.",
@@ -589,7 +589,7 @@
     "id": "context-pack-seed-related-depth",
     "query": "context pack should use seed files related depth and related item limits",
     "expectedPaths": [
-      "src/tools/registerTools.ts",
+      "src/core/operations.ts",
       "src/indexing/contextPack.ts",
       "src/indexing/relatedFiles.ts"
     ],
@@ -711,7 +711,7 @@
     "expectedPaths": [
       "src/providers/gemini.ts",
       "src/providers/gemini.test.ts",
-      "src/tools/registerTools.ts"
+      "src/core/operations.ts"
     ],
     "notes": "Provider error safety.",
     "tags": [
@@ -775,7 +775,7 @@
     "id": "server-instructions-first-512",
     "query": "MCP server instructions should tell Codex when to use context pack semantic search related files and rg",
     "expectedPaths": [
-      "src/index.ts",
+      "src/mcp.ts",
       "AGENTS.md",
       "README.md"
     ],
