@@ -6,6 +6,8 @@ This project follows semantic versioning before npm publication where practical.
 
 ## [Unreleased]
 
+## [0.1.18] - 2026-10-18
+
 ### Added
 
 - Add a `scythe-context` CLI in the existing npm package with status, index, search, context, related, and doctor commands, local keyword defaults, structured output, and optional result files.
