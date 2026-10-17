@@ -6,6 +6,8 @@ This project follows semantic versioning before npm publication where practical.
 
 ## [Unreleased]
 
+## [0.1.20] - 2026-10-18
+
 ### Added
 
 - Add basic C++ namespace/type/function/method extraction and exact file-relative quoted include navigation, with unresolved system/macro hints, fixtures, CLI/MCP parity, and documented compiler/build-system limits.
