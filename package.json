@@ -1,6 +1,6 @@
 {
   "name": "scythe-context-mcp",
-  "version": "0.1.20",
+  "version": "0.1.21",
   "description": "Local code search and import navigation via CLI + Skill or MCP, with optional Gemini embeddings.",
   "type": "module",
   "license": "Apache-2.0",

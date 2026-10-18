@@ -6,6 +6,8 @@ This project follows semantic versioning before npm publication where practical.
 
 ## [Unreleased]
 
+## [0.1.21] - 2026-10-18
+
 ### Fixed
 
 - Recover indexed exact-name declarations hidden by frequent usage/test matches during automatic keyword/hybrid reranking, with bounded candidates and previews anchored to declaration lines. Preserve existing visible candidates and the rerank-off path.
