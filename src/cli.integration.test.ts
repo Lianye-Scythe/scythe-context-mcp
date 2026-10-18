@@ -114,7 +114,7 @@ describe("CLI real process workflow", () => {
     const semantic = await cli(["search", "validateToken", "--mode=semantic", "--json"], commandPath, changed);
     expect(semantic.code).toBe(0);
     expect(JSON.parse(semantic.stdout).results.map((result: { path: string }) => result.path)).toEqual(["app.ts"]);
-  });
+  }, 20_000); // This lifecycle intentionally starts multiple real CLI processes.
 
   it("reports absent or incompatible vectors without sending a query", async () => {
     await index();
