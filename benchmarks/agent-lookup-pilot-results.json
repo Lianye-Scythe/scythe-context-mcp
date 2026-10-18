@@ -1,0 +1,1023 @@
+{
+  "recordedOn": "2026-10-18",
+  "scope": "Read-only agent lookup pilot: four pinned public source subtrees, three task types, one fresh session per group/task. Not a code-editing or statistically conclusive study.",
+  "model": "gpt-6.1-sol",
+  "reasoning": "medium",
+  "codexVersion": "codex-cli 0.163.0",
+  "engineCommit": "c7d64842f1f22a547a43d6d3c748e0b2113d49e8",
+  "manifestHash": "cb27425d6cea394bf1e5ec4ca429e0c27e337d59622c3c46ccff8b2042b99bd2",
+  "driverHash": "1417dbd90364fa741c91dfa86a1ff7131fbe9ede2c20dfeb965d605259d33f9f",
+  "quotaBlockedAttemptsRetainedSeparately": 31,
+  "summary": {
+    "groups": {
+      "rg": {
+        "n": 12,
+        "evidencePassed": 11,
+        "medianSeconds": 15.03,
+        "medianCommands": 2.0,
+        "totalCommands": 32,
+        "medianOutputChars": 3447.0,
+        "inputTokens": 789034,
+        "cachedInputTokens": 556288,
+        "outputTokens": 3462,
+        "medianInputTokens": 53264.5,
+        "medianCachedInputTokens": 46912.0,
+        "medianOutputTokens": 256.5,
+        "scytheCalls": 0,
+        "hybridQueries": 0
+      },
+      "keyword": {
+        "n": 12,
+        "evidencePassed": 12,
+        "medianSeconds": 15.93,
+        "medianCommands": 2.0,
+        "totalCommands": 29,
+        "medianOutputChars": 3208.0,
+        "inputTokens": 735278,
+        "cachedInputTokens": 556032,
+        "outputTokens": 3488,
+        "medianInputTokens": 53256.5,
+        "medianCachedInputTokens": 47040.0,
+        "medianOutputTokens": 279.5,
+        "scytheCalls": 8,
+        "hybridQueries": 0
+      },
+      "hybrid": {
+        "n": 12,
+        "evidencePassed": 11,
+        "medianSeconds": 14.9,
+        "medianCommands": 2.0,
+        "totalCommands": 31,
+        "medianOutputChars": 2701.5,
+        "inputTokens": 770323,
+        "cachedInputTokens": 563072,
+        "outputTokens": 3595,
+        "medianInputTokens": 53282.0,
+        "medianCachedInputTokens": 38528.0,
+        "medianOutputTokens": 294.0,
+        "scytheCalls": 8,
+        "hybridQueries": 8
+      }
+    },
+    "byKind": {
+      "identifier": {
+        "rg": {
+          "n": 4,
+          "evidencePassed": 3,
+          "medianSeconds": 13.4,
+          "medianCommands": 2.0,
+          "totalCommands": 8,
+          "medianOutputChars": 2208.5,
+          "inputTokens": 209713,
+          "cachedInputTokens": 127616,
+          "outputTokens": 1055,
+          "medianInputTokens": 52309.0,
+          "medianCachedInputTokens": 31936.0,
+          "medianOutputTokens": 243.5,
+          "scytheCalls": 0,
+          "hybridQueries": 0
+        },
+        "keyword": {
+          "n": 4,
+          "evidencePassed": 4,
+          "medianSeconds": 14.94,
+          "medianCommands": 2.0,
+          "totalCommands": 8,
+          "medianOutputChars": 2065.5,
+          "inputTokens": 209615,
+          "cachedInputTokens": 149120,
+          "outputTokens": 1058,
+          "medianInputTokens": 52472.0,
+          "medianCachedInputTokens": 34176.0,
+          "medianOutputTokens": 263.0,
+          "scytheCalls": 0,
+          "hybridQueries": 0
+        },
+        "hybrid": {
+          "n": 4,
+          "evidencePassed": 3,
+          "medianSeconds": 13.53,
+          "medianCommands": 2.0,
+          "totalCommands": 8,
+          "medianOutputChars": 2107.0,
+          "inputTokens": 209681,
+          "cachedInputTokens": 144512,
+          "outputTokens": 1001,
+          "medianInputTokens": 52517.5,
+          "medianCachedInputTokens": 34048.0,
+          "medianOutputTokens": 236.0,
+          "scytheCalls": 0,
+          "hybridQueries": 0
+        }
+      },
+      "natural": {
+        "rg": {
+          "n": 4,
+          "evidencePassed": 4,
+          "medianSeconds": 13.33,
+          "medianCommands": 2.0,
+          "totalCommands": 9,
+          "medianOutputChars": 2649.0,
+          "inputTokens": 230378,
+          "cachedInputTokens": 181120,
+          "outputTokens": 1033,
+          "medianInputTokens": 54076.5,
+          "medianCachedInputTokens": 47744.0,
+          "medianOutputTokens": 256.5,
+          "scytheCalls": 0,
+          "hybridQueries": 0
+        },
+        "keyword": {
+          "n": 4,
+          "evidencePassed": 4,
+          "medianSeconds": 15.17,
+          "medianCommands": 2.0,
+          "totalCommands": 9,
+          "medianOutputChars": 4267.0,
+          "inputTokens": 233405,
+          "cachedInputTokens": 181888,
+          "outputTokens": 1136,
+          "medianInputTokens": 54063.5,
+          "medianCachedInputTokens": 47232.0,
+          "medianOutputTokens": 278.0,
+          "scytheCalls": 4,
+          "hybridQueries": 0
+        },
+        "hybrid": {
+          "n": 4,
+          "evidencePassed": 4,
+          "medianSeconds": 14.71,
+          "medianCommands": 2.0,
+          "totalCommands": 9,
+          "medianOutputChars": 3217.5,
+          "inputTokens": 231184,
+          "cachedInputTokens": 168576,
+          "outputTokens": 1168,
+          "medianInputTokens": 53505.0,
+          "medianCachedInputTokens": 40896.0,
+          "medianOutputTokens": 294.0,
+          "scytheCalls": 4,
+          "hybridQueries": 4
+        }
+      },
+      "paraphrase": {
+        "rg": {
+          "n": 4,
+          "evidencePassed": 4,
+          "medianSeconds": 21.53,
+          "medianCommands": 4.0,
+          "totalCommands": 15,
+          "medianOutputChars": 6849.5,
+          "inputTokens": 348943,
+          "cachedInputTokens": 247552,
+          "outputTokens": 1374,
+          "medianInputTokens": 94448.0,
+          "medianCachedInputTokens": 63360.0,
+          "medianOutputTokens": 383.5,
+          "scytheCalls": 0,
+          "hybridQueries": 0
+        },
+        "keyword": {
+          "n": 4,
+          "evidencePassed": 4,
+          "medianSeconds": 18.02,
+          "medianCommands": 3.0,
+          "totalCommands": 12,
+          "medianOutputChars": 6175.5,
+          "inputTokens": 292258,
+          "cachedInputTokens": 225024,
+          "outputTokens": 1294,
+          "medianInputTokens": 73617.0,
+          "medianCachedInputTokens": 59392.0,
+          "medianOutputTokens": 325.5,
+          "scytheCalls": 4,
+          "hybridQueries": 0
+        },
+        "hybrid": {
+          "n": 4,
+          "evidencePassed": 4,
+          "medianSeconds": 20.65,
+          "medianCommands": 4.0,
+          "totalCommands": 14,
+          "medianOutputChars": 6279.0,
+          "inputTokens": 329458,
+          "cachedInputTokens": 249984,
+          "outputTokens": 1426,
+          "medianInputTokens": 92009.5,
+          "medianCachedInputTokens": 71808.0,
+          "medianOutputTokens": 361.0,
+          "scytheCalls": 4,
+          "hybridQueries": 4
+        }
+      }
+    },
+    "initialization": {
+      "vectorsReused": true,
+      "coldEmbeddingSeconds": null,
+      "coldEmbeddingBilling": null,
+      "metadataCold": {
+        "flask": {
+          "seconds": 0.19257326199999994,
+          "stats": {
+            "scannedFiles": 26,
+            "indexedFiles": 26,
+            "skippedFiles": 0,
+            "chunks": 106,
+            "bytes": 348137,
+            "symbols": 478,
+            "dependencies": 394,
+            "chunkedFiles": 26,
+            "reusedChunkFiles": 0,
+            "repairedFtsRows": 0
+          }
+        },
+        "fastify": {
+          "seconds": 0.17778750200000001,
+          "stats": {
+            "scannedFiles": 31,
+            "indexedFiles": 31,
+            "skippedFiles": 0,
+            "chunks": 83,
+            "bytes": 249592,
+            "symbols": 790,
+            "dependencies": 117,
+            "chunkedFiles": 31,
+            "reusedChunkFiles": 0,
+            "repairedFtsRows": 0
+          }
+        },
+        "globset": {
+          "seconds": 0.14661317600000007,
+          "stats": {
+            "scannedFiles": 11,
+            "indexedFiles": 11,
+            "skippedFiles": 0,
+            "chunks": 39,
+            "bytes": 120291,
+            "symbols": 388,
+            "dependencies": 69,
+            "chunkedFiles": 11,
+            "reusedChunkFiles": 0,
+            "repairedFtsRows": 0
+          }
+        },
+        "security": {
+          "seconds": 0.1177522469999999,
+          "stats": {
+            "scannedFiles": 10,
+            "indexedFiles": 10,
+            "skippedFiles": 0,
+            "chunks": 13,
+            "bytes": 26668,
+            "symbols": 50,
+            "dependencies": 46,
+            "chunkedFiles": 10,
+            "reusedChunkFiles": 0,
+            "repairedFtsRows": 0
+          }
+        }
+      },
+      "coverage": {
+        "flask": {
+          "embeddingSetId": 1,
+          "provider": "gemini",
+          "model": "gemini-embedding-2",
+          "dimensions": 1536,
+          "embeddings": 106,
+          "chunks": 106,
+          "missingChunks": 0
+        },
+        "fastify": {
+          "embeddingSetId": 1,
+          "provider": "gemini",
+          "model": "gemini-embedding-2",
+          "dimensions": 1536,
+          "embeddings": 83,
+          "chunks": 83,
+          "missingChunks": 0
+        },
+        "globset": {
+          "embeddingSetId": 1,
+          "provider": "gemini",
+          "model": "gemini-embedding-2",
+          "dimensions": 1536,
+          "embeddings": 39,
+          "chunks": 39,
+          "missingChunks": 0
+        },
+        "security": {
+          "embeddingSetId": 1,
+          "provider": "gemini",
+          "model": "gemini-embedding-2",
+          "dimensions": 1536,
+          "embeddings": 13,
+          "chunks": 13,
+          "missingChunks": 0
+        }
+      }
+    }
+  },
+  "cells": [
+    {
+      "id": "flask-identifier-rg",
+      "task": "flask-identifier",
+      "kind": "identifier",
+      "group": "rg",
+      "wallSeconds": 11.383416758,
+      "commandCalls": 2,
+      "capturedCommandOutputChars": 1426,
+      "usage": {
+        "input_tokens": 52039,
+        "cached_input_tokens": 29824,
+        "cache_write_input_tokens": 0,
+        "output_tokens": 242,
+        "reasoning_output_tokens": 0
+      },
+      "evidenceChecksPassed": true,
+      "failedChecks": [],
+      "semanticAnswerCorrect": true
+    },
+    {
+      "id": "flask-identifier-keyword",
+      "task": "flask-identifier",
+      "kind": "identifier",
+      "group": "keyword",
+      "wallSeconds": 13.393652728000001,
+      "commandCalls": 2,
+      "capturedCommandOutputChars": 1062,
+      "usage": {
+        "input_tokens": 52016,
+        "cached_input_tokens": 33920,
+        "cache_write_input_tokens": 0,
+        "output_tokens": 244,
+        "reasoning_output_tokens": 0
+      },
+      "evidenceChecksPassed": true,
+      "failedChecks": [],
+      "semanticAnswerCorrect": true
+    },
+    {
+      "id": "flask-identifier-hybrid",
+      "task": "flask-identifier",
+      "kind": "identifier",
+      "group": "hybrid",
+      "wallSeconds": 11.307642242999998,
+      "commandCalls": 2,
+      "capturedCommandOutputChars": 744,
+      "usage": {
+        "input_tokens": 51994,
+        "cached_input_tokens": 33920,
+        "cache_write_input_tokens": 0,
+        "output_tokens": 227,
+        "reasoning_output_tokens": 0
+      },
+      "evidenceChecksPassed": true,
+      "failedChecks": [],
+      "semanticAnswerCorrect": true
+    },
+    {
+      "id": "flask-natural-keyword",
+      "task": "flask-natural",
+      "kind": "natural",
+      "group": "keyword",
+      "wallSeconds": 16.714356758,
+      "commandCalls": 3,
+      "capturedCommandOutputChars": 4489,
+      "usage": {
+        "input_tokens": 72329,
+        "cached_input_tokens": 52992,
+        "cache_write_input_tokens": 0,
+        "output_tokens": 316,
+        "reasoning_output_tokens": 0
+      },
+      "evidenceChecksPassed": true,
+      "failedChecks": [],
+      "semanticAnswerCorrect": true
+    },
+    {
+      "id": "flask-natural-hybrid",
+      "task": "flask-natural",
+      "kind": "natural",
+      "group": "hybrid",
+      "wallSeconds": 14.321751103000002,
+      "commandCalls": 2,
+      "capturedCommandOutputChars": 4367,
+      "usage": {
+        "input_tokens": 53522,
+        "cached_input_tokens": 34432,
+        "cache_write_input_tokens": 0,
+        "output_tokens": 290,
+        "reasoning_output_tokens": 0
+      },
+      "evidenceChecksPassed": true,
+      "failedChecks": [],
+      "semanticAnswerCorrect": true
+    },
+    {
+      "id": "flask-natural-rg",
+      "task": "flask-natural",
+      "kind": "natural",
+      "group": "rg",
+      "wallSeconds": 13.481354192000001,
+      "commandCalls": 2,
+      "capturedCommandOutputChars": 3275,
+      "usage": {
+        "input_tokens": 52708,
+        "cached_input_tokens": 34176,
+        "cache_write_input_tokens": 0,
+        "output_tokens": 266,
+        "reasoning_output_tokens": 0
+      },
+      "evidenceChecksPassed": true,
+      "failedChecks": [],
+      "semanticAnswerCorrect": true
+    },
+    {
+      "id": "flask-paraphrase-hybrid",
+      "task": "flask-paraphrase",
+      "kind": "paraphrase",
+      "group": "hybrid",
+      "wallSeconds": 21.719568446,
+      "commandCalls": 4,
+      "capturedCommandOutputChars": 6927,
+      "usage": {
+        "input_tokens": 92236,
+        "cached_input_tokens": 71936,
+        "cache_write_input_tokens": 0,
+        "output_tokens": 340,
+        "reasoning_output_tokens": 12
+      },
+      "evidenceChecksPassed": true,
+      "failedChecks": [],
+      "semanticAnswerCorrect": true
+    },
+    {
+      "id": "flask-paraphrase-rg",
+      "task": "flask-paraphrase",
+      "kind": "paraphrase",
+      "group": "rg",
+      "wallSeconds": 15.467726288000005,
+      "commandCalls": 2,
+      "capturedCommandOutputChars": 6712,
+      "usage": {
+        "input_tokens": 53473,
+        "cached_input_tokens": 33920,
+        "cache_write_input_tokens": 0,
+        "output_tokens": 203,
+        "reasoning_output_tokens": 0
+      },
+      "evidenceChecksPassed": true,
+      "failedChecks": [],
+      "semanticAnswerCorrect": true
+    },
+    {
+      "id": "flask-paraphrase-keyword",
+      "task": "flask-paraphrase",
+      "kind": "paraphrase",
+      "group": "keyword",
+      "wallSeconds": 16.903521271000006,
+      "commandCalls": 3,
+      "capturedCommandOutputChars": 6417,
+      "usage": {
+        "input_tokens": 72437,
+        "cached_input_tokens": 52736,
+        "cache_write_input_tokens": 0,
+        "output_tokens": 301,
+        "reasoning_output_tokens": 0
+      },
+      "evidenceChecksPassed": true,
+      "failedChecks": [],
+      "semanticAnswerCorrect": true
+    },
+    {
+      "id": "fastify-identifier-rg",
+      "task": "fastify-identifier",
+      "kind": "identifier",
+      "group": "rg",
+      "wallSeconds": 14.593310562,
+      "commandCalls": 2,
+      "capturedCommandOutputChars": 2337,
+      "usage": {
+        "input_tokens": 52334,
+        "cached_input_tokens": 34048,
+        "cache_write_input_tokens": 0,
+        "output_tokens": 332,
+        "reasoning_output_tokens": 0
+      },
+      "evidenceChecksPassed": true,
+      "failedChecks": [],
+      "semanticAnswerCorrect": true
+    },
+    {
+      "id": "fastify-identifier-keyword",
+      "task": "fastify-identifier",
+      "kind": "identifier",
+      "group": "keyword",
+      "wallSeconds": 13.181582894000007,
+      "commandCalls": 2,
+      "capturedCommandOutputChars": 2327,
+      "usage": {
+        "input_tokens": 52546,
+        "cached_input_tokens": 34304,
+        "cache_write_input_tokens": 0,
+        "output_tokens": 277,
+        "reasoning_output_tokens": 0
+      },
+      "evidenceChecksPassed": true,
+      "failedChecks": [],
+      "semanticAnswerCorrect": true
+    },
+    {
+      "id": "fastify-identifier-hybrid",
+      "task": "fastify-identifier",
+      "kind": "identifier",
+      "group": "hybrid",
+      "wallSeconds": 13.08204891299999,
+      "commandCalls": 2,
+      "capturedCommandOutputChars": 2492,
+      "usage": {
+        "input_tokens": 52591,
+        "cached_input_tokens": 34048,
+        "cache_write_input_tokens": 0,
+        "output_tokens": 219,
+        "reasoning_output_tokens": 0
+      },
+      "evidenceChecksPassed": false,
+      "failedChecks": [
+        "groundedQuote"
+      ],
+      "semanticAnswerCorrect": true
+    },
+    {
+      "id": "fastify-natural-keyword",
+      "task": "fastify-natural",
+      "kind": "natural",
+      "group": "keyword",
+      "wallSeconds": 14.729603848999991,
+      "commandCalls": 2,
+      "capturedCommandOutputChars": 4045,
+      "usage": {
+        "input_tokens": 53564,
+        "cached_input_tokens": 47232,
+        "cache_write_input_tokens": 0,
+        "output_tokens": 274,
+        "reasoning_output_tokens": 0
+      },
+      "evidenceChecksPassed": true,
+      "failedChecks": [],
+      "semanticAnswerCorrect": true
+    },
+    {
+      "id": "fastify-natural-hybrid",
+      "task": "fastify-natural",
+      "kind": "natural",
+      "group": "hybrid",
+      "wallSeconds": 15.097630749000004,
+      "commandCalls": 3,
+      "capturedCommandOutputChars": 2546,
+      "usage": {
+        "input_tokens": 71162,
+        "cached_input_tokens": 52352,
+        "cache_write_input_tokens": 0,
+        "output_tokens": 309,
+        "reasoning_output_tokens": 0
+      },
+      "evidenceChecksPassed": true,
+      "failedChecks": [],
+      "semanticAnswerCorrect": true
+    },
+    {
+      "id": "fastify-natural-rg",
+      "task": "fastify-natural",
+      "kind": "natural",
+      "group": "rg",
+      "wallSeconds": 20.02299199500002,
+      "commandCalls": 3,
+      "capturedCommandOutputChars": 2023,
+      "usage": {
+        "input_tokens": 69953,
+        "cached_input_tokens": 51456,
+        "cache_write_input_tokens": 0,
+        "output_tokens": 257,
+        "reasoning_output_tokens": 0
+      },
+      "evidenceChecksPassed": true,
+      "failedChecks": [],
+      "semanticAnswerCorrect": true
+    },
+    {
+      "id": "fastify-paraphrase-hybrid",
+      "task": "fastify-paraphrase",
+      "kind": "paraphrase",
+      "group": "hybrid",
+      "wallSeconds": 24.458119882,
+      "commandCalls": 4,
+      "capturedCommandOutputChars": 6081,
+      "usage": {
+        "input_tokens": 91783,
+        "cached_input_tokens": 71808,
+        "cache_write_input_tokens": 0,
+        "output_tokens": 432,
+        "reasoning_output_tokens": 25
+      },
+      "evidenceChecksPassed": true,
+      "failedChecks": [],
+      "semanticAnswerCorrect": true
+    },
+    {
+      "id": "fastify-paraphrase-rg",
+      "task": "fastify-paraphrase",
+      "kind": "paraphrase",
+      "group": "rg",
+      "wallSeconds": 28.487857699999992,
+      "commandCalls": 4,
+      "capturedCommandOutputChars": 13517,
+      "usage": {
+        "input_tokens": 96207,
+        "cached_input_tokens": 73728,
+        "cache_write_input_tokens": 0,
+        "output_tokens": 404,
+        "reasoning_output_tokens": 11
+      },
+      "evidenceChecksPassed": true,
+      "failedChecks": [],
+      "semanticAnswerCorrect": true
+    },
+    {
+      "id": "fastify-paraphrase-keyword",
+      "task": "fastify-paraphrase",
+      "kind": "paraphrase",
+      "group": "keyword",
+      "wallSeconds": 19.390041893999996,
+      "commandCalls": 3,
+      "capturedCommandOutputChars": 10385,
+      "usage": {
+        "input_tokens": 74797,
+        "cached_input_tokens": 66048,
+        "cache_write_input_tokens": 0,
+        "output_tokens": 350,
+        "reasoning_output_tokens": 12
+      },
+      "evidenceChecksPassed": true,
+      "failedChecks": [],
+      "semanticAnswerCorrect": true
+    },
+    {
+      "id": "globset-identifier-rg",
+      "task": "globset-identifier",
+      "kind": "identifier",
+      "group": "rg",
+      "wallSeconds": 12.213153850000003,
+      "commandCalls": 2,
+      "capturedCommandOutputChars": 3952,
+      "usage": {
+        "input_tokens": 53056,
+        "cached_input_tokens": 46848,
+        "cache_write_input_tokens": 0,
+        "output_tokens": 245,
+        "reasoning_output_tokens": 0
+      },
+      "evidenceChecksPassed": true,
+      "failedChecks": [],
+      "semanticAnswerCorrect": true
+    },
+    {
+      "id": "globset-identifier-keyword",
+      "task": "globset-identifier",
+      "kind": "identifier",
+      "group": "keyword",
+      "wallSeconds": 16.48094374300001,
+      "commandCalls": 2,
+      "capturedCommandOutputChars": 2371,
+      "usage": {
+        "input_tokens": 52655,
+        "cached_input_tokens": 34048,
+        "cache_write_input_tokens": 0,
+        "output_tokens": 249,
+        "reasoning_output_tokens": 0
+      },
+      "evidenceChecksPassed": true,
+      "failedChecks": [],
+      "semanticAnswerCorrect": true
+    },
+    {
+      "id": "globset-identifier-hybrid",
+      "task": "globset-identifier",
+      "kind": "identifier",
+      "group": "hybrid",
+      "wallSeconds": 13.970952192999947,
+      "commandCalls": 2,
+      "capturedCommandOutputChars": 2400,
+      "usage": {
+        "input_tokens": 52652,
+        "cached_input_tokens": 42496,
+        "cache_write_input_tokens": 0,
+        "output_tokens": 245,
+        "reasoning_output_tokens": 0
+      },
+      "evidenceChecksPassed": true,
+      "failedChecks": [],
+      "validationCorrection": {
+        "originalLookupOperational": false,
+        "reason": "Distinguish an rg exclude glob from a Scythe invocation; original report retained"
+      },
+      "semanticAnswerCorrect": true
+    },
+    {
+      "id": "globset-natural-keyword",
+      "task": "globset-natural",
+      "kind": "natural",
+      "group": "keyword",
+      "wallSeconds": 15.386074285000001,
+      "commandCalls": 2,
+      "capturedCommandOutputChars": 6753,
+      "usage": {
+        "input_tokens": 54563,
+        "cached_input_tokens": 47232,
+        "cache_write_input_tokens": 0,
+        "output_tokens": 282,
+        "reasoning_output_tokens": 0
+      },
+      "evidenceChecksPassed": true,
+      "failedChecks": [],
+      "semanticAnswerCorrect": true
+    },
+    {
+      "id": "globset-natural-hybrid",
+      "task": "globset-natural",
+      "kind": "natural",
+      "group": "hybrid",
+      "wallSeconds": 17.555496209,
+      "commandCalls": 2,
+      "capturedCommandOutputChars": 3889,
+      "usage": {
+        "input_tokens": 53488,
+        "cached_input_tokens": 34560,
+        "cache_write_input_tokens": 0,
+        "output_tokens": 298,
+        "reasoning_output_tokens": 0
+      },
+      "evidenceChecksPassed": true,
+      "failedChecks": [],
+      "semanticAnswerCorrect": true
+    },
+    {
+      "id": "globset-natural-rg",
+      "task": "globset-natural",
+      "kind": "natural",
+      "group": "rg",
+      "wallSeconds": 12.505914882999997,
+      "commandCalls": 2,
+      "capturedCommandOutputChars": 6827,
+      "usage": {
+        "input_tokens": 55445,
+        "cached_input_tokens": 48512,
+        "cache_write_input_tokens": 0,
+        "output_tokens": 256,
+        "reasoning_output_tokens": 0
+      },
+      "evidenceChecksPassed": true,
+      "failedChecks": [],
+      "semanticAnswerCorrect": true
+    },
+    {
+      "id": "globset-paraphrase-hybrid",
+      "task": "globset-paraphrase",
+      "kind": "paraphrase",
+      "group": "hybrid",
+      "wallSeconds": 19.575824471999994,
+      "commandCalls": 4,
+      "capturedCommandOutputChars": 6477,
+      "usage": {
+        "input_tokens": 92363,
+        "cached_input_tokens": 71808,
+        "cache_write_input_tokens": 0,
+        "output_tokens": 382,
+        "reasoning_output_tokens": 0
+      },
+      "evidenceChecksPassed": true,
+      "failedChecks": [],
+      "semanticAnswerCorrect": true
+    },
+    {
+      "id": "globset-paraphrase-rg",
+      "task": "globset-paraphrase",
+      "kind": "paraphrase",
+      "group": "rg",
+      "wallSeconds": 22.840255682999995,
+      "commandCalls": 4,
+      "capturedCommandOutputChars": 6987,
+      "usage": {
+        "input_tokens": 92689,
+        "cached_input_tokens": 52992,
+        "cache_write_input_tokens": 0,
+        "output_tokens": 400,
+        "reasoning_output_tokens": 0
+      },
+      "evidenceChecksPassed": true,
+      "failedChecks": [],
+      "semanticAnswerCorrect": true
+    },
+    {
+      "id": "globset-paraphrase-keyword",
+      "task": "globset-paraphrase",
+      "kind": "paraphrase",
+      "group": "keyword",
+      "wallSeconds": 19.141269444000006,
+      "commandCalls": 4,
+      "capturedCommandOutputChars": 5934,
+      "usage": {
+        "input_tokens": 92154,
+        "cached_input_tokens": 71936,
+        "cache_write_input_tokens": 0,
+        "output_tokens": 383,
+        "reasoning_output_tokens": 0
+      },
+      "evidenceChecksPassed": true,
+      "failedChecks": [],
+      "semanticAnswerCorrect": true
+    },
+    {
+      "id": "security-identifier-rg",
+      "task": "security-identifier",
+      "kind": "identifier",
+      "group": "rg",
+      "wallSeconds": 16.314389015000007,
+      "commandCalls": 2,
+      "capturedCommandOutputChars": 2080,
+      "usage": {
+        "input_tokens": 52284,
+        "cached_input_tokens": 16896,
+        "cache_write_input_tokens": 0,
+        "output_tokens": 236,
+        "reasoning_output_tokens": 0
+      },
+      "evidenceChecksPassed": false,
+      "failedChecks": [
+        "groundedQuote"
+      ],
+      "semanticAnswerCorrect": true
+    },
+    {
+      "id": "security-identifier-keyword",
+      "task": "security-identifier",
+      "kind": "identifier",
+      "group": "keyword",
+      "wallSeconds": 17.039385705999987,
+      "commandCalls": 2,
+      "capturedCommandOutputChars": 1804,
+      "usage": {
+        "input_tokens": 52398,
+        "cached_input_tokens": 46848,
+        "cache_write_input_tokens": 0,
+        "output_tokens": 288,
+        "reasoning_output_tokens": 0
+      },
+      "evidenceChecksPassed": true,
+      "failedChecks": [],
+      "semanticAnswerCorrect": true
+    },
+    {
+      "id": "security-identifier-hybrid",
+      "task": "security-identifier",
+      "kind": "identifier",
+      "group": "hybrid",
+      "wallSeconds": 15.620675101999979,
+      "commandCalls": 2,
+      "capturedCommandOutputChars": 1814,
+      "usage": {
+        "input_tokens": 52444,
+        "cached_input_tokens": 34048,
+        "cache_write_input_tokens": 0,
+        "output_tokens": 310,
+        "reasoning_output_tokens": 0
+      },
+      "evidenceChecksPassed": true,
+      "failedChecks": [],
+      "semanticAnswerCorrect": true
+    },
+    {
+      "id": "security-natural-keyword",
+      "task": "security-natural",
+      "kind": "natural",
+      "group": "keyword",
+      "wallSeconds": 14.955528571000002,
+      "commandCalls": 2,
+      "capturedCommandOutputChars": 2227,
+      "usage": {
+        "input_tokens": 52949,
+        "cached_input_tokens": 34432,
+        "cache_write_input_tokens": 0,
+        "output_tokens": 264,
+        "reasoning_output_tokens": 0
+      },
+      "evidenceChecksPassed": true,
+      "failedChecks": [],
+      "semanticAnswerCorrect": true
+    },
+    {
+      "id": "security-natural-hybrid",
+      "task": "security-natural",
+      "kind": "natural",
+      "group": "hybrid",
+      "wallSeconds": 13.62897219499998,
+      "commandCalls": 2,
+      "capturedCommandOutputChars": 2301,
+      "usage": {
+        "input_tokens": 53012,
+        "cached_input_tokens": 47232,
+        "cache_write_input_tokens": 0,
+        "output_tokens": 271,
+        "reasoning_output_tokens": 0
+      },
+      "evidenceChecksPassed": true,
+      "failedChecks": [],
+      "semanticAnswerCorrect": true
+    },
+    {
+      "id": "security-natural-rg",
+      "task": "security-natural",
+      "kind": "natural",
+      "group": "rg",
+      "wallSeconds": 13.188503222,
+      "commandCalls": 2,
+      "capturedCommandOutputChars": 1556,
+      "usage": {
+        "input_tokens": 52272,
+        "cached_input_tokens": 46976,
+        "cache_write_input_tokens": 0,
+        "output_tokens": 254,
+        "reasoning_output_tokens": 0
+      },
+      "evidenceChecksPassed": true,
+      "failedChecks": [],
+      "semanticAnswerCorrect": true
+    },
+    {
+      "id": "security-paraphrase-hybrid",
+      "task": "security-paraphrase",
+      "kind": "paraphrase",
+      "group": "hybrid",
+      "wallSeconds": 14.697315864999982,
+      "commandCalls": 2,
+      "capturedCommandOutputChars": 2857,
+      "usage": {
+        "input_tokens": 53076,
+        "cached_input_tokens": 34432,
+        "cache_write_input_tokens": 0,
+        "output_tokens": 272,
+        "reasoning_output_tokens": 0
+      },
+      "evidenceChecksPassed": true,
+      "failedChecks": [],
+      "semanticAnswerCorrect": true
+    },
+    {
+      "id": "security-paraphrase-rg",
+      "task": "security-paraphrase",
+      "kind": "paraphrase",
+      "group": "rg",
+      "wallSeconds": 20.215367284999985,
+      "commandCalls": 5,
+      "capturedCommandOutputChars": 3619,
+      "usage": {
+        "input_tokens": 106574,
+        "cached_input_tokens": 86912,
+        "cache_write_input_tokens": 0,
+        "output_tokens": 367,
+        "reasoning_output_tokens": 0
+      },
+      "evidenceChecksPassed": true,
+      "failedChecks": [],
+      "semanticAnswerCorrect": true
+    },
+    {
+      "id": "security-paraphrase-keyword",
+      "task": "security-paraphrase",
+      "kind": "paraphrase",
+      "group": "keyword",
+      "wallSeconds": 14.005430335999991,
+      "commandCalls": 2,
+      "capturedCommandOutputChars": 2244,
+      "usage": {
+        "input_tokens": 52870,
+        "cached_input_tokens": 34304,
+        "cache_write_input_tokens": 0,
+        "output_tokens": 260,
+        "reasoning_output_tokens": 0
+      },
+      "evidenceChecksPassed": true,
+      "failedChecks": [],
+      "semanticAnswerCorrect": true
+    }
+  ],
+  "semanticReview": {
+    "reviewer": "parent implementation agent, not blinded or independent",
+    "correctAnswers": 36,
+    "total": 36,
+    "quoteFormatFailures": [
+      "fastify-identifier-hybrid",
+      "security-identifier-rg"
+    ]
+  }
+}

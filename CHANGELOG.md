@@ -13,6 +13,8 @@ This project follows semantic versioning before npm publication where practical.
 
 ### Added
 
+- Add a manual source-checkout agent lookup pilot for rg, keyword and hybrid workflows, with fixed public-source tasks, fresh sessions, actual client token usage and source-grounding checks.
+
 - Add a source-checkout-only hybrid fusion experiment comparing the current merge, RRF and score-scaled RRF with shared vector/keyword candidates, fixed public-source cases and file-rank metrics. Production search defaults remain unchanged.
 
 ### Changed

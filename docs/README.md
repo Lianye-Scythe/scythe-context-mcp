@@ -28,6 +28,7 @@ Setup is the source for configuration examples. Troubleshooting links to those e
 - [Config-driven navigation](config-navigation.md): local TS/JS paths and Cargo target contexts, scope and fixed GitHub cases.
 - [Index performance](index-performance.md): synthetic indexing/search latency, process memory, and chunk reuse measurements.
 - [Dogfood evaluation](dogfood.md): repository-specific observations, not a controlled model productivity study.
+- [Agent lookup pilot](agent-lookup-pilot.md): measured rg/keyword/hybrid workflow usage on 12 read-only tasks; exploratory, not a coding-productivity claim.
 - [Codex task A/B protocol](codex-evaluation.md) (Traditional Chinese): how to measure real task outcomes.
 - [Dependency maintenance policy and PR cleanup](dependency-maintenance.md): automation scope and the 2026-10-12 dependency update.
 - [Dependency security maintenance](dependency-security.md): audit and dependency review dated 2026-10-11.

@@ -4,6 +4,8 @@ This is a retrieval-quality regression benchmark, not a universal benchmark for 
 
 For broader claims, run the same methods against external repositories with their own case files. Keep those results separate from the bundled project-local report.
 
+For the smaller read-only agent comparison, see the [lookup pilot](agent-lookup-pilot.md), including actual client usage and initialization limits.
+
 For actual GPT‑6.1 Sol task completion, use the [Codex task A/B evaluation protocol](codex-evaluation.md). The `rg-smart` baseline here is a fixed algorithm, not Codex iteratively choosing searches. Output tokens are JSON character-based estimates, not measured model usage. The local benchmark calls search/formatting functions directly; MCP transport and remote embedding latency are not included in local-method timings.
 
 For indexing latency and memory measurements, see the separate [index performance benchmark](index-performance.md).

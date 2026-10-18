@@ -1,0 +1,167 @@
+{
+  "scope": "Read-only agent lookup pilot: four pinned public source subtrees, three task types, one fresh session per group/task. Not a code-editing or statistically conclusive study.",
+  "repositories": [
+    {
+      "name": "flask",
+      "repo": "pallets/flask",
+      "commit": "d086db856be187255b8ec61ef409357393020f32",
+      "sourceRoot": "src/flask",
+      "tasks": [
+        {
+          "id": "flask-identifier",
+          "kind": "identifier",
+          "prompt": "What does get_load_dotenv return when FLASK_SKIP_DOTENV is unset or empty, and which nonempty values enable loading?",
+          "expectedFile": "src/flask/helpers.py",
+          "expectedSymbol": "get_load_dotenv",
+          "evidenceAnchors": [
+            "return default",
+            "\"0\", \"false\", \"no\""
+          ]
+        },
+        {
+          "id": "flask-natural",
+          "kind": "natural",
+          "prompt": "Find the decorator that makes the current request context available to a background function. When is the context copied, and what happens if there was no active context when the decorator was applied?",
+          "expectedFile": "src/flask/ctx.py",
+          "expectedSymbol": "copy_current_request_context",
+          "evidenceAnchors": [
+            "original.copy()",
+            "raise RuntimeError"
+          ]
+        },
+        {
+          "id": "flask-paraphrase",
+          "kind": "paraphrase",
+          "prompt": "Find the helper that locates the on-disk home of an imported package. If import discovery provides no loader, what directory does it choose?",
+          "expectedFile": "src/flask/helpers.py",
+          "expectedSymbol": "get_root_path",
+          "evidenceAnchors": [
+            "if loader is None:",
+            "return os.getcwd()"
+          ]
+        }
+      ]
+    },
+    {
+      "name": "fastify",
+      "repo": "fastify/fastify",
+      "commit": "e03b48ba3cd92dcbdafcb624579318e0f22176d2",
+      "sourceRoot": "lib",
+      "tasks": [
+        {
+          "id": "fastify-identifier",
+          "kind": "identifier",
+          "prompt": "In validateParam, how is an undefined request value passed to the validator, and what status code is assigned if it throws synchronously?",
+          "expectedFile": "lib/validation.js",
+          "expectedSymbol": "validateParam",
+          "evidenceAnchors": [
+            "value === undefined ? null : value",
+            "err.statusCode = 500"
+          ]
+        },
+        {
+          "id": "fastify-natural",
+          "kind": "natural",
+          "prompt": "Find the response sending method that prevents sending a reply twice. What does it do and return if the reply was already sent?",
+          "expectedFile": "lib/reply.js",
+          "expectedSymbol": "Reply.prototype.send",
+          "evidenceAnchors": [
+            "this.sent === true",
+            "FST_ERR_REP_ALREADY_SENT",
+            "return this"
+          ]
+        },
+        {
+          "id": "fastify-paraphrase",
+          "kind": "paraphrase",
+          "prompt": "Find how the incoming media-type dispatch picks a body decoder. Does an exact MIME string take priority over parameter-stripped and regexp matching?",
+          "expectedFile": "lib/content-type-parser.js",
+          "expectedSymbol": "ContentTypeParser.prototype.getParser",
+          "evidenceAnchors": [
+            "this.customParsers.get(ct)"
+          ]
+        }
+      ]
+    },
+    {
+      "name": "globset",
+      "repo": "BurntSushi/ripgrep",
+      "commit": "3fce3b5bb0236da2df6d99672afb8a719642eca7",
+      "sourceRoot": "crates/globset",
+      "tasks": [
+        {
+          "id": "globset-identifier",
+          "kind": "identifier",
+          "prompt": "In file_name_ext, does the returned extension include the dot, and does a dot-prefixed name like .rs have an extension?",
+          "expectedFile": "crates/globset/src/pathutil.rs",
+          "expectedSymbol": "file_name_ext",
+          "evidenceAnchors": [
+            "&name[last_dot_at..]"
+          ]
+        },
+        {
+          "id": "globset-natural",
+          "kind": "natural",
+          "prompt": "Find the code that normalizes path separators. Explain how the Unix and non-Unix versions differ and whether borrowed data is copied when a change is needed.",
+          "expectedFile": "crates/globset/src/pathutil.rs",
+          "expectedSymbol": "normalize_path",
+          "evidenceAnchors": [
+            "path.to_mut()[i] = b'/'"
+          ]
+        },
+        {
+          "id": "globset-paraphrase",
+          "kind": "paraphrase",
+          "prompt": "Find how a serialized wildcard string is turned back into a pattern object. Is the text parsed and checked, or just stored, and how is a parsing error converted?",
+          "expectedFile": "crates/globset/src/serde_impl.rs",
+          "expectedSymbol": "visit_str",
+          "evidenceAnchors": [
+            "Glob::new(v).map_err(serde::de::Error::custom)"
+          ]
+        }
+      ]
+    },
+    {
+      "name": "security",
+      "repo": "pocketbase/pocketbase",
+      "commit": "6f370ea741f33adf889eef02e3c1b884a47aa522",
+      "sourceRoot": "tools/security",
+      "tasks": [
+        {
+          "id": "security-identifier",
+          "kind": "identifier",
+          "prompt": "In ParseJWT, which signing algorithm is accepted, and what two conditions are required to return claims successfully?",
+          "expectedFile": "tools/security/jwt.go",
+          "expectedSymbol": "ParseJWT",
+          "evidenceAnchors": [
+            "\"HS256\"",
+            "ok && parsedToken.Valid"
+          ]
+        },
+        {
+          "id": "security-natural",
+          "kind": "natural",
+          "prompt": "Find the helper that decrypts a base64 ciphertext. Where does it take the nonce from, and which operation authenticates and decrypts the remaining bytes?",
+          "expectedFile": "tools/security/encrypt.go",
+          "expectedSymbol": "Decrypt",
+          "evidenceAnchors": [
+            "cipherByte[:nonceSize]",
+            "gcm.Open(nil, nonce, cipherByteClean, nil)"
+          ]
+        },
+        {
+          "id": "security-paraphrase",
+          "kind": "paraphrase",
+          "prompt": "Find the OAuth proof helper that transforms an authorization verifier for transmission. What digest and encoding does it use, and how is padding handled?",
+          "expectedFile": "tools/security/crypto.go",
+          "expectedSymbol": "S256Challenge",
+          "evidenceAnchors": [
+            "sha256.New()",
+            "base64.URLEncoding",
+            "\"=\""
+          ]
+        }
+      ]
+    }
+  ]
+}
