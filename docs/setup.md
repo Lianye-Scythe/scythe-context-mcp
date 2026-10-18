@@ -2,6 +2,8 @@
 
 Start with the [README](../README.md) for local search without an API key. This guide covers CLI + Skill, platform-specific MCP launches, and optional provider settings.
 
+For client-specific Skill locations, MCP registration commands and observed compatibility, see [Codex CLI, Claude Code and Antigravity CLI integration](client-integration.md).
+
 ## CLI + Skill: local search first
 
 Install the package in the environment where your agent runs shell commands, then use a target repository's path:

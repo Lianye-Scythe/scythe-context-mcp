@@ -6,6 +6,7 @@ Start with the [English README](../README.md), [Traditional Chinese](../README.z
 
 | Goal | Read |
 | --- | --- |
+| Install Skills and configure Codex CLI, Claude Code or Antigravity CLI | [Client integration and verification](client-integration.md) |
 | Choose CLI + Skill or MCP and configure Windows, WSL, Linux, or macOS | [Setup and advanced configuration](setup.md) |
 | Diagnose startup, native modules, provider, or index failures | [Troubleshooting](troubleshooting.md) |
 | Check language and project-reference navigation coverage | [Language support and limits](language-support.md) |

@@ -124,6 +124,7 @@ Embeddings 需要 Gemini-compatible endpoint。建立向量時會發送程式碼
 
 ## 更多資訊
 
+- [客戶端設定：Codex CLI、Claude Code、Antigravity CLI（英文）](docs/client-integration.md)
 - [文件索引](docs/README.md) · [設定與指令參考](docs/setup.md) · [疑難排解](docs/troubleshooting.md)
 - [架構（英文）](docs/architecture.md) · [流程驗證與剩餘限制（英文）](docs/retrieval-workflow-audit.md)
 - [更新紀錄](CHANGELOG.md) · [貢獻與原始碼開發](CONTRIBUTING.md) · [發布流程](docs/release.md)

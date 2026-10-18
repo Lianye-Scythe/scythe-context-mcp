@@ -1,10 +1,10 @@
 # Codex Integration
 
-Status: integration notes reviewed on 2026-10-11. Installation examples live in [setup](setup.md); first-run checks and failure recovery live in [troubleshooting](troubleshooting.md).
+Status: integration notes reviewed on 2026-10-18. CLI + Skill setup and the observed Codex CLI lookup are documented in the [client integration guide](client-integration.md). The MCP details below apply when that interface is chosen. Installation examples live in [setup](setup.md); first-run checks and failure recovery live in [troubleshooting](troubleshooting.md).
 
 ## Transport and configuration
 
-Scythe is a local stdio MCP server. Codex starts the configured command and communicates over stdin/stdout; no hosted MCP endpoint is required. Node and native SQLite dependencies must run in the environment where they were installed.
+Scythe provides a CLI and a local stdio MCP server. The same packaged Skill supports terminal and App agents that can discover it and run the CLI. For MCP, Codex starts the configured command and communicates over stdin/stdout; no hosted MCP endpoint is required. Node and native SQLite dependencies must run in the environment where they were installed.
 
 Codex MCP configuration uses `command`, `args`, optional `cwd`, `env`, and `env_vars`. Consult the official [MCP documentation](https://developers.openai.com/codex/mcp) and [configuration reference](https://developers.openai.com/codex/config-reference) for current host behavior. This repository's [Windows/WSL wrapper](setup.md#windows-codex-app--wsl-repo) has been tested with Codex App; that observation does not establish compatibility for every App version or setup.
 

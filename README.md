@@ -124,6 +124,7 @@ See [semantic search, credentials, updates, and privacy](docs/semantic-search.md
 
 ## More information
 
+- [Client setup: Codex CLI, Claude Code, Antigravity CLI](docs/client-integration.md)
 - [Documentation index](docs/README.md) · [Setup and command reference](docs/setup.md) · [Troubleshooting](docs/troubleshooting.md)
 - [Architecture](docs/architecture.md) · [Workflow verification and remaining limits](docs/retrieval-workflow-audit.md)
 - [Changelog](CHANGELOG.md) · [Contributing and source development](CONTRIBUTING.md) · [Release process](docs/release.md)
