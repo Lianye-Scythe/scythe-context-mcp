@@ -45,13 +45,26 @@ Exit code 0 includes successful empty searches and reported hybrid fallback. Non
 
 ## Optional embeddings
 
-Use embeddings when semantic retrieval is needed and sending the relevant text to the configured endpoint is within the task's scope:
+Choose the retrieval mode by the lookup need, not by whether an API key is configured. CLI search/context remain `keyword` by default; a key does not automatically select hybrid or build code embeddings.
+
+| Lookup need | Preferred action |
+| --- | --- |
+| Exact identifier, error message, or literal | Use `rg`. |
+| Likely source terms, with ranked results or related context needed | Use `keyword`. |
+| Functional description with unknown implementation wording | Use `hybrid` directly when usable code embeddings exist and sending the query is within scope. |
+| Keyword results are insufficient because relevant code may use different terms | Try `hybrid` under the same conditions. |
+| Enough relevant code has been located | Read the matching ranges; skip another retrieval pass. |
+
+Before relying on hybrid, inspect `status` for index freshness and embeddings matching the configured provider/model/dimensions. Coverage may be partial; a configured key alone does not provide code vectors. Without usable vectors, continue local lookup unless embedding indexing is justified and within scope. Do not automatically embed the entire repository for a one-off search or to satisfy a coverage recommendation in the status output.
+
+With usable vectors and remote query transmission within scope:
 
 ```bash
-scythe-context index --embeddings
-scythe-context context "authentication flow" --mode hybrid --format compact
+scythe-context context "temporarily block login after repeated failures" --mode hybrid --format compact --max-results 3
 ```
+
+When creating or refreshing code embeddings is warranted and sending the indexed source is within scope, use `scythe-context index --embeddings`. Query transmission and source-chunk transmission are separate decisions.
 
 `index --embeddings` sends indexed chunks; hybrid and semantic lookup send query text. The configured Gemini-compatible service may charge for requests and can see the text. Keep credentials in the environment or a protected local `.env`. Keep `.scythe-context/` and result files containing private code out of commits.
 
-Hybrid lookup reports keyword fallback if query embedding fails. Semantic mode returns an error instead. Embedding coverage may be partial; inspect `status` before relying on vector retrieval.
+Hybrid lookup reports keyword fallback if query embedding fails; inspect the reported effective mode rather than assuming vector retrieval succeeded. Semantic mode returns an error instead. Do not repeat the same remote query without addressing the failure. Use explicit `--mode keyword` for local lookup, including when credentials are present.

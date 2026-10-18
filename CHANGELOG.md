@@ -8,6 +8,7 @@ This project follows semantic versioning before npm publication where practical.
 
 ### Changed
 
+- Define keyword/hybrid selection in the CLI Skill based on query wording, usable embedding coverage and permitted data transmission; avoid automatic whole-repository embedding for one-off lookups.
 - Clarify CLI Skill routing between direct reads, `rg`, ranked search and related context; document keyword wording limits and stop searching once enough relevant code is found.
 - Lead the three README languages and package description with local search, import navigation and bounded context. Add an interface comparison and optional semantic-search guide; keep MCP hybrid-default and remote-data disclosures explicit.
 
