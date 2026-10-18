@@ -6,6 +6,8 @@ This project follows semantic versioning before npm publication where practical.
 
 ## [Unreleased]
 
+## [0.1.22] - 2026-10-18
+
 ### Added
 
 - Resolve declared indexed workspace source exports/self-references and workspace config parents without running package code. Select explicit local project references by file/include/exclude selectors; keep conflicting conditions, project overlaps and unavailable targets unresolved.
