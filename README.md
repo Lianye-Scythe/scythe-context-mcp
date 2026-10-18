@@ -31,7 +31,7 @@ Requires Node.js `>=24.11.0 <27` in the environment running Scythe; Node.js 24 i
 The `scythe-context-mcp` npm package provides both a `scythe-context` CLI and the existing MCP entrypoint. Install once and choose CLI + Skill, MCP, or both. For a source checkout, run `npm run build` and substitute `node /absolute/path/to/scythe-context-mcp/dist/command.js` for `scythe-context` below.
 
 ```bash
-npm install -g scythe-context-mcp@0.1.22
+npm install -g scythe-context-mcp@0.1.23
 scythe-context status
 # Run when metadata is missing/stale, or once after upgrading to 0.1.22:
 scythe-context index

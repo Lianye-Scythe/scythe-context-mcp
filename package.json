@@ -1,6 +1,6 @@
 {
   "name": "scythe-context-mcp",
-  "version": "0.1.22",
+  "version": "0.1.23",
   "description": "Local code search, import navigation, and bounded context for coding agents via CLI + Skill or MCP.",
   "type": "module",
   "license": "Apache-2.0",

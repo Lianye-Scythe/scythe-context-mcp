@@ -7,7 +7,7 @@ Start with the [README](../README.md) for local search without an API key. This 
 Install the package in the environment where your agent runs shell commands, then use a target repository's path:
 
 ```bash
-npm install -g scythe-context-mcp@0.1.22
+npm install -g scythe-context-mcp@0.1.23
 scythe-context --version
 scythe-context status --project /absolute/path/to/repo
 scythe-context index --project /absolute/path/to/repo

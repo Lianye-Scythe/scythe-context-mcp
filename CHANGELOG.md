@@ -6,12 +6,13 @@ This project follows semantic versioning before npm publication where practical.
 
 ## [Unreleased]
 
+## [0.1.23] - 2026-10-18
+
 ### Changed
 
 - Define keyword/hybrid selection in the CLI Skill based on query wording, usable embedding coverage and permitted data transmission; avoid automatic whole-repository embedding for one-off lookups.
 - Clarify CLI Skill routing between direct reads, `rg`, ranked search and related context; document keyword wording limits and stop searching once enough relevant code is found.
 - Lead the three README languages and package description with local search, import navigation and bounded context. Add an interface comparison and optional semantic-search guide; keep MCP hybrid-default and remote-data disclosures explicit.
-
 - Regroup TS configuration, project-reference, Cargo and related-navigation tests by responsibility. Keep all 319 cases and existing test assertions; scope temporary-directory setup to filesystem tests.
 - Separate Cargo manifest parsing, workspace edition inheritance, target selection and anchored import resolution into named functions without changing supported resolution rules.
 - Split the navigation evaluation driver into snapshot, indexing, probe, CLI/MCP parity and reporting stages. Validate identical complete reports from the old/new driver across five fixed GitHub snapshots, with no dependency graph changes against published 0.1.22.

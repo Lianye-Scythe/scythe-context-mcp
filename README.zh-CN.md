@@ -31,7 +31,7 @@ Scythe Context MCP 通过 CLI＋Skill 或 MCP，为 coding agent 提供本地代
 同一个 `scythe-context-mcp` npm 包提供 `scythe-context` CLI 和原有 MCP 入口。安装一次后，可选择 CLI＋Skill、MCP，或同时使用。从源码使用时，先执行 `npm run build`，再将下列 `scythe-context` 换成 `node /absolute/path/to/scythe-context-mcp/dist/command.js`。
 
 ```bash
-npm install -g scythe-context-mcp@0.1.22
+npm install -g scythe-context-mcp@0.1.23
 scythe-context status
 # Run when metadata is missing/stale, or once after upgrading to 0.1.22:
 scythe-context index
