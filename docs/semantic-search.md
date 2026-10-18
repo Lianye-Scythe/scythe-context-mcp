@@ -18,6 +18,14 @@ scythe-context context "where is auth token validation handled?" --project /abso
 
 Use `--mode semantic` for vector retrieval without keyword fallback, or `--mode keyword` to search locally. The endpoint creates vectors used by Scythe's retrieval engine.
 
+### Creating and updating code vectors
+
+The packaged Skill guides the agent to prepare vectors when hybrid retrieval is useful, including sustained exploration with unknown implementation terms or keyword misses caused by wording differences. It checks index freshness and embedding coverage first, reuses usable vectors, and can proactively run `index --embeddings` when source transmission and provider usage are already within the task's authorized scope. Credentials alone do not authorize uploading source.
+
+The same command handles initial creation and updates: it refreshes metadata, then embeds chunks missing vectors for the configured endpoint, model and dimensions. Unchanged chunks with existing vectors are reused. New or changed chunks may need new embeddings; metadata-only indexing does not create them. This is an agent workflow, not a background watcher or automatic CLI mode switch.
+
+Use `--max-embedding-chunks` to bound work when appropriate. It limits the number of chunks processed, not provider charges, and processes chunks in file-path/line order rather than by task relevance. A limit or failure can leave partial coverage; inspect the indexing result and status. Do not rebuild before every query or fill the whole repository solely to satisfy a coverage recommendation. For a simple exact lookup, use `rg` or keyword search.
+
 ## MCP setup
 
 Keep `GEMINI_API_KEY` in the environment that starts Codex and forward it to the existing server configuration. Do not commit the key. Then build vectors and use hybrid search:

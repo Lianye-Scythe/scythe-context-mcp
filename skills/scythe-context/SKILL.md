@@ -51,19 +51,27 @@ Choose the retrieval mode by the lookup need, not by whether an API key is confi
 | --- | --- |
 | Exact identifier, error message, or literal | Use `rg`. |
 | Likely source terms, with ranked results or related context needed | Use `keyword`. |
-| Functional description with unknown implementation wording | Use `hybrid` directly when usable code embeddings exist and sending the query is within scope. |
-| Keyword results are insufficient because relevant code may use different terms | Try `hybrid` under the same conditions. |
+| Functional description with unknown implementation wording | Follow the hybrid preparation workflow below, then use `hybrid`. |
+| Keyword results are insufficient because relevant code may use different terms | Follow the same workflow to try `hybrid`. |
 | Enough relevant code has been located | Read the matching ranges; skip another retrieval pass. |
 
-Before relying on hybrid, inspect `status` for index freshness and embeddings matching the configured provider/model/dimensions. Coverage may be partial; a configured key alone does not provide code vectors. Without usable vectors, continue local lookup unless embedding indexing is justified and within scope. Do not automatically embed the entire repository for a one-off search or to satisfy a coverage recommendation in the status output.
+### Prepare or refresh hybrid retrieval
 
-With usable vectors and remote query transmission within scope:
+1. Run `status` to check metadata freshness, chunk counts and embedding sets; use `status --format full` or `doctor` when configuration details are needed. Do not print credentials. Counts alone do not prove that vectors cover current relevant code or match the configured endpoint.
+2. If current vectors are usable for the lookup and query transmission is within scope, search with `--mode hybrid` directly. Do not rebuild vectors before every query.
+3. If vectors are absent, incomplete for the needed code, or source files have changed, decide whether semantic retrieval justifies creating/updating them. Sustained exploration of unfamiliar code with unknown terminology, or repeated keyword misses caused by wording differences, are useful reasons. A precise one-off lookup or an index coverage recommendation alone is not.
+4. When justified, credentials are available, and the task permits transmitting the indexed source and incurring provider usage, proactively run `index --embeddings` to create or refresh vectors. Continue under existing authorization; ask only if a required data-transmission or cost decision is unresolved. Preview unfamiliar indexing scope with `index --dry-run` when needed, and use `--max-embedding-chunks` to bound the job to a task-appropriate budget. The limit caps chunk count, not monetary cost, and does not select files by relevance.
+5. Check the indexing result and `status` before hybrid lookup. Metadata refresh happens before missing-vector indexing; unchanged chunks with existing vectors are reused for the configured endpoint/model/dimensions. Job limits or failures may leave partial coverage. Use hybrid with that limitation when useful, or continue with keyword/direct reads. Do not loop to fill all vectors unless the task warrants it, and do not repeat a failed API operation without addressing its cause.
+
+If source transmission or provider usage is outside scope, continue local lookup. A configured API key by itself is not authorization to upload source. Query transmission and source-chunk transmission are separate decisions.
+
+When step 4 applies, prepare embeddings before the query; otherwise use existing usable vectors:
 
 ```bash
+# Only when creation/update is justified and source transmission is in scope:
+scythe-context index --embeddings
 scythe-context context "temporarily block login after repeated failures" --mode hybrid --format compact --max-results 3
 ```
-
-When creating or refreshing code embeddings is warranted and sending the indexed source is within scope, use `scythe-context index --embeddings`. Query transmission and source-chunk transmission are separate decisions.
 
 `index --embeddings` sends indexed chunks; hybrid and semantic lookup send query text. The configured Gemini-compatible service may charge for requests and can see the text. Keep credentials in the environment or a protected local `.env`. Keep `.scythe-context/` and result files containing private code out of commits.
 

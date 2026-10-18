@@ -6,6 +6,10 @@ This project follows semantic versioning before npm publication where practical.
 
 ## [Unreleased]
 
+### Changed
+
+- Clarify Skill-driven initial embedding creation and incremental refresh before hybrid lookup, including existing authorization, job budgets, vector reuse, partial coverage and failure handling. Document the same workflow in the semantic-search guide.
+
 ## [0.1.23] - 2026-10-18
 
 ### Changed
