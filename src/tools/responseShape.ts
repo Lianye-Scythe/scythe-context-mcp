@@ -102,10 +102,14 @@ function compactProviderCapabilities(capabilities: unknown): unknown {
     dimensions: record.dimensions,
     authMode: record.authMode,
     batchEmbedding: record.batchEmbedding,
+    batchEmbeddingVerified: record.batchEmbeddingVerified,
     outputDimensionality: record.outputDimensionality,
     lastErrorType: record.lastErrorType,
     lastHttpStatus: record.lastHttpStatus,
     lastRetryable: record.lastRetryable,
+    lastErrorReason: record.lastErrorReason,
+    lastRetryAfterMs: record.lastRetryAfterMs,
+    lastAttempts: record.lastAttempts,
   };
 }
 
@@ -124,6 +128,15 @@ export function shapeReindexPayload(payloadInput: object, mode: ReindexResponseM
     stats,
     skippedSummary: summarizeSkipped(payload.skipped),
   };
+
+  if (payload.status === "embedding_unavailable") {
+    shaped.error = payload.error;
+    shaped.embeddingProgress = payload.embeddingProgress;
+    shaped.embeddingCoverage = payload.embeddingCoverage;
+    shaped.providerCapabilities = compactProviderCapabilities(payload.providerCapabilities);
+    shaped.recommendedNextActions = payload.recommendedNextActions;
+    return withResponseStats(shaped);
+  }
 
   if (embeddings) {
     shaped.embeddings = {

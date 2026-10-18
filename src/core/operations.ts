@@ -6,7 +6,7 @@ import { sha256Hex } from "../indexing/hash.js";
 import type { AppConfig } from "../config.js";
 import { buildContextPack } from "../indexing/contextPack.js";
 import { reindexDryRun } from "../indexing/dryRun.js";
-import { indexMissingEmbeddings } from "../indexing/embeddingWriter.js";
+import { EmbeddingIndexError, indexMissingEmbeddings } from "../indexing/embeddingWriter.js";
 import { searchHybrid, searchKeywordOnly } from "../indexing/hybridSearch.js";
 import { getEmbeddingCoverage, readDetailedIndexStatus, readIndexFreshness, recommendedNextActions } from "../indexing/indexStatus.js";
 import { persistentReindexMetadata } from "../indexing/indexWriter.js";
@@ -63,6 +63,9 @@ interface EmbeddingFailureDetails {
   httpStatus?: number;
   retryable: boolean;
   bodySnippet?: string;
+  reason?: string;
+  attempts?: number;
+  retryAfterMs?: number;
 }
 
 function searchIndexedChunks(options: {
@@ -180,6 +183,9 @@ function embeddingFailureDetails(error: unknown): EmbeddingFailureDetails {
     httpStatus: geminiError?.status,
     retryable: geminiError?.retryable ?? false,
     bodySnippet: geminiError?.bodySnippet,
+    reason: geminiError?.reason ?? "indexing_error",
+    attempts: geminiError?.attempts,
+    retryAfterMs: geminiError?.retryAfterMs,
   };
 }
 
@@ -190,6 +196,9 @@ function embeddingFailureCapabilityUpdate(error: unknown, now = new Date().toISO
     lastErrorType: details.type,
     lastHttpStatus: details.httpStatus,
     lastRetryable: details.retryable,
+    lastErrorReason: details.reason,
+    lastRetryAfterMs: details.retryAfterMs,
+    lastAttempts: details.attempts,
   };
 }
 
@@ -496,8 +505,21 @@ export function createOperations(config: AppConfig) {
           lastSuccessAt: new Date().toISOString(),
         });
       } catch (error) {
-        updateProviderCapability(indexPath, capabilityKey, embeddingFailureCapabilityUpdate(error));
-        throw error;
+        const cause = error instanceof EmbeddingIndexError ? error.providerError : error;
+        const failedCapabilities = updateProviderCapability(indexPath, capabilityKey, embeddingFailureCapabilityUpdate(cause));
+        return shapeReindexPayload({
+          ...metadataResult,
+          status: "embedding_unavailable",
+          error: embeddingFailureDetails(cause),
+          embeddingProgress: error instanceof EmbeddingIndexError ? error.progress : undefined,
+          embeddingCoverage: getEmbeddingCoverage(readDetailedIndexStatus(metadataResult.dbPath), embeddingSet),
+          providerCapabilities: failedCapabilities,
+          recommendedNextActions: [
+            "Metadata and saved vectors remain usable for keyword search.",
+            "For rate limits, wait for the indicated retry delay or check provider quotas before resuming.",
+            "Run repo_index_status, then reindex with index_embeddings=true to resume only missing vectors.",
+          ],
+        }, response_mode);
       }
 
       return shapeReindexPayload(

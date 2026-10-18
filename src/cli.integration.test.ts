@@ -17,6 +17,7 @@ let projectPath: string;
 let upstream: Server;
 let requests: number;
 let upstreamFails: boolean;
+let failureStatus: number;
 let env: NodeJS.ProcessEnv;
 
 function cli(args: string[], entry = commandPath, overrides: NodeJS.ProcessEnv = {}) {
@@ -35,12 +36,16 @@ beforeEach(async () => {
   await fs.writeFile(path.join(projectPath, "app.ts"), 'import { validateToken } from "./auth.js";\nexport const valid = validateToken("example");\n');
   requests = 0;
   upstreamFails = false;
+  failureStatus = 503;
   upstream = createServer(async (request, response) => {
     requests++;
     const buffers = [];
     for await (const chunk of request) buffers.push(chunk);
     const body = JSON.parse(Buffer.concat(buffers).toString());
-    response.writeHead(upstreamFails ? 503 : 200, { "content-type": "application/json" });
+    response.writeHead(upstreamFails ? failureStatus : 200, {
+      "content-type": "application/json",
+      ...(upstreamFails && failureStatus === 429 ? { "Retry-After": "60" } : {}),
+    });
     response.end(JSON.stringify(upstreamFails ? { error: { message: "Unavailable" } } : request.url?.endsWith(":batchEmbedContents")
       ? { embeddings: body.requests.map(() => ({ values: [1, 0, 0] })) }
       : { embedding: { values: [1, 0, 0] } }));
@@ -68,6 +73,38 @@ async function index() {
 }
 
 describe("CLI real process workflow", () => {
+  it("exposes a long rate-limit delay and resumable progress through CLI and MCP without poisoning batch support", async () => {
+    upstreamFails = true;
+    failureStatus = 429;
+    const command = await cli(["index", "--embeddings", "--json"]);
+    expect(command.code).toBe(1);
+    const failed = JSON.parse(command.stdout);
+    expect(failed.error).toMatchObject({ reason: "rate_limited", retryAfterMs: 60000, attempts: 1 });
+    expect(failed.embeddingProgress).toMatchObject({ embeddedChunks: 0, remainingChunks: 2 });
+    expect(failed.providerCapabilities.batchEmbedding).toBe("unknown");
+    expect(requests).toBe(1);
+    const client = new Client({ name: "index-rate-limit", version: "1.0.0" });
+    const transport = new StdioClientTransport({
+      command: process.execPath, args: ["--import", loader, mcpPath], cwd: projectPath,
+      env: Object.fromEntries(Object.entries(env).filter((entry): entry is [string, string] => entry[1] !== undefined)), stderr: "pipe",
+    });
+    try {
+      await client.connect(transport);
+      const result = await client.callTool({ name: "repo_reindex", arguments: { dry_run: false, index_embeddings: true } });
+      expect(result.isError).toBe(true);
+      const payload = JSON.parse((result.content as Array<{ text: string }>)[0].text);
+      expect(payload.error).toEqual(failed.error);
+      expect(payload.embeddingCoverage).toMatchObject({ embeddings: 0, missingChunks: 2 });
+      expect(payload.providerCapabilities.lastErrorReason).toBe("rate_limited");
+      expect(requests).toBe(2);
+    } finally { await client.close(); }
+    upstreamFails = false;
+    const resumed = await cli(["index", "--embeddings", "--json"]);
+    expect(resumed.code).toBe(0);
+    expect(JSON.parse(resumed.stdout).embeddings.stats.embeddedChunks).toBe(2);
+    expect(JSON.parse((await cli(["status"])).stdout).embeddingCoverage.missingChunks).toBe(0);
+  }, 20_000);
+
   it("creates, resumes and refreshes vectors incrementally and preserves metadata after provider failure", async () => {
     const first = await cli(["index", "--embeddings", "--max-embedding-chunks=1", "--json"]);
     expect(first.code).toBe(0);
@@ -86,6 +123,12 @@ describe("CLI real process workflow", () => {
     upstreamFails = true;
     const interrupted = await cli(["index", "--embeddings", "--json"]);
     expect(interrupted.code).toBe(1);
+    const failed = JSON.parse(interrupted.stdout);
+    expect(failed.status).toBe("embedding_unavailable");
+    expect(failed.error).toMatchObject({ httpStatus: 503, reason: "http_error", retryable: true, attempts: 3 });
+    expect(failed.embeddingProgress).toMatchObject({ embeddedChunks: 0, remainingChunks: 1 });
+    expect(failed.embeddingCoverage).toMatchObject({ embeddings: 1, missingChunks: 1 });
+    expect(failed.providerCapabilities.batchEmbedding).toBe("supported");
     const afterFailure = JSON.parse((await cli(["status"])).stdout);
     expect(afterFailure.freshness.status).toBe("fresh");
     expect(afterFailure.embeddingCoverage).toMatchObject({ embeddings: 1, missingChunks: 1 });

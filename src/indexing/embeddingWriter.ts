@@ -1,6 +1,6 @@
 import Database from "better-sqlite3";
 import { sha256Hex } from "./hash.js";
-import type { EmbeddingProvider, EmbeddingRequest, EmbeddingResult } from "../providers/types.js";
+import { EmbeddingProviderError, type EmbeddingProvider, type EmbeddingRequest, type EmbeddingResult } from "../providers/types.js";
 import type { ProviderCapabilityRecord } from "../providers/capabilities.js";
 import {
   getOrCreateEmbeddingRecord,
@@ -19,8 +19,8 @@ export interface EmbeddingIndexOptions {
   batchSize: number;
   maxChunks?: number;
   provider: EmbeddingProvider;
-  capabilities?: Pick<ProviderCapabilityRecord, "batchEmbedding">;
-  onCapabilitiesUpdated?: (update: Pick<ProviderCapabilityRecord, "batchEmbedding">) => void;
+  capabilities?: Pick<ProviderCapabilityRecord, "batchEmbedding" | "batchEmbeddingVerified">;
+  onCapabilitiesUpdated?: (update: Pick<ProviderCapabilityRecord, "batchEmbedding" | "batchEmbeddingVerified">) => void;
 }
 
 export interface EmbeddingIndexResult {
@@ -66,33 +66,10 @@ function chunkArray<T>(items: T[], batchSize: number): T[][] {
   return batches;
 }
 
-async function embedWithFallback(
-  provider: EmbeddingProvider,
-  requests: EmbeddingRequest[],
-  options: {
-    skipBatch: boolean;
-    onBatchEmbeddingSupport?: (support: "supported" | "unsupported") => void;
-  },
-): Promise<{ results: EmbeddingResult[]; usedFallback: boolean }> {
-  if (options.skipBatch) {
-    const results: EmbeddingResult[] = [];
-    for (const request of requests) {
-      results.push(await provider.embed(request));
-    }
-    return { results, usedFallback: true };
-  }
-
-  try {
-    const results = await provider.embedBatch(requests);
-    options.onBatchEmbeddingSupport?.("supported");
-    return { results, usedFallback: false };
-  } catch (error) {
-    options.onBatchEmbeddingSupport?.("unsupported");
-    const results: EmbeddingResult[] = [];
-    for (const request of requests) {
-      results.push(await provider.embed(request));
-    }
-    return { results, usedFallback: true };
+export class EmbeddingIndexError extends Error {
+  constructor(readonly providerError: unknown, readonly progress: { pendingChunks: number; embeddedChunks: number; remainingChunks: number }) {
+    super(providerError instanceof Error ? providerError.message : "Embedding indexing failed", { cause: providerError });
+    this.name = "EmbeddingIndexError";
   }
 }
 
@@ -105,6 +82,7 @@ export async function indexMissingEmbeddings(options: EmbeddingIndexOptions): Pr
   let embeddedChunks = 0;
   let batchFallbacks = 0;
   let batches = 0;
+  let pendingCount = 0;
 
   try {
     initializeStorageSchema(db, { vectorDimensions: options.dimensions });
@@ -131,6 +109,7 @@ export async function indexMissingEmbeddings(options: EmbeddingIndexOptions): Pr
       `)
       .all({ embeddingSetId, maxChunks: options.maxChunks }) as PendingChunk[];
 
+    pendingCount = pendingChunks.length;
     const vectorTable = vectorTableName(options.dimensions);
     const deleteVector = db.prepare(`delete from ${vectorTable} where rowid = ?`);
     const insertVector = db.prepare(`insert into ${vectorTable}(rowid, embedding) values (?, ?)`);
@@ -140,26 +119,43 @@ export async function indexMissingEmbeddings(options: EmbeddingIndexOptions): Pr
       insertVector.run(BigInt(embeddingId), vectorToFloat32Buffer(vector, options.dimensions));
     });
 
+    const persist = (chunk: PendingChunk, result: EmbeddingResult) => {
+      if (result.dimensions !== options.dimensions) {
+        throw new Error(`Embedding dimensions mismatch for chunk ${chunk.id}: expected ${options.dimensions}, got ${result.dimensions}`);
+      }
+      writeEmbedding(chunk.id, result.vector);
+      embeddedChunks += 1;
+    };
+    // Legacy unsupported observations could have been caused by any transient error.
+    let skipBatch = options.capabilities?.batchEmbedding === "unsupported" && options.capabilities.batchEmbeddingVerified === true;
+    let verifyUnsupported = false;
     for (const batch of chunkArray(pendingChunks, options.batchSize)) {
       batches += 1;
-      const { results, usedFallback } = await embedWithFallback(
-        options.provider,
-        batch.map((chunk) => toEmbeddingRequest(chunk)),
-        {
-          skipBatch: options.capabilities?.batchEmbedding === "unsupported",
-          onBatchEmbeddingSupport: (batchEmbedding) => options.onCapabilitiesUpdated?.({ batchEmbedding }),
-        },
-      );
-      if (usedFallback) batchFallbacks += 1;
-
-      for (let index = 0; index < batch.length; index += 1) {
-        const chunk = batch[index];
-        const result = results[index];
-        if (result.dimensions !== options.dimensions) {
-          throw new Error(`Embedding dimensions mismatch for chunk ${chunk.id}: expected ${options.dimensions}, got ${result.dimensions}`);
+      if (!skipBatch) {
+        let results: EmbeddingResult[];
+        try {
+          results = await options.provider.embedBatch(batch.map(toEmbeddingRequest));
+        } catch (error) {
+          if (!(error instanceof EmbeddingProviderError) || !error.batchUnsupported) throw error;
+          skipBatch = true;
+          verifyUnsupported = true;
+          results = [];
         }
-        writeEmbedding(chunk.id, result.vector);
-        embeddedChunks += 1;
+        if (!skipBatch) {
+          if (results.length !== batch.length) throw new Error("Embedding batch result count mismatch");
+          results.forEach((result, index) => persist(batch[index], result));
+          options.onCapabilitiesUpdated?.({ batchEmbedding: "supported", batchEmbeddingVerified: true });
+          continue;
+        }
+      }
+      batchFallbacks += 1;
+      for (const chunk of batch) {
+        // Persist each successful single result before making the next remote call.
+        persist(chunk, await options.provider.embed(toEmbeddingRequest(chunk)));
+        if (verifyUnsupported) {
+          options.onCapabilitiesUpdated?.({ batchEmbedding: "unsupported", batchEmbeddingVerified: true });
+          verifyUnsupported = false;
+        }
       }
     }
 
@@ -176,6 +172,8 @@ export async function indexMissingEmbeddings(options: EmbeddingIndexOptions): Pr
         batchFallbacks,
       },
     };
+  } catch (error) {
+    throw new EmbeddingIndexError(error, { pendingChunks: pendingCount, embeddedChunks, remainingChunks: pendingCount - embeddedChunks });
   } finally {
     db.close();
   }

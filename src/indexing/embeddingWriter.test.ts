@@ -2,10 +2,10 @@ import fs from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
 import Database from "better-sqlite3";
-import { afterEach, beforeEach, describe, expect, it } from "vitest";
-import { indexMissingEmbeddings } from "./embeddingWriter.js";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { EmbeddingIndexError, indexMissingEmbeddings } from "./embeddingWriter.js";
 import { persistentReindexMetadata } from "./indexWriter.js";
-import type { EmbeddingProvider, EmbeddingRequest, EmbeddingResult } from "../providers/types.js";
+import { EmbeddingProviderError, type EmbeddingProvider, type EmbeddingRequest, type EmbeddingResult } from "../providers/types.js";
 import { initializeStorageSchema, vectorTableName } from "../storage/schema.js";
 
 class FakeEmbeddingProvider implements EmbeddingProvider {
@@ -25,7 +25,7 @@ class FakeEmbeddingProvider implements EmbeddingProvider {
   async embedBatch(inputs: EmbeddingRequest[]): Promise<EmbeddingResult[]> {
     this.batchCalls += 1;
     if (this.failBatch) {
-      throw new Error("batch unsupported");
+      throw new EmbeddingProviderError("batch unsupported", { status: 405, batchUnsupported: true });
     }
     return inputs.map((input) => this.result(input.text));
   }
@@ -127,7 +127,7 @@ describe("indexMissingEmbeddings", () => {
     expect(result.stats.batchFallbacks).toBeGreaterThan(0);
     expect(provider.batchCalls).toBeGreaterThan(0);
     expect(provider.singleCalls).toBe(result.stats.embeddedChunks);
-    expect(updates).toContainEqual({ batchEmbedding: "unsupported" });
+    expect(updates).toContainEqual({ batchEmbedding: "unsupported", batchEmbeddingVerified: true });
   });
 
   it("skips batch calls when cached capabilities mark batch embedding unsupported", async () => {
@@ -143,7 +143,7 @@ describe("indexMissingEmbeddings", () => {
       dimensions: 1536,
       batchSize: 3,
       provider,
-      capabilities: { batchEmbedding: "unsupported" },
+      capabilities: { batchEmbedding: "unsupported", batchEmbeddingVerified: true },
       onCapabilitiesUpdated: (update) => updates.push(update),
     });
 
@@ -151,6 +151,76 @@ describe("indexMissingEmbeddings", () => {
     expect(provider.batchCalls).toBe(0);
     expect(provider.singleCalls).toBe(result.stats.embeddedChunks);
     expect(updates).toEqual([]);
+  });
+
+  it("does not fan out or poison batch capability after a transient failure", async () => {
+    const metadata = await createMetadataIndex();
+    const provider = new FakeEmbeddingProvider(1536);
+    const failure = new EmbeddingProviderError("rate limited", { status: 429, retryable: true });
+    vi.spyOn(provider, "embedBatch").mockRejectedValue(failure);
+    const updates = vi.fn();
+    await expect(indexMissingEmbeddings({
+      dbPath: metadata.dbPath, providerName: "fake", providerBaseUrl: "memory://fake",
+      model: "fake", dimensions: 1536, batchSize: 2, provider, onCapabilitiesUpdated: updates,
+    })).rejects.toMatchObject({ providerError: failure, progress: { embeddedChunks: 0 } });
+    expect(provider.singleCalls).toBe(0);
+    expect(updates).not.toHaveBeenCalled();
+  });
+
+  it("rechecks legacy unsupported records and remembers a verified fallback within the same run", async () => {
+    const metadata = await createMetadataIndex();
+    const provider = new FakeEmbeddingProvider(1536, true);
+    await indexMissingEmbeddings({
+      dbPath: metadata.dbPath, providerName: "fake", providerBaseUrl: "memory://fake",
+      model: "fake", dimensions: 1536, batchSize: 1, provider,
+      capabilities: { batchEmbedding: "unsupported" },
+    });
+    expect(provider.batchCalls).toBe(1);
+    expect(provider.singleCalls).toBeGreaterThan(1);
+  });
+
+  it("recovers batch support from an unverified legacy unsupported observation", async () => {
+    const metadata = await createMetadataIndex();
+    const provider = new FakeEmbeddingProvider(1536);
+    const updates = vi.fn();
+    await indexMissingEmbeddings({
+      dbPath: metadata.dbPath, providerName: "fake", providerBaseUrl: "memory://fake",
+      model: "fake", dimensions: 1536, batchSize: 3, provider,
+      capabilities: { batchEmbedding: "unsupported" }, onCapabilitiesUpdated: updates,
+    });
+    expect(provider.batchCalls).toBeGreaterThan(0);
+    expect(provider.singleCalls).toBe(0);
+    expect(updates).toHaveBeenCalledWith({ batchEmbedding: "supported", batchEmbeddingVerified: true });
+  });
+
+  it("saves successful single vectors before interruption and resumes without repeating them", async () => {
+    const metadata = await createMetadataIndex();
+    const provider = new FakeEmbeddingProvider(1536, true);
+    const embed = provider.embed.bind(provider);
+    const single = vi.spyOn(provider, "embed").mockImplementationOnce(embed).mockRejectedValueOnce(new Error("interrupted"));
+    const options = {
+      dbPath: metadata.dbPath, providerName: "fake", providerBaseUrl: "memory://fake",
+      model: "fake", dimensions: 1536, batchSize: 3, provider,
+    };
+    let failure: EmbeddingIndexError | undefined;
+    try { await indexMissingEmbeddings(options); } catch (error) { failure = error as EmbeddingIndexError; }
+    expect(failure).toBeInstanceOf(EmbeddingIndexError);
+    expect(failure?.progress.embeddedChunks).toBe(1);
+    single.mockImplementation(embed);
+    const resumed = await indexMissingEmbeddings(options);
+    expect(resumed.stats.embeddedChunks).toBe((failure?.progress.pendingChunks ?? 0) - 1);
+  });
+
+  it("does not declare batch unsupported when individual requests also fail", async () => {
+    const metadata = await createMetadataIndex();
+    const provider = new FakeEmbeddingProvider(1536, true);
+    vi.spyOn(provider, "embed").mockRejectedValue(new EmbeddingProviderError("model missing", { status: 404 }));
+    const updates = vi.fn();
+    await expect(indexMissingEmbeddings({
+      dbPath: metadata.dbPath, providerName: "fake", providerBaseUrl: "memory://fake",
+      model: "fake", dimensions: 1536, batchSize: 2, provider, onCapabilitiesUpdated: updates,
+    })).rejects.toThrow("model missing");
+    expect(updates).not.toHaveBeenCalled();
   });
 
   it("limits embedding work when maxChunks is set", async () => {

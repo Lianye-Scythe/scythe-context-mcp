@@ -17,6 +17,7 @@ export interface ProviderCapabilityRecord extends ProviderCapabilityKey {
   key: string;
   baseUrlHash: string;
   batchEmbedding: CapabilitySupport;
+  batchEmbeddingVerified?: boolean;
   outputDimensionality: CapabilitySupport;
   lastProbeAt?: string;
   lastSuccessAt?: string;
@@ -24,12 +25,16 @@ export interface ProviderCapabilityRecord extends ProviderCapabilityKey {
   lastErrorType?: string;
   lastHttpStatus?: number;
   lastRetryable?: boolean;
+  lastErrorReason?: string;
+  lastRetryAfterMs?: number;
+  lastAttempts?: number;
 }
 
 export type ProviderCapabilityUpdate = Partial<
   Pick<
     ProviderCapabilityRecord,
     | "batchEmbedding"
+    | "batchEmbeddingVerified"
     | "outputDimensionality"
     | "lastProbeAt"
     | "lastSuccessAt"
@@ -37,6 +42,9 @@ export type ProviderCapabilityUpdate = Partial<
     | "lastErrorType"
     | "lastHttpStatus"
     | "lastRetryable"
+    | "lastErrorReason"
+    | "lastRetryAfterMs"
+    | "lastAttempts"
   >
 >;
 

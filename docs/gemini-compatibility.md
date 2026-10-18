@@ -45,7 +45,9 @@ Changing provider, endpoint, model, or dimensions requires appropriate vectors f
 
 ## Batch compatibility
 
-The embedding writer tries batch requests unless recorded capabilities indicate batch is unsupported. Batch failures can fall back to individual requests; results report `batchFallbacks`. Observations are stored in repo-local `.scythe-context/provider-capabilities.json` and keyed by provider, endpoint, model, dimensions, and auth mode.
+The embedding writer tries batch requests unless a verified observation marks batch unsupported. Batch HTTP 404, 405 or 501 can fall back to individual requests; the unsupported observation is recorded only after an individual request succeeds with the expected dimensions. Authentication errors, rate limits, timeouts, malformed responses and other errors do not trigger single-request fan-out or disable batch support. Results report `batchFallbacks`, including use of a cached fallback. Once verified unsupported, later batches in the same job also use individual requests.
+
+Observations are stored in repo-local `.scythe-context/provider-capabilities.json` and keyed by provider, endpoint, model, dimensions, and auth mode. `batchEmbeddingVerified=true` distinguishes the new evidence from legacy observations that could have been caused by transient failures. Legacy unsupported records are rechecked on the next explicit embedding job; manually deleting the cache is not needed.
 
 A successful single request does not prove batch support or compatibility for every input. This cache records observed behavior, not a provider certification.
 
@@ -53,7 +55,13 @@ A successful single request does not prove batch support or compatibility for ev
 
 `GEMINI_REQUEST_TIMEOUT_MS` must be an integer from 1 to 2147483647 milliseconds. Each single or batch request uses this deadline, including reading the response body. An indexing pass may contain many requests and is not limited to this duration.
 
-Timeouts return a retryable `GeminiEmbeddingError`. Query requests are not automatically retried. Hybrid search falls back to local keyword results with `fallback.reason="embedding_unavailable"`; semantic search returns `status="embedding_unavailable"` without keyword fallback.
+Document embedding requests (initial creation and incremental updates) retry transient network errors, timeouts, HTTP 408/409/425/429 and 500/502/503/504 at most twice after the initial attempt. Waiting uses exponential backoff starting at 500 ms plus jitter. A valid `Retry-After` in seconds or HTTP-date form sets the minimum wait. Cumulative waiting is limited to 10 seconds per request: if the requested delay exceeds the remaining budget, Scythe stops and reports the delay instead of retrying too early. Each attempt has its own request timeout; the whole indexing job has no single time deadline. Retries can repeat provider work and are not a billing guarantee.
+
+Timeouts return a retryable `GeminiEmbeddingError`. Query requests and embedding probes are not automatically retried. Hybrid search falls back to local keyword results with `fallback.reason="embedding_unavailable"`; semantic search returns `status="embedding_unavailable"` without keyword fallback.
+
+If embedding indexing stops, CLI returns exit code 1 and MCP marks the reindex tool result as an error, both with `status="embedding_unavailable"`. Metadata and saved vectors remain available. The result includes an error `reason`, HTTP status when present, `attempts` and `retryAfterMs` when provided, plus `embeddingProgress` for this job and configured `embeddingCoverage` for the full index. Progress counts cover the selected job budget, which may be smaller than all missing chunks. Successful individual fallback vectors are persisted immediately, so resuming skips them even if a later request fails.
+
+For 429, wait for the suggested delay or check provider quotas before running the same explicit embedding index command again. A `retryable` flag means a transient classification, not a promise that retries will succeed. `repo_doctor` shows the last observed error category, attempt count and delay without requiring a new provider call.
 
 ## Diagnostics and privacy
 

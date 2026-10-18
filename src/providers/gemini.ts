@@ -1,22 +1,15 @@
 import { DEFAULT_GEMINI_REQUEST_TIMEOUT_MS, type AppConfig } from "../config.js";
-import type { EmbeddingProvider, EmbeddingRequest, EmbeddingResult } from "./types.js";
+import { EmbeddingProviderError, type EmbeddingProvider, type EmbeddingRequest, type EmbeddingResult } from "./types.js";
 
 interface GeminiEmbeddingResponse {
   embedding?: { values?: number[] };
   embeddings?: Array<{ values?: number[] }>;
 }
 
-export class GeminiEmbeddingError extends Error {
-  readonly status?: number;
-  readonly bodySnippet?: string;
-  readonly retryable: boolean;
-
-  constructor(message: string, options: { status?: number; bodySnippet?: string; retryable?: boolean } = {}) {
-    super(message);
+export class GeminiEmbeddingError extends EmbeddingProviderError {
+  constructor(message: string, options: ConstructorParameters<typeof EmbeddingProviderError>[1] = {}) {
+    super(message, options);
     this.name = "GeminiEmbeddingError";
-    this.status = options.status;
-    this.bodySnippet = options.bodySnippet;
-    this.retryable = options.retryable ?? false;
   }
 }
 
@@ -53,13 +46,23 @@ function formatEmbeddingText(input: EmbeddingRequest): string {
 }
 
 function isRetryableStatus(status: number): boolean {
-  return status === 408 || status === 409 || status === 425 || status === 429 || status >= 500;
+  return status === 408 || status === 409 || status === 425 || status === 429 || [500, 502, 503, 504].includes(status);
 }
 
 function safeSnippet(text: string, secret?: string): string {
   const collapsed = text.replace(/\s+/g, " ").trim();
   const redacted = secret ? collapsed.split(secret).join("[REDACTED]") : collapsed;
   return redacted.length > 1000 ? `${redacted.slice(0, 1000)}...` : redacted;
+}
+
+function retryAfterMs(value: string | null): number | undefined {
+  if (!value?.trim()) return undefined;
+  if (/^\d+(?:\.\d+)?$/.test(value.trim())) {
+    const delay = Number(value) * 1000;
+    return Number.isFinite(delay) ? delay : undefined;
+  }
+  const date = Date.parse(value);
+  return Number.isFinite(date) ? Math.max(0, date - Date.now()) : undefined;
 }
 
 export class GeminiEmbeddingProvider implements EmbeddingProvider {
@@ -76,7 +79,7 @@ export class GeminiEmbeddingProvider implements EmbeddingProvider {
       ...(this.config.outputDimensionality
         ? { output_dimensionality: this.config.outputDimensionality }
         : {}),
-    });
+    }, input.kind === "document");
 
     const vector = this.extractSingleVector(response);
     return {
@@ -97,11 +100,11 @@ export class GeminiEmbeddingProvider implements EmbeddingProvider {
           ? { output_dimensionality: this.config.outputDimensionality }
           : {}),
       })),
-    });
+    }, inputs.every((input) => input.kind === "document"));
 
     const vectors = this.extractVectors(response);
     if (vectors.length !== inputs.length) {
-      throw new Error(`Gemini returned ${vectors.length} embeddings for ${inputs.length} inputs`);
+      throw new GeminiEmbeddingError(`Gemini returned ${vectors.length} embeddings for ${inputs.length} inputs`, { reason: "invalid_response" });
     }
 
     return vectors.map((vector) => ({
@@ -111,9 +114,26 @@ export class GeminiEmbeddingProvider implements EmbeddingProvider {
     }));
   }
 
-  private async post(method: "embedContent" | "batchEmbedContents", body: unknown): Promise<GeminiEmbeddingResponse> {
+  private async post(method: "embedContent" | "batchEmbedContents", body: unknown, retry = false): Promise<GeminiEmbeddingResponse> {
+    let waitedMs = 0;
+    for (let attempt = 1; ; attempt++) {
+      try {
+        return await this.postOnce(method, body);
+      } catch (error) {
+        if (!(error instanceof GeminiEmbeddingError)) throw error;
+        error.attempts = attempt;
+        const delay = Math.max(500 * 2 ** (attempt - 1) + Math.random() * 250, error.retryAfterMs ?? 0);
+        // Do not retry earlier than a long Retry-After, or turn an interactive job into an unbounded wait.
+        if (!retry || !error.retryable || attempt >= 3 || waitedMs + delay > 10_000) throw error;
+        await new Promise((resolve) => setTimeout(resolve, delay));
+        waitedMs += delay;
+      }
+    }
+  }
+
+  private async postOnce(method: "embedContent" | "batchEmbedContents", body: unknown): Promise<GeminiEmbeddingResponse> {
     if (!this.config.apiKey) {
-      throw new GeminiEmbeddingError("GEMINI_API_KEY is required for embedding calls");
+      throw new GeminiEmbeddingError("GEMINI_API_KEY is required for embedding calls", { reason: "configuration" });
     }
 
     let url: URL;
@@ -121,7 +141,7 @@ export class GeminiEmbeddingProvider implements EmbeddingProvider {
       url = buildGeminiEndpoint(this.config.baseUrl, this.config.model, method);
     } catch (error) {
       throw new GeminiEmbeddingError(
-        `Invalid GEMINI_BASE_URL: ${error instanceof Error ? error.message : String(error)}`,
+        `Invalid GEMINI_BASE_URL: ${error instanceof Error ? error.message : String(error)}`, { reason: "configuration" },
       );
     }
     const headers: Record<string, string> = {
@@ -152,15 +172,20 @@ export class GeminiEmbeddingProvider implements EmbeddingProvider {
       if (signal.aborted) {
         throw new GeminiEmbeddingError(`Gemini embedding request timed out after ${timeoutMs} ms`, {
           retryable: true,
+          reason: "timeout",
         });
       }
-      throw error;
+      throw new GeminiEmbeddingError("Gemini embedding network request failed", { retryable: true, reason: "network" });
     }
     if (!response.ok) {
+      const batchUnsupported = method === "batchEmbedContents" && [404, 405, 501].includes(response.status);
       throw new GeminiEmbeddingError(`Gemini embedding request failed with HTTP ${response.status}`, {
         status: response.status,
         bodySnippet: safeSnippet(text, this.config.apiKey),
-        retryable: isRetryableStatus(response.status),
+        retryable: !batchUnsupported && isRetryableStatus(response.status),
+        retryAfterMs: retryAfterMs(response.headers.get("retry-after")),
+        reason: response.status === 429 ? "rate_limited" : "http_error",
+        batchUnsupported,
       });
     }
 
@@ -169,6 +194,7 @@ export class GeminiEmbeddingProvider implements EmbeddingProvider {
     } catch {
       throw new GeminiEmbeddingError("Gemini embedding response was not valid JSON", {
         bodySnippet: safeSnippet(text, this.config.apiKey),
+        reason: "invalid_response",
       });
     }
   }
@@ -176,7 +202,7 @@ export class GeminiEmbeddingProvider implements EmbeddingProvider {
   private extractSingleVector(response: GeminiEmbeddingResponse): number[] {
     const vector = response.embedding?.values || response.embeddings?.[0]?.values;
     if (!vector || vector.length === 0) {
-      throw new Error("Gemini response did not include an embedding vector");
+      throw new GeminiEmbeddingError("Gemini response did not include an embedding vector", { reason: "invalid_response" });
     }
     return vector;
   }
@@ -184,7 +210,7 @@ export class GeminiEmbeddingProvider implements EmbeddingProvider {
   private extractVectors(response: GeminiEmbeddingResponse): number[][] {
     const vectors = response.embeddings?.map((embedding) => embedding.values || []) || [];
     if (vectors.some((vector) => vector.length === 0)) {
-      throw new Error("Gemini batch response included an empty embedding vector");
+      throw new GeminiEmbeddingError("Gemini batch response included an empty embedding vector", { reason: "invalid_response" });
     }
     return vectors;
   }

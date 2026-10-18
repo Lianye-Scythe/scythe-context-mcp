@@ -16,6 +16,7 @@ const baseConfig = {
 const servers: Server[] = [];
 
 afterEach(async () => {
+  vi.useRealTimers();
   vi.unstubAllGlobals();
   for (const server of servers.splice(0)) {
     const closed = new Promise<void>((resolve, reject) => server.close((error) => error ? reject(error) : resolve()));
@@ -48,11 +49,78 @@ describe("Gemini URL compatibility", () => {
 });
 
 describe("GeminiEmbeddingProvider diagnostics", () => {
+  it("backs off document requests and respects Retry-After without delaying query fallback", async () => {
+    vi.useFakeTimers();
+    const fetch = vi.fn()
+      .mockResolvedValueOnce(new Response("limited", { status: 429, headers: { "Retry-After": "2" } }))
+      .mockResolvedValueOnce(new Response(JSON.stringify({ embedding: { values: [1, 0, 0] } })));
+    vi.stubGlobal("fetch", fetch);
+    const pending = new GeminiEmbeddingProvider(baseConfig).embed({ kind: "document", text: "public source" });
+    await vi.advanceTimersByTimeAsync(1999);
+    expect(fetch).toHaveBeenCalledTimes(1);
+    await vi.advanceTimersByTimeAsync(1);
+    expect((await pending).vector).toEqual([1, 0, 0]);
+    expect(fetch).toHaveBeenCalledTimes(2);
+  });
+
+  it("honors HTTP-date Retry-After and stops instead of retrying before a long delay", async () => {
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date("2026-10-18T00:00:00Z"));
+    const fetch = vi.fn(async () => new Response("limited secret-key", {
+      status: 429, headers: { "Retry-After": "Sun, 18 Oct 2026 00:01:00 GMT" },
+    }));
+    vi.stubGlobal("fetch", fetch);
+    await expect(new GeminiEmbeddingProvider(baseConfig).embed({ kind: "document", text: "source" })).rejects.toMatchObject({
+      reason: "rate_limited", retryAfterMs: 60000, attempts: 1, bodySnippet: "limited [REDACTED]",
+    });
+    expect(fetch).toHaveBeenCalledTimes(1);
+  });
+
+  it("limits retries and classifies transient batch failures without declaring them unsupported", async () => {
+    vi.useFakeTimers();
+    const fetch = vi.fn(async () => new Response("busy", { status: 503, headers: { "Retry-After": "invalid" } }));
+    vi.stubGlobal("fetch", fetch);
+    const pending = new GeminiEmbeddingProvider(baseConfig).embedBatch([{ kind: "document", text: "source" }]);
+    const assertion = expect(pending).rejects.toMatchObject({ status: 503, attempts: 3, retryable: true, batchUnsupported: false });
+    await vi.runAllTimersAsync();
+    await assertion;
+    expect(fetch).toHaveBeenCalledTimes(3);
+  });
+
+  it("bounds cumulative Retry-After waits and redacts network failure details", async () => {
+    vi.useFakeTimers();
+    const fetch = vi.fn(async () => new Response("busy", { status: 429, headers: { "Retry-After": "6" } }));
+    vi.stubGlobal("fetch", fetch);
+    const provider = new GeminiEmbeddingProvider(baseConfig);
+    const pending = provider.embed({ kind: "document", text: "source" });
+    const assertion = expect(pending).rejects.toMatchObject({ attempts: 2, retryAfterMs: 6000 });
+    await vi.runAllTimersAsync();
+    await assertion;
+    expect(fetch).toHaveBeenCalledTimes(2);
+    fetch.mockRejectedValue(new TypeError("fetch failed https://host/?key=secret-key"));
+    const network = provider.embed({ kind: "document", text: "source" });
+    const networkAssertion = expect(network).rejects.toMatchObject({
+      reason: "network", attempts: 3, message: "Gemini embedding network request failed",
+    });
+    await vi.runAllTimersAsync();
+    await networkAssertion;
+  });
+
+  it.each([401, 403, 404, 405, 501])("does not retry permanent batch HTTP %s errors", async (status) => {
+    const fetch = vi.fn(async () => new Response("denied", { status }));
+    vi.stubGlobal("fetch", fetch);
+    await expect(new GeminiEmbeddingProvider(baseConfig).embedBatch([{ kind: "document", text: "source" }])).rejects.toMatchObject({
+      status, attempts: 1, batchUnsupported: [404, 405, 501].includes(status),
+    });
+    expect(fetch).toHaveBeenCalledTimes(1);
+  });
+
   it.each([
     ["query", false],
     ["query", true],
     ["batch", false],
     ["batch", true],
+    ["document", true],
   ] as const)("times out a stalled %s request (headers sent: %s)", async (kind, sendHeaders) => {
     let requests = 0;
     const server = createServer((_request, response) => {
@@ -70,14 +138,14 @@ describe("GeminiEmbeddingProvider diagnostics", () => {
       baseUrl: `http://127.0.0.1:${(server.address() as AddressInfo).port}`,
       requestTimeoutMs: 250,
     });
-    const input = { kind: "query" as const, text: "hello" };
+    const input = { kind: kind === "document" ? "document" as const : "query" as const, text: "hello" };
     const request = kind === "batch" ? provider.embedBatch([input]) : provider.embed(input);
     await expect(request).rejects.toMatchObject({
       name: "GeminiEmbeddingError",
       message: "Gemini embedding request timed out after 250 ms",
       retryable: true,
     });
-    expect(requests).toBe(1);
+    expect(requests).toBe(kind === "document" ? 3 : 1);
   });
 
   it("redacts secrets and marks retryable HTTP failures", async () => {

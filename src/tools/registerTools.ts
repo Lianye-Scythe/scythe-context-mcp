@@ -8,8 +8,12 @@ export function registerTools(server: McpServer, config: AppConfig): void {
       title: operation.title,
       description: operation.description,
       inputSchema: operation.inputSchema,
-    }, async (input) => ({
-      content: [{ type: "text" as const, text: JSON.stringify(await operation.run(input), null, 2) }],
-    }));
+    }, async (input) => {
+      const payload = await operation.run(input);
+      return {
+        content: [{ type: "text" as const, text: JSON.stringify(payload, null, 2) }],
+        ...(name === "repo_reindex" && payload.status === "embedding_unavailable" ? { isError: true } : {}),
+      };
+    });
   }
 }

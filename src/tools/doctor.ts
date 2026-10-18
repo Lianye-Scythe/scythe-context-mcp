@@ -259,6 +259,7 @@ function providerCapabilityCheck(config: AppConfig["gemini"], indexPath: string,
       dimensions: record.dimensions,
       authMode: record.authMode,
       batchEmbedding: record.batchEmbedding,
+      batchEmbeddingVerified: record.batchEmbeddingVerified,
       outputDimensionality: record.outputDimensionality,
       lastProbeAt: record.lastProbeAt,
       lastSuccessAt: record.lastSuccessAt,
@@ -266,9 +267,14 @@ function providerCapabilityCheck(config: AppConfig["gemini"], indexPath: string,
       lastErrorType: record.lastErrorType,
       lastHttpStatus: record.lastHttpStatus,
       lastRetryable: record.lastRetryable,
+      lastErrorReason: record.lastErrorReason,
+      lastRetryAfterMs: record.lastRetryAfterMs,
+      lastAttempts: record.lastAttempts,
     },
     recommendedActions: lastFailureIsCurrent
-      ? ["Run gemini_embedding_probe after fixing provider credentials, URL, model, auth mode, or dimensionality."]
+      ? record.lastHttpStatus === 429
+        ? ["Wait for the provider retry delay or check rate/quota limits, then resume missing embeddings. Keyword lookup remains available."]
+        : ["Run gemini_embedding_probe after fixing provider credentials, URL, model, auth mode, or dimensionality."]
       : undefined,
   };
 }

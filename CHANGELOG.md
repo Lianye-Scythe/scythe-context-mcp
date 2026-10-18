@@ -6,6 +6,11 @@ This project follows semantic versioning before npm publication where practical.
 
 ## [Unreleased]
 
+### Fixed
+
+- Keep rate limits, timeouts and authentication failures from poisoning batch capability observations or triggering immediate single-request fan-out. Recheck legacy unsupported observations and verify individual support before caching a batch fallback.
+- Retry transient document embedding failures with bounded exponential backoff and Retry-After support; preserve query fallback latency. Persist successful single vectors immediately and report resumable progress, configured coverage and classified diagnostics through CLI/MCP indexing failures.
+
 ### Added
 
 - Add a source-checkout-only hybrid fusion experiment comparing the current merge, RRF and score-scaled RRF with shared vector/keyword candidates, fixed public-source cases and file-rank metrics. Production search defaults remain unchanged.
