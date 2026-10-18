@@ -1,7 +1,7 @@
 {
   "name": "scythe-context-mcp",
   "version": "0.1.22",
-  "description": "Local code search and import navigation via CLI + Skill or MCP, with optional Gemini embeddings.",
+  "description": "Local code search, import navigation, and bounded context for coding agents via CLI + Skill or MCP.",
   "type": "module",
   "license": "Apache-2.0",
   "homepage": "https://github.com/Lianye-Scythe/scythe-context-mcp#readme",

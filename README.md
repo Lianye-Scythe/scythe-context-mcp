@@ -7,7 +7,7 @@
 
 [English](README.md) | [繁體中文](README.zh-TW.md) | [简体中文](README.zh-CN.md)
 
-Scythe Context MCP helps coding agents find code when the file location is unknown, through CLI + Skill or MCP. It indexes a repository locally and returns file paths, line ranges, and related files. Optional Gemini embeddings add semantic search.
+Scythe Context MCP gives coding agents local code search, import navigation, and bounded context through CLI + Skill or MCP. Find relevant file paths, line ranges, symbols, and related files in an unfamiliar repository. Start with local keyword search: no API key or embedding service is required.
 
 ## When to use it
 
@@ -15,23 +15,20 @@ Scythe Context MCP helps coding agents find code when the file location is unkno
 - Use `rg` or direct file reads when you already know the path or exact string.
 - Local keyword search needs no API key. Semantic search requires a Gemini-compatible endpoint.
 
-The project has retrieval benchmarks and integration tests. These do **not** establish that MCP improves GPT‑6.1 Sol task completion, speed, or total token use. See the [benchmark](docs/benchmark.md) and [task A/B protocol (Traditional Chinese)](docs/codex-evaluation.md).
+## Choose an interface
 
-## Language support
+Both interfaces ship in the same npm package and share the indexing and retrieval engine. Choose either, or use both.
 
-The target repository can use JS/TS, Python, Go, Rust, C#, C++, or other text-based languages; only Scythe itself requires Node.js. Starting with 0.1.19, local import navigation additionally supports Python flat/`src` packages and relative imports, Go packages within the nearest `go.mod` module, and conventional Cargo file modules with anchored Rust paths. After upgrading to 0.1.22, run `scythe-context index --project /absolute/path/to/repo` once, even if the index reports fresh, to refresh metadata and warm the chunking cache. MCP users can instead call `repo_reindex` with `dry_run=false` and `index_embeddings=false` on the upgraded server. No new embeddings are required. Parsing is conservative and does not provide compiler-level symbol resolution. See [language support and limits](docs/language-support.md).
+| Interface | Choose it when | Search default |
+| --- | --- | --- |
+| CLI + Skill | Your agent can run shell commands and load skills, or you want to search from a terminal. | Local `keyword`; no embedding requests. |
+| MCP | Your client uses MCP tools. | `hybrid`; explicitly set `mode="keyword"` for local-only search. |
 
-Version 0.1.20 adds C# structure and project-reference navigation: namespace, type and common method declarations, plus literal `.csproj` `ProjectReference` links. C# `using` directives remain unresolved namespace/type hints rather than file imports. This reads source/project files without requiring or running the .NET SDK. See the same language guide for limitations.
-
-Version 0.1.20 also adds basic C++ navigation: namespaces, class/struct/enum declarations, common functions/methods, and exact file-relative quoted `#include` links. System headers and macro includes stay unresolved. No C++ toolchain is required; compiler include paths and build configuration are not evaluated.
-
-Version 0.1.21 reuses unchanged chunks and healthy FTS rows while refreshing symbols and dependencies. Automatic reranking can recover exact-name declarations hidden by frequent usage/test matches. Existing indexes gain a per-file chunking cache automatically; matching layouts keep their chunk ids and embeddings. See [index performance and external validation](docs/index-performance.md) for measurements and limits.
-
-Version 0.1.22 adds TypeScript/JavaScript config aliases, local/workspace config inheritance, explicit project-reference selection, declared workspace source exports, and literal Cargo library/binary target roots. These are indexed source-navigation hints; complete compiler/runtime binding and build-time configuration are not evaluated. See [config-driven navigation and GitHub validation](docs/config-navigation.md).
+Requires Node.js `>=24.11.0 <27` in the environment running Scythe; Node.js 24 is the tested baseline. The target repository does not need to use Node.js. See [platform setup](docs/setup.md) for Windows, WSL, Linux, and macOS.
 
 ## CLI + Skill (same package)
 
-Starting with 0.1.18, the `scythe-context-mcp` npm package provides both a `scythe-context` CLI and the existing MCP entrypoint. Install once and choose CLI + Skill, MCP, or both. For a source checkout, run `npm run build` and substitute `node /absolute/path/to/scythe-context-mcp/dist/command.js` for `scythe-context` below.
+The `scythe-context-mcp` npm package provides both a `scythe-context` CLI and the existing MCP entrypoint. Install once and choose CLI + Skill, MCP, or both. For a source checkout, run `npm run build` and substitute `node /absolute/path/to/scythe-context-mcp/dist/command.js` for `scythe-context` below.
 
 ```bash
 npm install -g scythe-context-mcp@0.1.22
@@ -47,8 +44,6 @@ scythe-context doctor
 CLI search/context default to local `keyword` mode and paths-only output. MCP retains its existing `hybrid` default. Both interfaces share validation, indexing, search, fallback, and response shaping; changing the interface does not improve retrieval accuracy by itself.
 
 Use `--project /absolute/repo/path` to override the configured project. Add `--json` for structured search/context results; status/index/related/doctor already return JSON. `--format` controls detail (`paths`, `compact`, `snippets` for search/context; `compact`, `full` for other commands). `--output /absolute/result.json` saves the structured payload and prints its path for selective reading. `--help` lists budgets and other options. Exit code 0 includes empty searches and hybrid fallback; errors and missing lookup indexes return nonzero. `doctor` returns nonzero on error, while warnings return 0.
-
-For semantic retrieval, explicitly use `index --embeddings` and `search`/`context --mode hybrid` or `--mode semantic`. These send chunks or queries to the configured endpoint. `index --dry-run` previews metadata indexing without writing or calling embeddings.
 
 The packaged [Skill](skills/scythe-context/SKILL.md) teaches an agent when to search, read ranges, refresh metadata, and use embeddings. Copy the `skills/scythe-context/` folder into your agent's skill directory to enable discovery; the CLI must be available in that agent's execution environment. There is no automatic skill installation. `scythe-context` without arguments shows help; `scythe-context-mcp` without arguments continues to start MCP stdio. Either entrypoint accepts the subcommands above, and `serve` explicitly starts MCP.
 
@@ -80,33 +75,22 @@ Run `repo_reindex` only when the index is missing or stale. It writes metadata t
 
 A successful lookup returns `primaryResults` containing paths and line ranges. `repo_context_pack` defaults to `response_mode="paths_only"`; let Codex read the matching file ranges next. Request `response_mode="compact"` for short snippets. If setup fails, start with `repo_doctor` and the [troubleshooting guide](docs/troubleshooting.md).
 
-## Optional semantic search and privacy
+## Language support
 
-Keep `GEMINI_API_KEY` in the environment that starts Codex and forward it to the existing server configuration. Do not commit the key. Then build vectors and use hybrid search:
+Text search works across supported text files. Structure and import navigation are language-specific:
 
-```toml
-# Add this field to the existing [mcp_servers.scythe_context] table.
-env_vars = ["GEMINI_API_KEY"]
-```
+| Language | Navigation coverage |
+| --- | --- |
+| JS / TS | Common declarations/imports, config aliases/inheritance, explicit project references, and declared workspace source exports. |
+| Python | Common declarations, flat/`src` packages, and relative imports. |
+| Go | Common declarations and packages within the nearest `go.mod` module. |
+| Rust | Common declarations, Cargo file modules, anchored paths, and literal library/binary target roots. |
+| C# | Namespace/type/common method declarations and literal `.csproj` project references; `using` stays a namespace/type hint. |
+| C++ | Namespace/type/common function declarations and exact file-relative quoted includes. |
 
-```text
-repo_reindex({ "project_path": "/absolute/path/to/your/repo", "dry_run": false, "index_embeddings": true })
-repo_context_pack({ "project_path": "/absolute/path/to/your/repo", "query": "where is auth token validation handled?", "mode": "hybrid" })
-```
+Navigation is conservative and does not provide compiler-level binding or a complete runtime call graph. No target-language SDK or compiler is required. See [language support and limits](docs/language-support.md) and [config-driven navigation](docs/config-navigation.md).
 
-These calls send repository chunks and query text to the configured endpoint, which may incur provider charges. Defaults are `https://generativelanguage.googleapis.com/v1beta`, model `gemini-embedding-2`, and 1536 dimensions. For proxies and authentication settings, see [setup](docs/setup.md).
-
-**MCP search mode defaults to `hybrid`, even though the quick start explicitly uses `keyword`; CLI search/context default to `keyword`.** If a key is configured, omitting `mode` can send the query to the provider. Use `mode="keyword"` to avoid embedding requests.
-
-| Mode | Embedding requests | If query embedding fails |
-| --- | --- | --- |
-| `keyword` | None; metadata only | Not applicable |
-| `hybrid` (MCP default) | Sends the query; indexed vectors support semantic retrieval | Falls back to keyword and reports the fallback |
-| `semantic` | Sends the query; requires indexed vectors | Returns an error without keyword fallback |
-
-`GEMINI_REQUEST_TIMEOUT_MS` defaults to `10000` and bounds each embedding request, including the response body. It does not limit the entire indexing job. `gemini_embedding_probe` also sends its test text to the endpoint. Third-party proxies can see the text sent to them.
-
-Index files stay in `.scythe-context/`. Keep that directory, legacy `.repo-beacon/`, `.env`, and `local/` out of version control. Exclude private files from indexing with `.gitignore`, and check scope before enabling embeddings. Do not include secrets, private source, or index databases in public issues or logs.
+When upgrading from a version before 0.1.22, run `scythe-context index --project /absolute/path/to/repo` once even if the index reports fresh. MCP users can call `repo_reindex` with `dry_run=false` and `index_embeddings=false`. This refreshes navigation metadata and warms the chunking cache without requesting embeddings.
 
 ## Tools and current limits
 
@@ -122,6 +106,18 @@ Index files stay in `.scythe-context/`. Keep that directory, legacy `.repo-beaco
 
 The default symbol/import extractor uses regex; tree-sitter is experimental and requires separately configured grammars. Related-file results are navigation hints, not a complete runtime call graph. Indexes need refreshing as files change; embedding coverage can be partial.
 
+The project has retrieval benchmarks and integration tests. These do **not** establish that MCP improves GPT‑6.1 Sol task completion, speed, or total token use. See the [benchmark](docs/benchmark.md) and [task A/B protocol (Traditional Chinese)](docs/codex-evaluation.md).
+
+## Optional: semantic search with embeddings
+
+Start with keyword search and import navigation. If relevant code uses different wording from your query and local results are insufficient, try hybrid or semantic retrieval and compare the results on your repository. Embeddings are optional; they are not required for language navigation or context packing.
+
+Enabling them requires a Gemini-compatible endpoint and sends code chunks during embedding indexing and query text during hybrid/semantic search. Provider charges may apply. See [optional semantic search](docs/semantic-search.md) for setup, commands, modes, and privacy details.
+
+CLI search/context default to `keyword`; MCP defaults to `hybrid`. With a key configured, MCP queries can reach the provider unless you explicitly select `mode="keyword"`.
+
+Keep `.scythe-context/`, legacy `.repo-beacon/`, `.env`, and `local/` out of version control. Use `.gitignore` to exclude private files from indexing.
+
 ## Documentation
 
 - [Documentation index](docs/README.md)
@@ -129,7 +125,7 @@ The default symbol/import extractor uses regex; tree-sitter is experimental and 
 - [Troubleshooting](docs/troubleshooting.md)
 - [Retrieval benchmark](docs/benchmark.md) · [Dogfood evaluation](docs/dogfood.md)
 - [Codex task A/B protocol (Traditional Chinese)](docs/codex-evaluation.md)
-- [Architecture](docs/architecture.md) · [Gemini provider details](docs/gemini-compatibility.md)
+- [Architecture](docs/architecture.md) · [Optional semantic search](docs/semantic-search.md)
 - [Contributing](CONTRIBUTING.md) · [Release process](docs/release.md) · [Changelog](CHANGELOG.md)
 
 ## Development

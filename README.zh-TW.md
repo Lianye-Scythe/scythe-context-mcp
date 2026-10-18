@@ -7,7 +7,7 @@
 
 [English](README.md) | [繁體中文](README.zh-TW.md) | [简体中文](README.zh-CN.md)
 
-Scythe Context MCP 透過 CLI＋Skill 或 MCP，協助 coding agent 在不知道檔案位置時找到程式碼。它在本機索引專案，回傳檔案路徑、行號範圍與相關檔案；可選的 Gemini embeddings 提供語義搜尋。
+Scythe Context MCP 透過 CLI＋Skill 或 MCP，為 coding agent 提供本機程式碼搜尋、import 導航與有範圍限制的脈絡整理。在陌生專案中找到相關檔案路徑、行號、符號與檔案關聯；從本機關鍵字搜尋開始，不需要 API key 或 embedding 服務。
 
 ## 什麼時候適合使用
 
@@ -15,21 +15,20 @@ Scythe Context MCP 透過 CLI＋Skill 或 MCP，協助 coding agent 在不知道
 - 已知路徑或精確字串時，使用 `rg` 或直接讀取檔案。
 - 本機關鍵字搜尋不需要 API key；語義搜尋需要 Gemini-compatible endpoint。
 
-專案已有搜尋 benchmark 與整合測試，但這些結果**不能證明** MCP 能提高 GPT‑6.1 Sol 任務完成率、速度或降低整體 token 用量。請參閱 [benchmark](docs/benchmark.md) 與[任務 A/B 評估流程](docs/codex-evaluation.md)。
+## 選擇使用介面
 
-## 語言支援
+兩個介面由同一個 npm 套件提供，共用索引與檢索引擎。可以二選一，也能同時使用。
 
-目標專案可以是 JS／TS、Python、Go、Rust、C#、C++ 或其他文字程式碼；只有 Scythe 本身需要 Node.js。從 0.1.19 起，本地 import 導航進一步支援 Python flat／`src` package 與相對 imports、最近一層 `go.mod` 所屬的 Go packages，以及傳統 Cargo 檔案模組和 Rust 明確錨定的路徑。升級到 0.1.22 後，即使索引顯示 fresh，也請執行一次 `scythe-context index --project /absolute/path/to/repo`，更新 metadata 並建立切塊快取。MCP 使用者也能在升級後的 server 呼叫 `repo_reindex`，設定 `dry_run=false`、`index_embeddings=false`。不需要重新產生 embeddings。解析採保守方式，不等同編譯器層級的符號解析。詳見[語言支援與限制](docs/language-support.md)。
+| 介面 | 適用情境 | 搜尋預設 |
+| --- | --- | --- |
+| CLI＋Skill | Agent 能執行 shell 指令並載入技能，或想直接在終端機搜尋。 | 本機 `keyword`，不發送 embedding 請求。 |
+| MCP | 使用支援 MCP 工具的客戶端。 | `hybrid`；純本機搜尋請明確指定 `mode="keyword"`。 |
 
-0.1.20 加入 C# 結構與專案參考導航：namespace、型別與常見方法宣告，以及 `.csproj` 的靜態 `ProjectReference` 關聯。C# 的 `using` 會保留為未解析的 namespace／型別線索，不會當成檔案 import。這些功能只讀取原始碼與專案檔，不需要安裝或執行 .NET SDK；限制詳見同一份語言支援指南。
-
-0.1.20 也加入 C++ 基礎導航：namespace、class／struct／enum、常見函式與方法，以及相對於目前檔案的雙引號 `#include` 關聯。系統標頭與巨集引用會保留為未解析。不需要安裝 C++ 工具鏈；目前不解析編譯器 include 路徑或建置設定。
-
-0.1.22 加入 TypeScript／JavaScript 設定別名、本地與 workspace 設定繼承、明確的 project references 選擇、已宣告的 workspace 原始碼 exports，以及 Cargo library／binary 入口路徑。這些功能用於索引內的原始碼導航，不會執行建置設定，也不等同完整的編譯器或執行環境解析。詳見[設定驅動導航與 GitHub 驗證](docs/config-navigation.md)。
+執行 Scythe 的環境需要 Node.js `>=24.11.0 <27`；Node.js 24 是已測試的基準。目標專案不需要使用 Node.js。Windows、WSL、Linux 與 macOS 請參閱[平台設定](docs/setup.md)。
 
 ## CLI＋Skill（同一個套件）
 
-從 0.1.18 起，同一個 `scythe-context-mcp` npm 套件提供 `scythe-context` CLI 與原有 MCP 入口。安裝一次後，可選擇 CLI＋Skill、MCP，或同時使用。從原始碼使用時，先執行 `npm run build`，再將下列 `scythe-context` 換成 `node /absolute/path/to/scythe-context-mcp/dist/command.js`。
+同一個 `scythe-context-mcp` npm 套件提供 `scythe-context` CLI 與原有 MCP 入口。安裝一次後，可選擇 CLI＋Skill、MCP，或同時使用。從原始碼使用時，先執行 `npm run build`，再將下列 `scythe-context` 換成 `node /absolute/path/to/scythe-context-mcp/dist/command.js`。
 
 ```bash
 npm install -g scythe-context-mcp@0.1.22
@@ -45,8 +44,6 @@ scythe-context doctor
 CLI 的 search/context 預設使用本機 `keyword` 模式，只回傳路徑與行號；MCP 維持原有的 `hybrid` 預設。兩個介面共用參數驗證、索引、搜尋、fallback 與回傳格式處理；更換介面本身不會提高檢索準確度。
 
 以 `--project /absolute/repo/path` 覆寫預設專案。搜尋加上 `--json` 可取得結構化結果；status/index/related/doctor 預設就輸出 JSON。`--format` 控制詳細程度（search/context 使用 `paths`、`compact`、`snippets`，其他命令使用 `compact`、`full`）。`--output /absolute/result.json` 將結構化結果存成檔案，只印出路徑，方便按需讀取。其他預算與選項見 `--help`。搜尋無結果或 hybrid fallback 時 exit code 為 0；操作失敗或查找時缺少索引則回傳非零。doctor 有 error 時回傳非零，只有 warning 時回傳 0。
-
-需要語意搜尋時，明確使用 `index --embeddings`，以及 `search`／`context --mode hybrid` 或 `--mode semantic`；這些操作會將 chunks 或查詢送至設定的 endpoint。`index --dry-run` 只預覽 metadata 索引，不寫入，也不呼叫 embedding。
 
 套件內的 [Skill](skills/scythe-context/SKILL.md) 說明何時搜尋、讀取檔案範圍、更新索引及使用 embeddings。將 `skills/scythe-context/` 複製至 agent 的技能目錄即可供它探索；CLI 也必須在該 agent 的執行環境中可用。目前不會自動安裝 Skill。`scythe-context` 無參數時顯示 help；`scythe-context-mcp` 無參數時仍啟動 MCP stdio。兩個入口都接受上述子命令，也能以 `serve` 明確啟動 MCP。
 
@@ -78,33 +75,22 @@ repo_context_pack({ "project_path": "/absolute/path/to/your/repo", "query": "whe
 
 成功查找會回傳包含路徑與行號的 `primaryResults`。`repo_context_pack` 預設為 `response_mode="paths_only"`；接著讓 Codex 讀取命中的檔案範圍。需要短片段時指定 `response_mode="compact"`。設定失敗時，先使用 `repo_doctor` 與[疑難排解指南](docs/troubleshooting.md)。
 
-## 可選語義搜尋與隱私
+## 語言支援
 
-將 `GEMINI_API_KEY` 保留在啟動 Codex 的環境中，再透過既有 server 設定轉發。不要提交 key。接著建立向量並使用 hybrid 搜尋：
+文字搜尋適用於支援的文字檔案；結構與 import 導航則依語言提供：
 
-```toml
-# Add this field to the existing [mcp_servers.scythe_context] table.
-env_vars = ["GEMINI_API_KEY"]
-```
+| 語言 | 導航範圍 |
+| --- | --- |
+| JS／TS | 常見宣告與 imports、設定別名與繼承、明確的 project references、已宣告的 workspace 原始碼 exports。 |
+| Python | 常見宣告、flat／`src` packages 與相對 imports。 |
+| Go | 常見宣告及最近一層 `go.mod` 模組內的 packages。 |
+| Rust | 常見宣告、Cargo 檔案模組、明確錨定路徑及靜態 library／binary 入口。 |
+| C# | Namespace、型別、常見方法宣告與靜態 `.csproj` 專案參考；`using` 保留為 namespace／型別線索。 |
+| C++ | Namespace、型別、常見函式宣告與相對於目前檔案的精確雙引號 includes。 |
 
-```text
-repo_reindex({ "project_path": "/absolute/path/to/your/repo", "dry_run": false, "index_embeddings": true })
-repo_context_pack({ "project_path": "/absolute/path/to/your/repo", "query": "where is auth token validation handled?", "mode": "hybrid" })
-```
+導航採保守解析，不等同編譯器層級的綁定或完整執行時呼叫圖；不需要目標語言的 SDK 或編譯器。詳見[語言支援與限制](docs/language-support.md)及[設定驅動導航](docs/config-navigation.md)。
 
-這些呼叫會將專案程式碼區塊與查詢文字送到設定的 endpoint，可能產生 provider 費用。預設為 `https://generativelanguage.googleapis.com/v1beta`、模型 `gemini-embedding-2`、1536 維。Proxy 與驗證設定請參閱[設定指南](docs/setup.md)。
-
-**MCP 搜尋模式預設是 `hybrid`，快速開始則明確指定 `keyword`；CLI 的 search/context 預設為 `keyword`。** 有設定 key 時，省略 `mode` 可能將查詢送到 provider。請使用 `mode="keyword"` 避免 embedding 請求。
-
-| 模式 | Embedding 請求 | 查詢 embedding 失敗時 |
-| --- | --- | --- |
-| `keyword` | 無；只需要 metadata | 不適用 |
-| `hybrid`（MCP 預設） | 傳送查詢；索引向量提供語義查找 | 退回 keyword 並回報 fallback |
-| `semantic` | 傳送查詢；需要索引向量 | 回報錯誤，不退回 keyword |
-
-`GEMINI_REQUEST_TIMEOUT_MS` 預設為 `10000`，限制每次 embedding 請求，包含讀取回應本文；不限制整個索引工作的時間。`gemini_embedding_probe` 也會將測試文字送到 endpoint。第三方 proxy 能看到傳送給它的文字。
-
-索引保存在 `.scythe-context/`。請勿將該目錄、舊版 `.repo-beacon/`、`.env` 或 `local/` 納入版本控制。使用 `.gitignore` 排除不應索引的私人檔案，啟用 embeddings 前先確認範圍。不要在公開 issue 或 log 中附上秘密、私人程式碼或索引資料庫。
+從 0.1.22 之前的版本升級時，即使索引顯示 fresh，也請執行一次 `scythe-context index --project /absolute/path/to/repo`。MCP 使用者可呼叫 `repo_reindex`，指定 `dry_run=false`、`index_embeddings=false`。這會更新導航 metadata 並建立切塊快取，不會請求 embeddings。
 
 ## 工具與目前限制
 
@@ -120,6 +106,18 @@ repo_context_pack({ "project_path": "/absolute/path/to/your/repo", "query": "whe
 
 符號與 imports 預設使用 regex 擷取；tree-sitter 為實驗功能，需要另行設定 grammar。相關檔案結果是導航線索，並非完整的執行期呼叫圖。檔案變更後需要更新索引；embedding 覆蓋率可能不完整。
 
+專案已有搜尋 benchmark 與整合測試，但這些結果**不能證明** MCP 能提高 GPT‑6.1 Sol 任務完成率、速度或降低整體 token 用量。請參閱 [benchmark](docs/benchmark.md) 與[任務 A/B 評估流程](docs/codex-evaluation.md)。
+
+## 選配：使用 embeddings 的語義搜尋
+
+先使用關鍵字搜尋與 import 導航。若相關程式碼與查詢用詞不同、本機結果不足，再嘗試 hybrid 或 semantic，並在自己的專案比較結果。Embeddings 是選配，語言導航與脈絡整理都不依賴它。
+
+啟用時需要 Gemini-compatible endpoint；建立向量索引會發送程式碼區塊，hybrid／semantic 搜尋會發送查詢文字，可能產生服務費用。設定、指令、模式差異與隱私說明請見[選配語義搜尋指南（英文）](docs/semantic-search.md)。
+
+CLI search/context 預設為 `keyword`，MCP 預設為 `hybrid`。設定 key 後，MCP 查詢可能連線至 provider；純本機搜尋請明確指定 `mode="keyword"`。
+
+請勿將 `.scythe-context/`、舊版 `.repo-beacon/`、`.env` 與 `local/` 納入版本控制；使用 `.gitignore` 排除不應索引的私人檔案。
+
 ## 文件
 
 - [文件索引](docs/README.md)
@@ -127,7 +125,7 @@ repo_context_pack({ "project_path": "/absolute/path/to/your/repo", "query": "whe
 - [疑難排解](docs/troubleshooting.md)
 - [搜尋 benchmark](docs/benchmark.md) · [實際使用評估](docs/dogfood.md)
 - [Codex 任務 A/B 評估流程（繁體中文）](docs/codex-evaluation.md)
-- [架構（英文）](docs/architecture.md) · [Gemini provider 細節（英文）](docs/gemini-compatibility.md)
+- [架構（英文）](docs/architecture.md) · [選配語義搜尋（英文）](docs/semantic-search.md)
 - [貢獻指南](CONTRIBUTING.md) · [發布流程](docs/release.md) · [更新紀錄](CHANGELOG.md)
 
 ## 開發

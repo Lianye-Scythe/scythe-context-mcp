@@ -1,6 +1,30 @@
 # Setup and Advanced Configuration
 
-Start with the [README](../README.md) for local search without an API key. This guide covers platform-specific launches and optional provider settings.
+Start with the [README](../README.md) for local search without an API key. This guide covers CLI + Skill, platform-specific MCP launches, and optional provider settings.
+
+## CLI + Skill: local search first
+
+Install the package in the environment where your agent runs shell commands, then use a target repository's path:
+
+```bash
+npm install -g scythe-context-mcp@0.1.22
+scythe-context --version
+scythe-context status --project /absolute/path/to/repo
+scythe-context index --project /absolute/path/to/repo
+scythe-context context "where is auth token validation handled?" --project /absolute/path/to/repo --format compact
+```
+
+Run `index` when metadata is missing/stale, or once when upgrading from before 0.1.22. This creates local metadata without embedding requests. CLI search/context use `keyword` by default; no API key is needed.
+
+Copy the packaged `skills/scythe-context/` folder into your agent's skill directory using that agent's skill installation workflow. The CLI must be on PATH in the agent's execution environment; a global installation in another operating system or shell does not make it available automatically. Skill installation is separate from npm installation.
+
+For a Windows app running commands in WSL, install Node and Scythe in WSL and verify `command -v scythe-context` there. Keep the repository and its SQLite index in that environment. The MCP wrappers below are needed only when choosing MCP.
+
+From a source checkout, run `npm run build` and replace `scythe-context` with `node /absolute/path/to/scythe-context-mcp/dist/command.js`. The package also includes the MCP entrypoint, so choosing CLI does not require another package or an MCP server.
+
+For optional remote retrieval, see [semantic search](semantic-search.md). The remaining sections cover MCP configuration and advanced settings.
+
+## MCP configuration
 
 Codex MCP configuration uses fields such as `command`, `args`, `cwd`, `env`, and `env_vars`; see the official [Model Context Protocol](https://developers.openai.com/codex/mcp) and [Configuration Reference](https://developers.openai.com/codex/config-reference) docs.
 
@@ -106,6 +130,8 @@ If you really want to pin one default project, set `SCYTHE_CONTEXT_DEFAULT_PROJE
 Scythe stores observed Gemini-compatible provider capabilities in repo-local `.scythe-context/provider-capabilities.json`, including whether batch embedding works, whether output dimensionality matches the expected size, and the latest probe / success / failure timestamps. This file is not committed; `repo_reindex(index_embeddings=true)` uses it to avoid repeatedly trying a batch endpoint that is already known to be unsupported.
 
 ## Gemini / v1beta proxy
+
+This section is optional. For the complete CLI/MCP embedding workflow and data handling, start with [optional semantic search](semantic-search.md).
 
 If URL/model/auth are not set, Scythe uses the official Gemini-compatible defaults:
 

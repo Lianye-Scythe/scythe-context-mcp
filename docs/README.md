@@ -6,12 +6,13 @@ Start with the [English README](../README.md), [Traditional Chinese](../README.z
 
 | Goal | Read |
 | --- | --- |
-| Configure Codex and choose Windows, WSL, Linux, or macOS startup | [Setup and advanced configuration](setup.md) |
+| Choose CLI + Skill or MCP and configure Windows, WSL, Linux, or macOS | [Setup and advanced configuration](setup.md) |
 | Diagnose startup, native modules, provider, or index failures | [Troubleshooting](troubleshooting.md) |
 | Check language and project-reference navigation coverage | [Language support and limits](language-support.md) |
 | Understand module boundaries, indexing, and retrieval | [Architecture](architecture.md) |
 | Understand runtime and dependency choices | [Technology stack](tech-stack.md) |
-| Configure or debug embedding request compatibility | [Gemini-compatible provider](gemini-compatibility.md) |
+| Add optional hybrid/semantic retrieval and understand remote data handling | [Optional semantic search](semantic-search.md) |
+| Debug embedding request compatibility | [Gemini-compatible provider](gemini-compatibility.md) |
 | Review Codex integration decisions | [Codex integration](codex-integration.md) |
 | Contribute or publish | [Contributing](../CONTRIBUTING.md) · [Release process](release.md) |
 

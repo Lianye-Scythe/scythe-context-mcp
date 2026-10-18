@@ -20,8 +20,8 @@ body:
       label: Reproduction steps
       description: Provide the smallest sequence of steps that reproduces the issue.
       placeholder: |
-        1. Configure MCP with ...
-        2. Run repo_index_status ...
+        1. Install CLI + Skill or configure MCP with ...
+        2. Run scythe-context status or repo_index_status ...
         3. See ...
     validations:
       required: true
@@ -56,11 +56,20 @@ body:
         - Codex CLI
         - Codex IDE extension
         - Other
+  - type: dropdown
+    id: interface
+    attributes:
+      label: Scythe interface
+      options:
+        - CLI + Skill
+        - CLI only
+        - MCP
+        - Both
   - type: input
     id: environment
     attributes:
-      label: Operating system and server environment
-      description: Where do Codex and the MCP Node process run?
+      label: Operating system and execution environment
+      description: Where do the agent and Scythe Node process run?
       placeholder: "Windows App + WSL Ubuntu, native Windows, Linux, or macOS"
   - type: dropdown
     id: search_mode
@@ -68,12 +77,12 @@ body:
       label: Search mode
       options:
         - Not applicable
-        - keyword
-        - hybrid (default)
+        - keyword (CLI default)
+        - hybrid (MCP default)
         - semantic
   - type: textarea
     id: logs
     attributes:
       label: Relevant diagnostics
-      description: Paste redacted `repo_doctor`, `repo_index_status`, or error output. Provider probes send test text remotely; use them only when appropriate.
+      description: Paste redacted CLI `doctor` / `status`, MCP `repo_doctor` / `repo_index_status`, or error output. Provider probes send test text remotely; use them only when appropriate.
       render: text
