@@ -234,6 +234,40 @@ function readFirstChunk(db: SqliteDatabase, path: string, maxSnippetChars: numbe
   };
 }
 
+/** Recover indexed declarations that lexical candidate truncation can hide behind usages. */
+function readExactDeclarations(db: SqliteDatabase, query: string, terms: readonly string[], maxCandidates: number, maxSnippetChars: number): HybridSearchResult[] {
+  const name = query.trim();
+  if (!/^[A-Za-z_$][\w$]*$/.test(name)) return [];
+  const choices: Array<{ path: string; line: number; role: number }> = [];
+  const compare = (a: typeof choices[number], b: typeof choices[number]) => b.role - a.role || a.path.localeCompare(b.path) || a.line - b.line;
+  const symbols = db.prepare(`
+    select files.path, file_symbols.line from file_symbols
+    join files on files.id = file_symbols.file_id where file_symbols.name = ?
+  `);
+  // Scan indexed exact-name matches, retaining at most one declaration per file and
+  // a bounded set of candidates. Repeated test declarations cannot fill the cap first.
+  for (const item of symbols.iterate(name)) {
+    const row = item as { path: string; line: number };
+    const existing = choices.find((choice) => choice.path === row.path);
+    if (existing) { existing.line = Math.min(existing.line, row.line); continue; }
+    choices.push({ ...row, role: roleScore(row.path, terms) });
+    choices.sort(compare);
+    if (choices.length > maxCandidates) choices.pop();
+  }
+  const readChunk = db.prepare(`
+    select start_line as startLine, end_line as endLine, text from chunks
+    join files on files.id = chunks.file_id
+    where files.path = ? and start_line <= ? and end_line >= ?
+    order by start_line desc, end_line asc limit 1
+  `);
+  return choices.flatMap((choice) => {
+    const chunk = readChunk.get(choice.path, choice.line, choice.line) as { startLine: number; endLine: number; text: string } | undefined;
+    if (!chunk) return [];
+    const text = chunk.text.split("\n").slice(choice.line - chunk.startLine).join("\n");
+    return [{ path: choice.path, startLine: choice.line, endLine: chunk.endLine, snippet: compactSnippet(text, maxSnippetChars), score: 0, matchTypes: ["local"] as Array<"local"> }];
+  });
+}
+
 function pathScore(path: string, terms: readonly string[]): number {
   const normalizedPath = path.toLowerCase();
   const basename = normalizedPath.split("/").at(-1) ?? normalizedPath;
@@ -334,11 +368,23 @@ export function rerankCodeAware(options: CodeAwareRerankOptions): HybridSearchRe
       }
     }
 
+    const exactDeclarations = readExactDeclarations(db, options.query, terms, Math.min(32, options.maxResults * 2), options.maxSnippetChars);
+    const declarationPaths = new Set(exactDeclarations.map((candidate) => candidate.path));
+    const bestScore = options.results.reduce((score, result) => Math.max(score, baseScore(result)), 0);
+    for (const candidate of exactDeclarations) {
+      const alreadyVisible = Array.from(candidates.values()).some((item) => item.path === candidate.path
+        && item.startLine <= candidate.startLine && item.endLine >= candidate.startLine
+        && item.snippet.includes(options.query.trim()));
+      if (!alreadyVisible) addCandidate(candidates, { ...candidate, score: bestScore });
+    }
+
     const detailCache = new Map<string, CandidateDetails>();
     const detailsFor = (candidatePath: string) => {
       const existing = detailCache.get(candidatePath);
       if (existing) return existing;
       const details = readCandidateDetails(db, candidatePath);
+      // The exact-name lookup can find declarations beyond the bounded symbol preview.
+      if (declarationPaths.has(candidatePath)) details.symbols.push(options.query.trim(), ...splitIdentifier(options.query.trim()));
       detailCache.set(candidatePath, details);
       return details;
     };

@@ -101,6 +101,11 @@ export function initializeStorageSchema(db: Database, options: StorageSchemaOpti
       tokenize='trigram'
     );
 
+    create table if not exists file_chunking (
+      file_id integer primary key references files(id) on delete cascade,
+      cache_key text not null
+    );
+
     create table if not exists embedding_sets (
       id integer primary key,
       provider text not null,
@@ -145,6 +150,7 @@ export function initializeStorageSchema(db: Database, options: StorageSchemaOpti
 
     insert or ignore into schema_migrations(version) values (1);
     insert or ignore into schema_migrations(version) values (2);
+    insert or ignore into schema_migrations(version) values (3);
   `);
 
   const tableName = vectorTableName(options.vectorDimensions);

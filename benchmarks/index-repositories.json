@@ -1,0 +1,64 @@
+{
+  "repos": [
+    {
+      "repo": "pallets/flask",
+      "commit": "d086db856be187255b8ec61ef409357393020f32",
+      "editPath": "src/flask/app.py",
+      "queries": [
+        {
+          "query": "get_root_path",
+          "expectedPath": "src/flask/helpers.py"
+        },
+        {
+          "query": "get_send_file_max_age",
+          "expectedPath": "src/flask/app.py"
+        }
+      ]
+    },
+    {
+      "repo": "fastify/fastify",
+      "commit": "e03b48ba3cd92dcbdafcb624579318e0f22176d2",
+      "editPath": "lib/route.js",
+      "queries": [
+        {
+          "query": "buildRouting",
+          "expectedPath": "lib/route.js"
+        },
+        {
+          "query": "buildRouterOptions",
+          "expectedPath": "lib/route.js"
+        }
+      ]
+    },
+    {
+      "repo": "pocketbase/pocketbase",
+      "commit": "6f370ea741f33adf889eef02e3c1b884a47aa522",
+      "editPath": "core/base.go",
+      "queries": [
+        {
+          "query": "NewBaseApp",
+          "expectedPath": "core/base.go"
+        },
+        {
+          "query": "NewBaseCollection",
+          "expectedPath": "core/collection_model.go"
+        }
+      ]
+    },
+    {
+      "repo": "BurntSushi/ripgrep",
+      "commit": "3fce3b5bb0236da2df6d99672afb8a719642eca7",
+      "editPath": "crates/ignore/src/walk.rs",
+      "queries": [
+        {
+          "query": "WalkBuilder",
+          "expectedPath": "crates/ignore/src/walk.rs"
+        },
+        {
+          "query": "GlobSetBuilder",
+          "expectedPath": "crates/globset/src/lib.rs"
+        }
+      ]
+    }
+  ]
+}

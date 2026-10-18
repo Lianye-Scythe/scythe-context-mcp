@@ -44,7 +44,9 @@
     "scripts/prepare-release.mjs",
     "scripts/release-notes.mjs",
     "scripts/tree-sitter-spike.mjs",
-    ".env.example"
+    ".env.example",
+    "scripts/index-performance.mjs",
+    "scripts/repository-index-performance.mjs"
   ],
   "scripts": {
     "build": "tsc -p tsconfig.json && node scripts/bin-mode.mjs ensure",
@@ -64,7 +66,9 @@
     "smoke": "node dist/index.js --version && node dist/index.js --help && node dist/command.js --version && node dist/command.js --help",
     "test": "vitest run",
     "typecheck": "tsc -p tsconfig.json --noEmit",
-    "verify": "npm test && npm run build && node scripts/bin-mode.mjs check && npm run smoke && npm audit --omit=dev && npm pack --dry-run"
+    "verify": "npm test && npm run build && node scripts/bin-mode.mjs check && npm run smoke && npm audit --omit=dev && npm pack --dry-run",
+    "bench:index": "npm run build && node scripts/index-performance.mjs",
+    "bench:index:repos": "npm run build && node scripts/repository-index-performance.mjs"
   },
   "engines": {
     "node": ">=24.11.0 <27"

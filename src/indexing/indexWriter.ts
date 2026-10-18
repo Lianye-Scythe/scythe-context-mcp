@@ -13,7 +13,6 @@ import {
   deleteChunksForFile,
   initializeStorageSchema,
   insertChunk,
-  rebuildChunkFtsForFile,
   replaceSymbolGraphForFile,
   upsertFile,
 } from "../storage/schema.js";
@@ -38,6 +37,9 @@ export interface PersistentReindexResult {
     bytes: number;
     symbols: number;
     dependencies: number;
+    chunkedFiles: number;
+    reusedChunkFiles: number;
+    repairedFtsRows: number;
   };
   skipped: SkippedFile[];
 }
@@ -58,6 +60,11 @@ export async function persistentReindexMetadata(options: PersistentReindexOption
   const db = new Database(dbPath);
   const structureExtractor = options.structureExtractor ?? regexStructureExtractor;
   const structureChunker = structureExtractor.chunkText ?? chunkText;
+  const chunkerKey = structureExtractor.chunkText ? structureExtractor.chunkCacheKey : regexStructureExtractor.chunkCacheKey;
+  const cacheKey = chunkerKey ? JSON.stringify([chunkerKey, limits.targetChunkChars, limits.chunkOverlapChars, limits.maxChunksPerFile]) : null;
+  let chunkedFiles = 0;
+  let reusedChunkFiles = 0;
+  let repairedFtsRows = 0;
   let chunkCount = 0;
   let byteCount = 0;
   let symbolCount = 0;
@@ -65,18 +72,30 @@ export async function persistentReindexMetadata(options: PersistentReindexOption
 
   try {
     initializeStorageSchema(db, { vectorDimensions: options.vectorDimensions });
+    const readExisting = db.prepare(`
+      select files.id, files.hash, file_chunking.cache_key as cacheKey,
+             (select count(*) from chunks where file_id = files.id) as chunkCount
+      from files left join file_chunking on file_chunking.file_id = files.id
+      where project_path = ? and path = ?
+    `);
+    const readChunks = db.prepare("select start_line as startLine, end_line as endLine, hash, text from chunks where file_id = ? order by start_line, end_line, id");
+    const rememberChunking = db.prepare("insert into file_chunking(file_id, cache_key) values (?, ?) on conflict(file_id) do update set cache_key = excluded.cache_key");
+    const forgetChunking = db.prepare("delete from file_chunking where file_id = ?");
+    // Repair missing search rows without rewriting healthy FTS content on every reindex.
+    const repairFts = db.prepare(`
+      insert into chunk_fts(rowid, path, title, text)
+      select chunks.id, ?, coalesce(chunks.title, ''), chunks.text from chunks
+      where file_id = ? and not exists (select 1 from chunk_fts where rowid = chunks.id)
+    `);
     const writeFileMetadata = db.transaction(
       (input: {
         relativePath: string;
         size: number;
         mtimeMs: number;
         hash: string;
-        chunks: Array<{ startLine: number; endLine: number; text: string; hash: string }>;
         content: string;
       }) => {
-        const existing = db
-          .prepare("select id, hash from files where project_path = ? and path = ?")
-          .get(projectPath, input.relativePath) as { id: number; hash: string } | undefined;
+        const existing = readExisting.get(projectPath, input.relativePath) as { id: number; hash: string; cacheKey: string | null; chunkCount: number } | undefined;
         const fileId = upsertFile(db, {
           projectPath,
           path: input.relativePath,
@@ -99,51 +118,62 @@ export async function persistentReindexMetadata(options: PersistentReindexOption
           dependencies,
         );
 
-        if (existing?.hash === input.hash) {
-          rebuildChunkFtsForFile(db, fileId, input.relativePath);
-          return { ...graph, dependencyCount: dependencies.length };
+        const unchanged = existing?.hash === input.hash;
+        let chunksForFile = existing?.chunkCount ?? 0;
+        let reuse = unchanged && cacheKey !== null && existing?.cacheKey === cacheKey;
+        if (!reuse) {
+          const chunks = structureChunker(input.relativePath, input.content, limits);
+          chunkedFiles++;
+          chunksForFile = chunks.length;
+          // Old indexes and custom chunkers have no reusable key. Compare layouts so a
+          // migration or a settings change need not discard equivalent chunks/embeddings.
+          if (unchanged) {
+            const previous = readChunks.all(fileId) as Array<{ startLine: number; endLine: number; hash: string; text: string }>;
+            reuse = previous.length === chunks.length && previous.every((chunk, index) => {
+              const next = chunks[index];
+              return chunk.startLine === next.startLine && chunk.endLine === next.endLine && chunk.hash === next.hash && chunk.text === next.text;
+            });
+          }
+          if (!reuse) {
+            deleteChunksForFile(db, fileId);
+            for (const chunk of chunks) {
+              insertChunk(db, { fileId, path: input.relativePath, startLine: chunk.startLine, endLine: chunk.endLine,
+                title: input.relativePath, text: chunk.text, hash: chunk.hash });
+            }
+          }
         }
-
-        deleteChunksForFile(db, fileId);
-        for (const chunk of input.chunks) {
-          insertChunk(db, {
-            fileId,
-            path: input.relativePath,
-            startLine: chunk.startLine,
-            endLine: chunk.endLine,
-            title: input.relativePath,
-            text: chunk.text,
-            hash: chunk.hash,
-          });
+        if (reuse) {
+          reusedChunkFiles++;
+          repairedFtsRows += repairFts.run(input.relativePath, fileId).changes;
         }
-        return { ...graph, dependencyCount: dependencies.length };
+        if (cacheKey !== null) rememberChunking.run(fileId, cacheKey); else forgetChunking.run(fileId);
+        return { ...graph, chunks: chunksForFile, dependencyCount: dependencies.length };
       },
     );
 
     for (const file of scan.files) {
       const content = await fs.readFile(file.absolutePath, "utf8");
-      const chunks = structureChunker(file.relativePath, content, limits);
       const graph = writeFileMetadata({
         relativePath: file.relativePath,
         size: file.size,
         mtimeMs: file.mtimeMs,
         hash: sha256Hex(content),
-        chunks,
         content,
       });
-      chunkCount += chunks.length;
+      chunkCount += graph.chunks;
       byteCount += file.size;
       symbolCount += graph.symbols.length;
       dependencyCount += graph.dependencyCount;
     }
 
-    const activePaths = scan.files.map((file) => file.relativePath);
-    if (activePaths.length === 0) {
-      db.prepare("delete from files where project_path = ?").run(projectPath);
-    } else {
-      const placeholders = activePaths.map(() => "?").join(", ");
-      db.prepare(`delete from files where project_path = ? and path not in (${placeholders})`).run(projectPath, ...activePaths);
-    }
+    const stale = (db.prepare("select id, path from files where project_path = ?").all(projectPath) as Array<{ id: number; path: string }>).filter((file) => !activePathSet.has(file.path));
+    const deleteFile = db.prepare("delete from files where id = ?");
+    db.transaction(() => {
+      for (const file of stale) {
+        deleteChunksForFile(db, file.id);
+        deleteFile.run(file.id);
+      }
+    })();
   } finally {
     db.close();
   }
@@ -162,6 +192,9 @@ export async function persistentReindexMetadata(options: PersistentReindexOption
       bytes: byteCount,
       symbols: symbolCount,
       dependencies: dependencyCount,
+      chunkedFiles,
+      reusedChunkFiles,
+      repairedFtsRows,
     },
     skipped: scan.skipped,
   };

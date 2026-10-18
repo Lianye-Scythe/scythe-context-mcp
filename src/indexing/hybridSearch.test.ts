@@ -3,6 +3,7 @@ import os from "node:os";
 import path from "node:path";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import { mergeHybridResults, searchKeywordOnly } from "./hybridSearch.js";
+import { searchByKeyword } from "./keywordSearch.js";
 import { persistentReindexMetadata } from "./indexWriter.js";
 
 let tempDir: string;
@@ -127,6 +128,68 @@ describe("searchKeywordOnly", () => {
     const paths = results.map((result) => result.path);
     expect(paths).toContain("src/indexWriter.ts");
     expect(paths.indexOf("src/indexWriter.ts")).toBeLessThan(paths.indexOf("src/indexWriter.test.ts"));
+  });
+
+  it.each([
+    { language: "go", source: "src/model.go", tests: "tests/model_test.go", declaration: "func NewBaseCollection() bool { return true }", call: "NewBaseCollection()", name: "NewBaseCollection" },
+    { language: "python", source: "src/auth.py", tests: "tests/test_auth.py", declaration: "def validate_token():\n    return True", call: "validate_token()", name: "validate_token" },
+    { language: "rust", source: "src/auth.rs", tests: "tests/auth.rs", declaration: "pub fn validate_token() -> bool { true }", call: "validate_token();", name: "validate_token" },
+  ])("recovers $language declarations beyond the FTS shortlist and anchors the preview", async (example) => {
+    await fs.mkdir(path.join(tempDir, "src"));
+    await fs.mkdir(path.join(tempDir, "tests"));
+    const comment = example.language === "python" ? "#" : "//";
+    const padding = Array.from({ length: 80 }, (_, index) => `${comment} unrelated implementation detail ${index}`).join("\n");
+    await fs.writeFile(path.join(tempDir, example.source), padding + "\n" + example.declaration + "\n");
+    // Repeated usages dominate lexical ranking; they must not hide the declaration.
+    await fs.writeFile(path.join(tempDir, example.tests), Array.from({ length: 500 }, () => example.call).join("\n"));
+    const metadata = await persistentReindexMetadata({ projectPath: tempDir, indexDirName: ".scythe-context", vectorDimensions: 3,
+      targetChunkChars: 500, chunkOverlapChars: 0 });
+    const shortlist = searchByKeyword({ dbPath: metadata.dbPath, query: example.name, maxResults: 6, maxSnippetChars: 100 });
+    expect(shortlist).toHaveLength(6);
+    expect(shortlist.every((row) => row.path === example.tests)).toBe(true);
+    const off = searchKeywordOnly({ dbPath: metadata.dbPath, query: example.name, maxResults: 3, maxSnippetChars: 100, rerankMode: "off" });
+    expect(off.every((row) => row.path === example.tests)).toBe(true);
+    const results = searchKeywordOnly({ dbPath: metadata.dbPath, query: example.name, maxResults: 3, maxSnippetChars: 100 });
+    expect(results[0]).toMatchObject({ path: example.source, startLine: 81 });
+    expect(results[0].snippet).toContain(example.declaration.split("\n")[0]);
+  });
+
+  it("retains an exact source declaration beyond symbol previews and many test declarations", async () => {
+    await fs.mkdir(path.join(tempDir, "tests"));
+    await fs.writeFile(path.join(tempDir, "z_source.py"), Array.from({ length: 100 }, (_, i) => `def helper_${i}(): pass`).join("\n") + "\ndef validate_token(): return True\n");
+    for (let i = 0; i < 40; i++) await fs.writeFile(path.join(tempDir, "tests", `test_${i}.py`), "def validate_token(): return False\n" + "validate_token()\n".repeat(20));
+    const metadata = await persistentReindexMetadata({ projectPath: tempDir, indexDirName: ".scythe-context", vectorDimensions: 3, targetChunkChars: 500, chunkOverlapChars: 0 });
+    const results = searchKeywordOnly({ dbPath: metadata.dbPath, query: "validate_token", maxResults: 2, maxSnippetChars: 100 });
+    expect(results[0]).toMatchObject({ path: "z_source.py", startLine: 101 });
+    expect(results[0].snippet).toContain("def validate_token()");
+  });
+
+  it("does not invent source candidates for undeclared names or multiword queries", async () => {
+    await fs.writeFile(path.join(tempDir, "test_auth.py"), "unknown_token()\n".repeat(50));
+    const metadata = await persistentReindexMetadata({ projectPath: tempDir, indexDirName: ".scythe-context", vectorDimensions: 3 });
+    for (const query of ["unknown_token", "unknown_token callers"]) {
+      const results = searchKeywordOnly({ dbPath: metadata.dbPath, query, maxResults: 3, maxSnippetChars: 100 });
+      expect(results.length).toBeGreaterThan(0);
+      expect(results.every((row) => row.path === "test_auth.py" && !row.matchTypes.includes("local"))).toBe(true);
+    }
+  });
+
+  it("keeps multiword usage searches on the existing candidate path", async () => {
+    await fs.writeFile(path.join(tempDir, "auth.py"), "# implementation detail\n".repeat(100) + "def validate_token(): return True\n");
+    await fs.writeFile(path.join(tempDir, "test_auth.py"), "validate_token() # callers\n".repeat(500));
+    const metadata = await persistentReindexMetadata({ projectPath: tempDir, indexDirName: ".scythe-context", vectorDimensions: 3, targetChunkChars: 500, chunkOverlapChars: 0 });
+    const results = searchKeywordOnly({ dbPath: metadata.dbPath, query: "validate_token callers", maxResults: 2, maxSnippetChars: 100 });
+    expect(results).toHaveLength(2);
+    expect(results.every((row) => row.path === "test_auth.py" && !row.matchTypes.includes("local"))).toBe(true);
+  });
+
+  it("does not return a declaration beyond the indexed chunk limit", async () => {
+    await fs.writeFile(path.join(tempDir, "auth.py"), "# unrelated padding\n".repeat(100) + "def validate_token(): return True\n");
+    await fs.writeFile(path.join(tempDir, "test_auth.py"), "validate_token()\n".repeat(50));
+    const metadata = await persistentReindexMetadata({ projectPath: tempDir, indexDirName: ".scythe-context", vectorDimensions: 3, targetChunkChars: 100, chunkOverlapChars: 0, maxChunksPerFile: 1 });
+    const results = searchKeywordOnly({ dbPath: metadata.dbPath, query: "validate_token", maxResults: 3, maxSnippetChars: 100 });
+    expect(results.length).toBeGreaterThan(0);
+    expect(results.every((row) => row.path === "test_auth.py")).toBe(true);
   });
 
   it("can disable code-aware reranking", async () => {

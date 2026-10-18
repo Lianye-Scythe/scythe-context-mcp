@@ -20,6 +20,7 @@ Setup is the source for configuration examples. Troubleshooting links to those e
 ## Evaluation and maintenance records
 
 - [Retrieval benchmark](benchmark.md): method, metrics, and recorded results.
+- [Index performance](index-performance.md): synthetic indexing/search latency, process memory, and chunk reuse measurements.
 - [Dogfood evaluation](dogfood.md): repository-specific observations, not a controlled model productivity study.
 - [Codex task A/B protocol](codex-evaluation.md) (Traditional Chinese): how to measure real task outcomes.
 - [Dependency maintenance policy and PR cleanup](dependency-maintenance.md): automation scope and the 2026-10-12 dependency update.

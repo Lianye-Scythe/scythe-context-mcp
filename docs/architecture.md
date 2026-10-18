@@ -1,6 +1,6 @@
 # Architecture
 
-Status: current implementation as of 0.1.20, including C# structure/project-reference and C++ structure/include support. Start with [setup](setup.md) for installation or the [documentation index](README.md) for other guides. Early proposals are preserved in the [archive](archive/README.md).
+Status: current implementation as of 0.1.21, including C# structure/project-reference and C++ structure/include support. Start with [setup](setup.md) for installation or the [documentation index](README.md) for other guides. Early proposals are preserved in the [archive](archive/README.md).
 
 ## Responsibilities
 
@@ -46,7 +46,7 @@ Tests live beside the implementation as `*.test.ts`; TypeScript excludes them fr
 1. Resolve `project_path`, then the configured default project, usable `PWD`, or process `cwd`.
 2. Scan using Node directory traversal. Skip symlinks, apply built-in exclusions and the root `.gitignore`, and reject binary or oversized files. Nested `.gitignore` files are not loaded. Some built-in patterns are root-scoped; use the root `.gitignore` to specify exclusions throughout the repository.
 3. Split text using character targets and line boundaries. Defaults are 512 KiB per file, 4,000 characters per chunk, 400 overlap characters, and at most 80 chunks per file. These are character limits, not token guarantees.
-4. Update file/chunk metadata and rebuild symbols/imports for changed files. Preserve unchanged chunk row ids to reuse cached embeddings.
+4. Read/hash files and rebuild symbols/imports. Reuse matching chunk layouts and healthy FTS rows with a per-file chunking key; changing chunk settings recomputes layouts. Preserve equivalent chunk row ids and embeddings. See [index performance](index-performance.md) for cache migration and work counters.
 5. Embed chunks only when `repo_reindex(index_embeddings=true)` is requested. Batch requests may fall back to individual requests; the capability cache records observed endpoint behavior.
 
 The default regex extractor handles common declarations and imports. Language-specific extraction and local dependency resolution cover Python packages, Go module/package directories, and conventional Rust file modules; see [language support](language-support.md) for boundaries. Dependencies are recomputed during metadata reindexing even when the importing file is unchanged. Optional tree-sitter extraction applies to JS/TS with configured WASM grammars, falling back to regex when unavailable. It does not replace the text chunker.

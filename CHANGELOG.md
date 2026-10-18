@@ -6,6 +6,23 @@ This project follows semantic versioning before npm publication where practical.
 
 ## [Unreleased]
 
+### Fixed
+
+- Recover indexed exact-name declarations hidden by frequent usage/test matches during automatic keyword/hybrid reranking, with bounded candidates and previews anchored to declaration lines. Preserve existing visible candidates and the rerank-off path.
+- Fix the PocketBase NewBaseCollection lookup: the source declaration previously fell outside the FTS shortlist and is now returned first. Add Go/Python/Rust regression coverage and verify identical CLI/MCP compact context payloads.
+- Route external search probes through the production keyword-only pipeline and retain failures and intentional ranking changes in the evaluation report.
+
+### Performance
+
+- Reuse unchanged chunk layouts and healthy FTS rows while refreshing symbols and dependencies. Repair missing FTS rows and remove deleted files from FTS and the per-file cache.
+- Track chunker identity/settings per file. Recompute changed settings and unkeyed custom chunkers conservatively, preserving equivalent legacy chunk ids and embedding records.
+- Add synthetic and pinned Flask/Fastify/PocketBase/ripgrep comparisons. In the sampled public repositories, unchanged reindexing takes roughly 54–70% less time; first indexing remains approximately unchanged. These small local workloads are not universal speed claims. The corrected production-pipeline evaluation hits all eight fixed source probes without losing previously successful probes.
+
+### Upgrade
+
+- After upgrading to 0.1.21, run `scythe-context index --project /absolute/path/to/repo` once to warm the chunking cache. MCP users can call `repo_reindex` with `dry_run=false` and `index_embeddings=false` on the upgraded server.
+- Schema initialization adds the per-file chunking cache automatically. Equivalent chunks retain ids and embedding records; changing chunk settings may replace chunks and require optional re-embedding. See [index performance and validation](https://github.com/Lianye-Scythe/scythe-context-mcp/blob/v0.1.21/docs/index-performance.md) for scope, migration, and evaluation details.
+
 ## [0.1.20] - 2026-10-18
 
 ### Added

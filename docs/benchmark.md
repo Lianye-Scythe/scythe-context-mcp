@@ -6,6 +6,8 @@ For broader claims, run the same methods against external repositories with thei
 
 For actual GPT‑6.1 Sol task completion, use the [Codex task A/B evaluation protocol](codex-evaluation.md). The `rg-smart` baseline here is a fixed algorithm, not Codex iteratively choosing searches. Output tokens are JSON character-based estimates, not measured model usage. The local benchmark calls search/formatting functions directly; MCP transport and remote embedding latency are not included in local-method timings.
 
+For indexing latency and memory measurements, see the separate [index performance benchmark](index-performance.md).
+
 This benchmark can compare three lookup modes:
 
 - `rg-smart`: local ripgrep baseline without MCP or embeddings.
@@ -70,6 +72,10 @@ Equivalent explicit form:
 ```bash
 npm run bench:context -- --include-hybrid
 ```
+
+Automatic reranking also checks indexed declarations for a single exact, case-sensitive identifier query. It retains at most one declaration per file and up to `min(32, 2 * maxResults)` declaration candidates, ordered by existing path-role preferences. Eligible candidates must have an indexed chunk covering the declaration line. Missing declarations are supplemented using the best existing candidate's base score; already-visible declarations retain their original candidate score. Previews for supplemented declarations begin at the declaration line. This helps when frequent usages or test chunks occupy the FTS shortlist, without increasing every query's lexical candidate limit.
+
+This applies to keyword/hybrid automatic reranking and all languages whose declarations are indexed. It does not add compiler binding, qualified-name resolution, or unindexed source text. Multiword queries and `rerank=off` keep the existing candidate behavior. The bounded symbol metadata preview can omit a later declaration, so exact-name evidence from the lookup is retained for scoring that file.
 
 Compare code-aware reranking against the raw merge baseline without API calls. The report prints auto/off metrics and deltas in one table:
 
