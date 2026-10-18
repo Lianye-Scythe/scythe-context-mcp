@@ -1,11 +1,19 @@
 ---
 name: scythe-context
-description: Find code in unfamiliar repositories with the Scythe Context CLI, including conceptual lookup, bounded context packs, and tracing imports. Use direct reads or rg for known paths and exact strings.
+description: Find code in unfamiliar repositories with ranked local search, bounded context packs, and import navigation through the Scythe Context CLI. Prefer rg for exact strings and direct reads for known file ranges.
 ---
 
 # Scythe Context CLI
 
 Use the installed `scythe-context` command. Read `scythe-context --help` when additional options are needed. If unavailable, use a built source checkout through `node /absolute/path/to/scythe-context-mcp/dist/command.js`; do not download or install packages just to discover commands.
+
+## Choose the lookup tool
+
+- Read files directly when the relevant path and range are known. Use `rg --files` to locate a known filename or path pattern.
+- Use `rg` for exact names, error messages, literals, regular expressions, or an exhaustive textual match list. It searches current files without an index; prefer it for a simple lookup rather than building an index solely for that lookup.
+- Use Scythe `search` when you need ranked candidates across an unfamiliar repository. Use `context` when import relationships and bounded related snippets would help trace the implementation; use `related` for a focused view of an indexed file's symbols, imports, and reverse imports.
+- Local `keyword` retrieval depends on matching terms; it does not provide semantic understanding or reliably bridge different languages or synonyms. Start with identifiers or technical terms likely to appear in the source. If wording mismatch prevents useful results, consider the optional embeddings workflow below when within scope.
+- Once results identify enough relevant code, read those file ranges and continue the task. Avoid repeating the same lookup through both tools without a missing piece to resolve. Neither faster task completion nor lower total token use is guaranteed.
 
 ## Local lookup
 
@@ -15,15 +23,15 @@ Run commands in the target repository or supply `--project /absolute/repo/path`.
 scythe-context status
 # Only when metadata is missing or stale:
 scythe-context index
-scythe-context context "where is authentication validated?"
+scythe-context context "auth token validation"
 ```
 
-Search and context commands default to local `keyword` mode and `paths` output. Read the matching file ranges next. Use `search` for ranked matches alone; `context` also includes related-file navigation hints. Prefer `rg` or direct reads when a path or exact string is already known.
+Search and context commands default to local `keyword` mode and `paths` output. Index freshness affects these results; `rg` and direct reads use current file contents. Read the matching file ranges next.
 
 For a short code preview, add `--format compact`. Use `--format snippets` for fuller snippets and ranking fields with `--json`. Keep output bounded with `--max-results` and `--max-context-chars`.
 
 ```bash
-scythe-context context "where is authentication validated?" --format compact --max-results 3
+scythe-context context "auth token validation" --format compact --max-results 3
 scythe-context related src/auth.ts
 ```
 

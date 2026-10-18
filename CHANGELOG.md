@@ -8,6 +8,7 @@ This project follows semantic versioning before npm publication where practical.
 
 ### Changed
 
+- Clarify CLI Skill routing between direct reads, `rg`, ranked search and related context; document keyword wording limits and stop searching once enough relevant code is found.
 - Lead the three README languages and package description with local search, import navigation and bounded context. Add an interface comparison and optional semantic-search guide; keep MCP hybrid-default and remote-data disclosures explicit.
 
 - Regroup TS configuration, project-reference, Cargo and related-navigation tests by responsibility. Keep all 319 cases and existing test assertions; scope temporary-directory setup to filesystem tests.
