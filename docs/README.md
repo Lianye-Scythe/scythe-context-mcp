@@ -24,6 +24,7 @@ Setup is the source for configuration examples. Troubleshooting links to those e
 - [Retrieval workflow verification](retrieval-workflow-audit.md): lifecycle, configured-vector isolation, failure behavior, real-provider checks and remaining limits for 0.1.24.
 
 - [Retrieval benchmark](benchmark.md): method, metrics, and recorded results.
+- [Hybrid fusion experiment](hybrid-fusion-evaluation.md): current merge versus RRF on fixed public source subtrees; production defaults remain unchanged.
 - [Config-driven navigation](config-navigation.md): local TS/JS paths and Cargo target contexts, scope and fixed GitHub cases.
 - [Index performance](index-performance.md): synthetic indexing/search latency, process memory, and chunk reuse measurements.
 - [Dogfood evaluation](dogfood.md): repository-specific observations, not a controlled model productivity study.

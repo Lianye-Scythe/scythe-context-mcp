@@ -1,0 +1,421 @@
+{
+  "scope": "Pinned public source subtrees; exploratory file-level labels, not whole-repository or agent-task evaluation. Cases fixed before retrieval runs.",
+  "repositories": [
+    {
+      "name": "flask",
+      "repo": "pallets/flask",
+      "commit": "d086db856be187255b8ec61ef409357393020f32",
+      "sourceRoot": "src/flask",
+      "cases": [
+        {
+          "id": "flask-1-identifier",
+          "kind": "identifier",
+          "query": "get_root_path",
+          "expectedPaths": [
+            "src/flask/helpers.py"
+          ]
+        },
+        {
+          "id": "flask-1-natural",
+          "kind": "natural",
+          "query": "find the filesystem root directory for an imported Python module",
+          "expectedPaths": [
+            "src/flask/helpers.py"
+          ]
+        },
+        {
+          "id": "flask-1-paraphrase",
+          "kind": "paraphrase",
+          "query": "locate where a package lives on disk even when its loader does not provide a filename",
+          "expectedPaths": [
+            "src/flask/helpers.py"
+          ]
+        },
+        {
+          "id": "flask-2-identifier",
+          "kind": "identifier",
+          "query": "SecureCookieSessionInterface",
+          "expectedPaths": [
+            "src/flask/sessions.py"
+          ]
+        },
+        {
+          "id": "flask-2-natural",
+          "kind": "natural",
+          "query": "load and save signed cookie sessions",
+          "expectedPaths": [
+            "src/flask/sessions.py"
+          ]
+        },
+        {
+          "id": "flask-2-paraphrase",
+          "kind": "paraphrase",
+          "query": "persist a browser login state in a tamper resistant client cookie",
+          "expectedPaths": [
+            "src/flask/sessions.py"
+          ]
+        },
+        {
+          "id": "flask-3-identifier",
+          "kind": "identifier",
+          "query": "copy_current_request_context",
+          "expectedPaths": [
+            "src/flask/ctx.py"
+          ]
+        },
+        {
+          "id": "flask-3-natural",
+          "kind": "natural",
+          "query": "copy the current request context for another function",
+          "expectedPaths": [
+            "src/flask/ctx.py"
+          ]
+        },
+        {
+          "id": "flask-3-paraphrase",
+          "kind": "paraphrase",
+          "query": "keep request local objects available when work runs in a greenlet",
+          "expectedPaths": [
+            "src/flask/ctx.py"
+          ]
+        },
+        {
+          "id": "flask-4-identifier",
+          "kind": "identifier",
+          "query": "DispatchingJinjaLoader",
+          "expectedPaths": [
+            "src/flask/templating.py"
+          ]
+        },
+        {
+          "id": "flask-4-natural",
+          "kind": "natural",
+          "query": "load templates from applications and blueprints",
+          "expectedPaths": [
+            "src/flask/templating.py"
+          ]
+        },
+        {
+          "id": "flask-4-paraphrase",
+          "kind": "paraphrase",
+          "query": "look up an HTML view across the main application and its registered modules",
+          "expectedPaths": [
+            "src/flask/templating.py"
+          ]
+        }
+      ]
+    },
+    {
+      "name": "fastify",
+      "repo": "fastify/fastify",
+      "commit": "e03b48ba3cd92dcbdafcb624579318e0f22176d2",
+      "sourceRoot": "lib",
+      "cases": [
+        {
+          "id": "fastify-1-identifier",
+          "kind": "identifier",
+          "query": "Reply.prototype.send",
+          "expectedPaths": [
+            "lib/reply.js"
+          ]
+        },
+        {
+          "id": "fastify-1-natural",
+          "kind": "natural",
+          "query": "send a response payload to the client",
+          "expectedPaths": [
+            "lib/reply.js"
+          ]
+        },
+        {
+          "id": "fastify-1-paraphrase",
+          "kind": "paraphrase",
+          "query": "finish an HTTP request by writing the outgoing body",
+          "expectedPaths": [
+            "lib/reply.js"
+          ]
+        },
+        {
+          "id": "fastify-2-identifier",
+          "kind": "identifier",
+          "query": "buildRouting",
+          "expectedPaths": [
+            "lib/route.js"
+          ]
+        },
+        {
+          "id": "fastify-2-natural",
+          "kind": "natural",
+          "query": "register routes and check duplicate paths",
+          "expectedPaths": [
+            "lib/route.js"
+          ]
+        },
+        {
+          "id": "fastify-2-paraphrase",
+          "kind": "paraphrase",
+          "query": "connect incoming URLs and HTTP methods to their handlers",
+          "expectedPaths": [
+            "lib/route.js"
+          ]
+        },
+        {
+          "id": "fastify-3-identifier",
+          "kind": "identifier",
+          "query": "compileSchemasForValidation",
+          "expectedPaths": [
+            "lib/validation.js"
+          ]
+        },
+        {
+          "id": "fastify-3-natural",
+          "kind": "natural",
+          "query": "validate request bodies against schemas",
+          "expectedPaths": [
+            "lib/validation.js"
+          ]
+        },
+        {
+          "id": "fastify-3-paraphrase",
+          "kind": "paraphrase",
+          "query": "reject incoming data that violates declared field constraints",
+          "expectedPaths": [
+            "lib/validation.js"
+          ]
+        },
+        {
+          "id": "fastify-4-identifier",
+          "kind": "identifier",
+          "query": "ContentTypeParser",
+          "expectedPaths": [
+            "lib/content-type-parser.js"
+          ]
+        },
+        {
+          "id": "fastify-4-natural",
+          "kind": "natural",
+          "query": "parse request body based on content type",
+          "expectedPaths": [
+            "lib/content-type-parser.js"
+          ]
+        },
+        {
+          "id": "fastify-4-paraphrase",
+          "kind": "paraphrase",
+          "query": "turn raw incoming JSON bytes into a JavaScript object and enforce payload size limits",
+          "expectedPaths": [
+            "lib/content-type-parser.js"
+          ]
+        }
+      ]
+    },
+    {
+      "name": "globset",
+      "repo": "BurntSushi/ripgrep",
+      "commit": "3fce3b5bb0236da2df6d99672afb8a719642eca7",
+      "sourceRoot": "crates/globset",
+      "cases": [
+        {
+          "id": "globset-1-identifier",
+          "kind": "identifier",
+          "query": "GlobBuilder",
+          "expectedPaths": [
+            "crates/globset/src/glob.rs"
+          ]
+        },
+        {
+          "id": "globset-1-natural",
+          "kind": "natural",
+          "query": "compile a glob pattern into a matcher",
+          "expectedPaths": [
+            "crates/globset/src/glob.rs"
+          ]
+        },
+        {
+          "id": "globset-1-paraphrase",
+          "kind": "paraphrase",
+          "query": "translate wildcard expressions with braces and character classes into regular expressions",
+          "expectedPaths": [
+            "crates/globset/src/glob.rs"
+          ]
+        },
+        {
+          "id": "globset-2-identifier",
+          "kind": "identifier",
+          "query": "GlobSetBuilder",
+          "expectedPaths": [
+            "crates/globset/src/lib.rs"
+          ]
+        },
+        {
+          "id": "globset-2-natural",
+          "kind": "natural",
+          "query": "match a path against multiple glob patterns",
+          "expectedPaths": [
+            "crates/globset/src/lib.rs"
+          ]
+        },
+        {
+          "id": "globset-2-paraphrase",
+          "kind": "paraphrase",
+          "query": "determine which of many filename filters accept a candidate using specialized strategies",
+          "expectedPaths": [
+            "crates/globset/src/lib.rs"
+          ]
+        },
+        {
+          "id": "globset-3-identifier",
+          "kind": "identifier",
+          "query": "normalize_path",
+          "expectedPaths": [
+            "crates/globset/src/pathutil.rs"
+          ]
+        },
+        {
+          "id": "globset-3-natural",
+          "kind": "natural",
+          "query": "normalize path separators on Windows",
+          "expectedPaths": [
+            "crates/globset/src/pathutil.rs"
+          ]
+        },
+        {
+          "id": "globset-3-paraphrase",
+          "kind": "paraphrase",
+          "query": "make backslashes and forward slashes consistent before filename matching",
+          "expectedPaths": [
+            "crates/globset/src/pathutil.rs"
+          ]
+        },
+        {
+          "id": "globset-4-identifier",
+          "kind": "identifier",
+          "query": "GlobVisitor",
+          "expectedPaths": [
+            "crates/globset/src/serde_impl.rs"
+          ]
+        },
+        {
+          "id": "globset-4-natural",
+          "kind": "natural",
+          "query": "deserialize a glob from a string",
+          "expectedPaths": [
+            "crates/globset/src/serde_impl.rs"
+          ]
+        },
+        {
+          "id": "globset-4-paraphrase",
+          "kind": "paraphrase",
+          "query": "restore a wildcard object from serialized text while validating its syntax",
+          "expectedPaths": [
+            "crates/globset/src/serde_impl.rs"
+          ]
+        }
+      ]
+    },
+    {
+      "name": "security",
+      "repo": "pocketbase/pocketbase",
+      "commit": "6f370ea741f33adf889eef02e3c1b884a47aa522",
+      "sourceRoot": "tools/security",
+      "cases": [
+        {
+          "id": "security-1-identifier",
+          "kind": "identifier",
+          "query": "Decrypt",
+          "expectedPaths": [
+            "tools/security/encrypt.go"
+          ]
+        },
+        {
+          "id": "security-1-natural",
+          "kind": "natural",
+          "query": "decrypt an encrypted string with a key",
+          "expectedPaths": [
+            "tools/security/encrypt.go"
+          ]
+        },
+        {
+          "id": "security-1-paraphrase",
+          "kind": "paraphrase",
+          "query": "recover the original bytes from a base64 encoded AES GCM ciphertext",
+          "expectedPaths": [
+            "tools/security/encrypt.go"
+          ]
+        },
+        {
+          "id": "security-2-identifier",
+          "kind": "identifier",
+          "query": "ParseJWT",
+          "expectedPaths": [
+            "tools/security/jwt.go"
+          ]
+        },
+        {
+          "id": "security-2-natural",
+          "kind": "natural",
+          "query": "parse a JWT and verify its signature",
+          "expectedPaths": [
+            "tools/security/jwt.go"
+          ]
+        },
+        {
+          "id": "security-2-paraphrase",
+          "kind": "paraphrase",
+          "query": "check a signed bearer token before trusting its claims",
+          "expectedPaths": [
+            "tools/security/jwt.go"
+          ]
+        },
+        {
+          "id": "security-3-identifier",
+          "kind": "identifier",
+          "query": "S256Challenge",
+          "expectedPaths": [
+            "tools/security/crypto.go"
+          ]
+        },
+        {
+          "id": "security-3-natural",
+          "kind": "natural",
+          "query": "create a PKCE S256 challenge",
+          "expectedPaths": [
+            "tools/security/crypto.go"
+          ]
+        },
+        {
+          "id": "security-3-paraphrase",
+          "kind": "paraphrase",
+          "query": "derive a URL safe SHA256 proof from an OAuth authorization verifier",
+          "expectedPaths": [
+            "tools/security/crypto.go"
+          ]
+        },
+        {
+          "id": "security-4-identifier",
+          "kind": "identifier",
+          "query": "RandomStringByRegex",
+          "expectedPaths": [
+            "tools/security/random_by_regex.go"
+          ]
+        },
+        {
+          "id": "security-4-natural",
+          "kind": "natural",
+          "query": "generate a random string matching a regular expression",
+          "expectedPaths": [
+            "tools/security/random_by_regex.go"
+          ]
+        },
+        {
+          "id": "security-4-paraphrase",
+          "kind": "paraphrase",
+          "query": "synthesize sample text satisfying character classes and repetition constraints",
+          "expectedPaths": [
+            "tools/security/random_by_regex.go"
+          ]
+        }
+      ]
+    }
+  ]
+}

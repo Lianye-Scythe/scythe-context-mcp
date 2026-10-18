@@ -6,6 +6,10 @@ This project follows semantic versioning before npm publication where practical.
 
 ## [Unreleased]
 
+### Added
+
+- Add a source-checkout-only hybrid fusion experiment comparing the current merge, RRF and score-scaled RRF with shared vector/keyword candidates, fixed public-source cases and file-rank metrics. Production search defaults remain unchanged.
+
 ### Changed
 
 - Add client-specific Skill discovery and MCP setup for Codex CLI, Claude Code and Antigravity CLI. Record successful Codex/Antigravity CLI + Skill lookups and Claude Skill discovery blocked at model authentication.
