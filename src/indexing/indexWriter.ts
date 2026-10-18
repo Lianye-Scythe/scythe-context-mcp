@@ -4,6 +4,7 @@ import Database from "better-sqlite3";
 import { chunkText } from "./chunker.js";
 import { resolveIndexingLimits } from "./dryRun.js";
 import { sha256Hex } from "./hash.js";
+import { readResolutionSources } from "./resolutionSources.js";
 import { scanProject } from "./scanner.js";
 import { regexStructureExtractor } from "./structureExtractor.js";
 import { createDependencyResolver } from "./dependencyResolver.js";
@@ -53,9 +54,7 @@ export async function persistentReindexMetadata(options: PersistentReindexOption
 
   const scan = await scanProject(projectPath, limits);
   const activePathSet = new Set(scan.files.map((file) => file.relativePath));
-  const resolutionSources = new Map(await Promise.all(scan.files
-    .filter((file) => /(?:^|\/)(?:go\.mod|lib\.rs|main\.rs)$/.test(file.relativePath))
-    .map(async (file) => [file.relativePath, await fs.readFile(file.absolutePath, "utf8")] as const)));
+  const resolutionSources = await readResolutionSources(scan.files);
   const resolveDependencies = createDependencyResolver(activePathSet, resolutionSources);
   const db = new Database(dbPath);
   const structureExtractor = options.structureExtractor ?? regexStructureExtractor;

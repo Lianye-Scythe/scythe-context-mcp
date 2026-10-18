@@ -1,6 +1,6 @@
 # Architecture
 
-Status: current implementation as of 0.1.21, including C# structure/project-reference and C++ structure/include support. Start with [setup](setup.md) for installation or the [documentation index](README.md) for other guides. Early proposals are preserved in the [archive](archive/README.md).
+Status: current for 0.1.22, including config-driven JS/TS and Rust navigation, C# structure/project-reference and C++ structure/include support. Start with [setup](setup.md) for installation or the [documentation index](README.md) for other guides. Early proposals are preserved in the [archive](archive/README.md).
 
 ## Responsibilities
 
@@ -24,6 +24,10 @@ src/
     csharp.ts            C# declarations, using hints, and literal project references
     languageImports.ts   Python, Go, and Rust import statement extraction
     dependencyResolver.ts  Local module/package-to-file resolution
+    typescriptPaths.ts   Indexed JSONC inheritance, reference selection and path mappings
+    workspacePackages.ts  Declared workspace exports/config source hints
+    rustTargets.ts       Static Cargo library/binary target contexts
+    resolutionSources.ts  Indexed config/root text collection
     experimental/        Optional tree-sitter structure extraction
   providers/             Gemini-compatible REST adapter and capability cache
   storage/               SQLite schema and sqlite-vec integration

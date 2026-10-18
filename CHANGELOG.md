@@ -6,6 +6,19 @@ This project follows semantic versioning before npm publication where practical.
 
 ## [Unreleased]
 
+### Added
+
+- Resolve declared indexed workspace source exports/self-references and workspace config parents without running package code. Select explicit local project references by file/include/exclude selectors; keep conflicting conditions, project overlaps and unavailable targets unresolved.
+- Add fixed create-t3-turbo and shadcn Vite subtree probes: recover four T3 cases (+81 resolved edges against the preceding source build), preserve the Vite theme-provider edge and its missing generated Button, and verify CLI/MCP parity.
+- Add static local tsconfig/jsconfig JSONC paths/baseUrl navigation, relative config inheritance, wildcard specificity, ordered indexed fallbacks, and runtime-extension/source mapping. Keep unavailable, invalid, cyclic, and ambiguous contexts unresolved.
+- Read literal Cargo library/binary root paths and use those contexts for outlined modules and anchored imports, including arbitrary root filenames, auto-discovery controls, and basic workspace edition inheritance.
+- Validate fixed ripgrep, Taxonomy, and Next.js Boilerplate snapshots against published 0.1.21: six edge probes and four source probes pass; chunks/symbols stay equal; CLI/MCP related payloads match. Record all graph additions/removals.
+- Refresh configuration-driven dependencies after config-only edits and target removal while preserving unchanged source chunk ids. Reindex metadata once after upgrading to populate the new edges; no new embeddings, dependencies, or schema migration are needed.
+
+### Changed
+
+- Separate TypeScript config loading/overrides, project selection, alias matching and fallback dispatch into named functions. Add typed validated path maps and a typed workspace resolver; replace dense workspace export/dependency handling with focused helpers. Preserve navigation behavior across all five fixed GitHub snapshots.
+
 ## [0.1.21] - 2026-10-18
 
 ### Fixed

@@ -19,20 +19,22 @@ Scythe Context MCP 透過 CLI＋Skill 或 MCP，協助 coding agent 在不知道
 
 ## 語言支援
 
-目標專案可以是 JS／TS、Python、Go、Rust、C#、C++ 或其他文字程式碼；只有 Scythe 本身需要 Node.js。從 0.1.19 起，本地 import 導航進一步支援 Python flat／`src` package 與相對 imports、最近一層 `go.mod` 所屬的 Go packages，以及傳統 Cargo 檔案模組和 Rust 明確錨定的路徑。升級到 0.1.21 後，即使索引顯示 fresh，也請執行一次 `scythe-context index --project /absolute/path/to/repo`，更新 metadata 並建立切塊快取。MCP 使用者也能在升級後的 server 呼叫 `repo_reindex`，設定 `dry_run=false`、`index_embeddings=false`。不需要重新產生 embeddings。解析採保守方式，不等同編譯器層級的符號解析。詳見[語言支援與限制](docs/language-support.md)。
+目標專案可以是 JS／TS、Python、Go、Rust、C#、C++ 或其他文字程式碼；只有 Scythe 本身需要 Node.js。從 0.1.19 起，本地 import 導航進一步支援 Python flat／`src` package 與相對 imports、最近一層 `go.mod` 所屬的 Go packages，以及傳統 Cargo 檔案模組和 Rust 明確錨定的路徑。升級到 0.1.22 後，即使索引顯示 fresh，也請執行一次 `scythe-context index --project /absolute/path/to/repo`，更新 metadata 並建立切塊快取。MCP 使用者也能在升級後的 server 呼叫 `repo_reindex`，設定 `dry_run=false`、`index_embeddings=false`。不需要重新產生 embeddings。解析採保守方式，不等同編譯器層級的符號解析。詳見[語言支援與限制](docs/language-support.md)。
 
 0.1.20 加入 C# 結構與專案參考導航：namespace、型別與常見方法宣告，以及 `.csproj` 的靜態 `ProjectReference` 關聯。C# 的 `using` 會保留為未解析的 namespace／型別線索，不會當成檔案 import。這些功能只讀取原始碼與專案檔，不需要安裝或執行 .NET SDK；限制詳見同一份語言支援指南。
 
 0.1.20 也加入 C++ 基礎導航：namespace、class／struct／enum、常見函式與方法，以及相對於目前檔案的雙引號 `#include` 關聯。系統標頭與巨集引用會保留為未解析。不需要安裝 C++ 工具鏈；目前不解析編譯器 include 路徑或建置設定。
+
+0.1.22 加入 TypeScript／JavaScript 設定別名、本地與 workspace 設定繼承、明確的 project references 選擇、已宣告的 workspace 原始碼 exports，以及 Cargo library／binary 入口路徑。這些功能用於索引內的原始碼導航，不會執行建置設定，也不等同完整的編譯器或執行環境解析。詳見[設定驅動導航與 GitHub 驗證](docs/config-navigation.md)。
 
 ## CLI＋Skill（同一個套件）
 
 從 0.1.18 起，同一個 `scythe-context-mcp` npm 套件提供 `scythe-context` CLI 與原有 MCP 入口。安裝一次後，可選擇 CLI＋Skill、MCP，或同時使用。從原始碼使用時，先執行 `npm run build`，再將下列 `scythe-context` 換成 `node /absolute/path/to/scythe-context-mcp/dist/command.js`。
 
 ```bash
-npm install -g scythe-context-mcp@0.1.21
+npm install -g scythe-context-mcp@0.1.22
 scythe-context status
-# Run when metadata is missing/stale, or once after upgrading to 0.1.21:
+# Run when metadata is missing/stale, or once after upgrading to 0.1.22:
 scythe-context index
 scythe-context search "where is auth token validation handled?"
 scythe-context context "where is auth token validation handled?" --format compact

@@ -19,20 +19,22 @@ Scythe Context MCP 通过 CLI＋Skill 或 MCP，帮助 coding agent 在不知道
 
 ## 语言支持
 
-目标项目可以是 JS／TS、Python、Go、Rust、C#、C++ 或其他文本代码；只有 Scythe 本身需要 Node.js。从 0.1.19 起，本地 import 导航进一步支持 Python flat／`src` package 和相对 imports、最近一层 `go.mod` 所属的 Go packages，以及常规 Cargo 文件模块和 Rust 明确锚定的路径。升级到 0.1.21 后，即使索引显示 fresh，也请执行一次 `scythe-context index --project /absolute/path/to/repo`，更新 metadata 并建立切块缓存。MCP 用户也能在升级后的 server 调用 `repo_reindex`，设置 `dry_run=false`、`index_embeddings=false`。不需要重新生成 embeddings。解析采用保守方式，不等同编译器级别的符号解析。详见[语言支持与限制](docs/language-support.md)。
+目标项目可以是 JS／TS、Python、Go、Rust、C#、C++ 或其他文本代码；只有 Scythe 本身需要 Node.js。从 0.1.19 起，本地 import 导航进一步支持 Python flat／`src` package 和相对 imports、最近一层 `go.mod` 所属的 Go packages，以及常规 Cargo 文件模块和 Rust 明确锚定的路径。升级到 0.1.22 后，即使索引显示 fresh，也请执行一次 `scythe-context index --project /absolute/path/to/repo`，更新 metadata 并建立切块缓存。MCP 用户也能在升级后的 server 调用 `repo_reindex`，设置 `dry_run=false`、`index_embeddings=false`。不需要重新生成 embeddings。解析采用保守方式，不等同编译器级别的符号解析。详见[语言支持与限制](docs/language-support.md)。
 
 0.1.20 加入 C# 结构和项目引用导航：namespace、类型和常见方法声明，以及 `.csproj` 的静态 `ProjectReference` 关联。C# 的 `using` 会保留为未解析的 namespace／类型线索，不会当成文件 import。这些功能只读取源码和项目文件，不需要安装或执行 .NET SDK；限制详见同一份语言支持指南。
 
 0.1.20 也加入 C++ 基础导航：namespace、class／struct／enum、常见函数与方法，以及相对于当前文件的双引号 `#include` 关联。系统头文件与宏引用会保留为未解析。不需要安装 C++ 工具链；目前不解析编译器 include 路径或构建配置。
+
+0.1.22 加入 TypeScript／JavaScript 配置别名、本地与 workspace 配置继承、明确的 project references 选择、已声明的 workspace 源码 exports，以及 Cargo library／binary 入口路径。这些功能用于索引内的源码导航，不会执行构建配置，也不等同完整的编译器或运行环境解析。详见[配置驱动导航与 GitHub 验证](docs/config-navigation.md)。
 
 ## CLI＋Skill（同一个包）
 
 从 0.1.18 起，同一个 `scythe-context-mcp` npm 包提供 `scythe-context` CLI 和原有 MCP 入口。安装一次后，可选择 CLI＋Skill、MCP，或同时使用。从源码使用时，先执行 `npm run build`，再将下列 `scythe-context` 换成 `node /absolute/path/to/scythe-context-mcp/dist/command.js`。
 
 ```bash
-npm install -g scythe-context-mcp@0.1.21
+npm install -g scythe-context-mcp@0.1.22
 scythe-context status
-# Run when metadata is missing/stale, or once after upgrading to 0.1.21:
+# Run when metadata is missing/stale, or once after upgrading to 0.1.22:
 scythe-context index
 scythe-context search "where is auth token validation handled?"
 scythe-context context "where is auth token validation handled?" --format compact

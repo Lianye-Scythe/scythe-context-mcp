@@ -1,0 +1,77 @@
+{
+  "repos": [
+    {
+      "repo": "BurntSushi/ripgrep",
+      "directory": "ripgrep",
+      "commit": "3fce3b5bb0236da2df6d99672afb8a719642eca7",
+      "edges": [
+        {
+          "from": "crates/core/main.rs",
+          "specifier": "flags",
+          "target": "crates/core/flags/mod.rs"
+        },
+        {
+          "from": "crates/core/main.rs",
+          "specifier": "crate::flags::HiArgs",
+          "target": "crates/core/flags/mod.rs"
+        }
+      ],
+      "queries": [
+        {
+          "query": "WalkBuilder",
+          "expectedPath": "crates/ignore/src/walk.rs"
+        },
+        {
+          "query": "GlobSetBuilder",
+          "expectedPath": "crates/globset/src/lib.rs"
+        }
+      ]
+    },
+    {
+      "repo": "shadcn-ui/taxonomy",
+      "directory": "taxonomy",
+      "commit": "298a8857c7128a0d121e7f699dfd729f23b3966d",
+      "edges": [
+        {
+          "from": "components/main-nav.tsx",
+          "specifier": "@/lib/utils",
+          "target": "lib/utils.ts"
+        },
+        {
+          "from": "components/main-nav.tsx",
+          "specifier": "@/config/site",
+          "target": "config/site.ts"
+        }
+      ],
+      "queries": [
+        {
+          "query": "cn",
+          "expectedPath": "lib/utils.ts"
+        }
+      ]
+    },
+    {
+      "repo": "ixartz/Next-js-Boilerplate",
+      "directory": "Next-js-Boilerplate",
+      "commit": "b83157a8018f55b926a3c25a4b7a7e14b0dfbc35",
+      "edges": [
+        {
+          "from": "src/libs/I18nRouting.ts",
+          "specifier": "@/utils/AppConfig",
+          "target": "src/utils/AppConfig.ts"
+        },
+        {
+          "from": "src/components/Sponsors.tsx",
+          "specifier": "@/public/assets/images/arcjet-light.svg",
+          "target": "public/assets/images/arcjet-light.svg"
+        }
+      ],
+      "queries": [
+        {
+          "query": "AppConfig",
+          "expectedPath": "src/utils/AppConfig.ts"
+        }
+      ]
+    }
+  ]
+}

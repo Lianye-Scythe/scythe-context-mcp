@@ -46,7 +46,8 @@
     "scripts/tree-sitter-spike.mjs",
     ".env.example",
     "scripts/index-performance.mjs",
-    "scripts/repository-index-performance.mjs"
+    "scripts/repository-index-performance.mjs",
+    "scripts/navigation-evaluation.mjs"
   ],
   "scripts": {
     "build": "tsc -p tsconfig.json && node scripts/bin-mode.mjs ensure",
@@ -68,7 +69,8 @@
     "typecheck": "tsc -p tsconfig.json --noEmit",
     "verify": "npm test && npm run build && node scripts/bin-mode.mjs check && npm run smoke && npm audit --omit=dev && npm pack --dry-run",
     "bench:index": "npm run build && node scripts/index-performance.mjs",
-    "bench:index:repos": "npm run build && node scripts/repository-index-performance.mjs"
+    "bench:index:repos": "npm run build && node scripts/repository-index-performance.mjs",
+    "bench:navigation": "npm run build && node scripts/navigation-evaluation.mjs"
   },
   "engines": {
     "node": ">=24.11.0 <27"

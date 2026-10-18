@@ -1,6 +1,8 @@
 import path from "node:path";
+import { createRustResolver } from "./rustTargets.js";
+import { createTypeScriptResolver } from "./typescriptPaths.js";
 import { cppPath } from "./cpp.js";
-import { extractFileGraph, resolveDependencyPath, type ExtractedDependency } from "./symbolGraph.js";
+import { resolveDependencyPath, type ExtractedDependency } from "./symbolGraph.js";
 
 export type DependencyResolver = (fromPath: string, dependency: ExtractedDependency) => string[];
 
@@ -60,44 +62,6 @@ function goDependencies(fromPath: string, specifier: string, modules: GoModule[]
   return packages.get(directory) ?? [];
 }
 
-function rustDependencies(fromPath: string, dependency: ExtractedDependency, activePaths: ReadonlySet<string>, manifests: string[], rootSymbols: ReadonlyMap<string, ReadonlySet<string>>): string[] {
-  const { specifier } = dependency;
-  const filename = path.posix.basename(fromPath);
-  const directory = path.posix.dirname(fromPath);
-  const manifest = manifests.find((file) => inside(fromPath, path.posix.dirname(file)));
-  const crateDir = manifest ? path.posix.join(path.posix.dirname(manifest), "src") : undefined;
-  const rootModule = filename === "mod.rs" || directory === crateDir && /^(?:lib|main)\.rs$/.test(filename);
-  const moduleDir = rootModule ? directory : fromPath.slice(0, -3);
-  if (dependency.kind === "rust_module") {
-    const stem = path.posix.join(moduleDir, specifier);
-    return uniqueCandidate([`${stem}.rs`, `${stem}/mod.rs`], activePaths);
-  }
-  if (!crateDir || !inside(fromPath, crateDir) || inside(fromPath, `${crateDir}/bin`)) return [];
-  if (!activePaths.has(`${crateDir}/lib.rs`) && !activePaths.has(`${crateDir}/main.rs`)) return [];
-  const parts = specifier.split("::");
-  let base: string;
-  if (parts[0] === "crate") { base = crateDir; parts.shift(); }
-  else if (parts[0] === "self") { base = moduleDir; parts.shift(); }
-  else if (parts[0] === "super") {
-    base = moduleDir;
-    while (parts[0] === "super") {
-      if (base === crateDir) return [];
-      base = path.posix.dirname(base);
-      parts.shift();
-    }
-  } else return [];
-  if (parts.at(-1) === "*") parts.pop();
-  // A use may end with a symbol, not a module: find its nearest file module.
-  for (let count = parts.length; count > 0; count--) {
-    const stem = path.posix.join(base, ...parts.slice(0, count));
-    const candidates = [`${stem}.rs`, `${stem}/mod.rs`].filter((file) => activePaths.has(file));
-    if (candidates.length > 0) return candidates.length === 1 ? candidates : [];
-  }
-  if (base !== crateDir) return uniqueCandidate([`${base}.rs`, `${base}/mod.rs`], activePaths);
-  const roots = [`${crateDir}/lib.rs`, `${crateDir}/main.rs`];
-  return uniqueCandidate(parts.length === 0 ? roots : roots.filter((file) => parts.length === 1 && rootSymbols.get(file)?.has(parts[0])), activePaths);
-}
-
 export function createDependencyResolver(activePaths: ReadonlySet<string>, manifests: ReadonlyMap<string, string>): DependencyResolver {
   const modules: GoModule[] = [...activePaths].filter((file) => path.posix.basename(file) === "go.mod").map((file) => {
     const match = /^\s*module\s+(?:"([^"\n]+)"|`([^`\n]+)`|([^\s]+))\s*(?:\/\/[^\n]*)?$/m.exec(manifests.get(file) ?? "");
@@ -112,9 +76,8 @@ export function createDependencyResolver(activePaths: ReadonlySet<string>, manif
     packages.set(directory, files);
   }
   for (const files of packages.values()) files.sort();
-  const rustManifests = [...activePaths].filter((file) => path.posix.basename(file) === "Cargo.toml").sort((a, b) => b.length - a.length);
-  const rootSymbols = new Map([...manifests].filter(([file]) => file.endsWith(".rs"))
-    .map(([file, content]) => [file, new Set(extractFileGraph(file, content).symbols.map((symbol) => symbol.name))]));
+  const resolveRust = createRustResolver(activePaths, manifests);
+  const resolveTypeScript = createTypeScriptResolver(activePaths, manifests);
   return (fromPath, dependency) => {
     if (dependency.kind === "unresolved") return [];
     if (cppPath.test(fromPath)) {
@@ -133,7 +96,8 @@ export function createDependencyResolver(activePaths: ReadonlySet<string>, manif
 
     if (fromPath.endsWith(".py")) return pythonDependencies(fromPath, dependency, activePaths);
     if (fromPath.endsWith(".go")) return goDependencies(fromPath, dependency.specifier, modules, packages);
-    if (fromPath.endsWith(".rs")) return rustDependencies(fromPath, dependency, activePaths, rustManifests, rootSymbols);
+    if (fromPath.endsWith(".rs")) return resolveRust(fromPath, dependency);
+    if (!dependency.specifier.startsWith(".")) return resolveTypeScript(fromPath, dependency.specifier);
     const resolved = resolveDependencyPath(fromPath, dependency.specifier, activePaths);
     return resolved ? [resolved] : [];
   };

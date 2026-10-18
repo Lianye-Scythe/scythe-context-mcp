@@ -20,6 +20,7 @@ Setup is the source for configuration examples. Troubleshooting links to those e
 ## Evaluation and maintenance records
 
 - [Retrieval benchmark](benchmark.md): method, metrics, and recorded results.
+- [Config-driven navigation](config-navigation.md): local TS/JS paths and Cargo target contexts, scope and fixed GitHub cases.
 - [Index performance](index-performance.md): synthetic indexing/search latency, process memory, and chunk reuse measurements.
 - [Dogfood evaluation](dogfood.md): repository-specific observations, not a controlled model productivity study.
 - [Codex task A/B protocol](codex-evaluation.md) (Traditional Chinese): how to measure real task outcomes.
