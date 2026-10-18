@@ -7,51 +7,55 @@
 
 [English](README.md) | [繁體中文](README.zh-TW.md) | [简体中文](README.zh-CN.md)
 
-Scythe Context MCP gives coding agents local code search, import navigation, and bounded context through CLI + Skill or MCP. Find relevant file paths, line ranges, symbols, and related files in an unfamiliar repository. Start with local keyword search: no API key or embedding service is required.
+Scythe Context MCP helps coding agents find relevant code and trace symbols, imports, and reverse imports. It returns file paths, line ranges, and selected snippets through CLI + Skill or MCP. Local keyword search works without an API key; semantic search is optional.
 
 ## When to use it
 
-- Use it for unfamiliar repositories, conceptual code lookup, and tracing symbols or imports across files.
-- Use `rg` or direct file reads when you already know the path or exact string.
-- Local keyword search needs no API key. Semantic search requires a Gemini-compatible endpoint.
+| What you need | Start with |
+| --- | --- |
+| A known file, exact identifier, error message, or regular expression | Direct file reads or `rg`. |
+| Ranked matches and related-file context in an unfamiliar repository | Scythe keyword search and navigation. |
+| Relevant code may use different wording from your description | Optional hybrid search with embeddings. |
+
+Keyword search depends on matching terms. Scythe's additional value is ranking and cross-file context; it is not a replacement for every `rg` lookup.
 
 ## Choose an interface
 
-Both interfaces ship in the same npm package and share the indexing and retrieval engine. Choose either, or use both.
+Both interfaces ship in the same `scythe-context-mcp` npm package. Choose either, or use both.
 
-| Interface | Choose it when | Search default |
+| Interface | Use it when | Search default |
 | --- | --- | --- |
-| CLI + Skill | Your agent can run shell commands and load skills, or you want to search from a terminal. | Local `keyword`; no embedding requests. |
-| MCP | Your client uses MCP tools. | `hybrid`; explicitly set `mode="keyword"` for local-only search. |
+| CLI + Skill | Your agent runs shell commands and loads skills, or you search from a terminal. | Local `keyword`. |
+| MCP | Your client uses MCP tools. | `hybrid`; set `mode="keyword"` for local-only lookup. |
 
-Requires Node.js `>=24.11.0 <27` in the environment running Scythe; Node.js 24 is the tested baseline. The target repository does not need to use Node.js. See [platform setup](docs/setup.md) for Windows, WSL, Linux, and macOS.
+Scythe requires Node.js `>=24.11.0 <27`; Node.js 24 is the tested baseline. Your target repository does not need Node.js. Install and run Scythe in the same environment as its files; see [Windows, WSL, Linux, and macOS setup](docs/setup.md).
 
-## CLI + Skill (same package)
+## Quick start
 
-The `scythe-context-mcp` npm package provides both a `scythe-context` CLI and the existing MCP entrypoint. Install once and choose CLI + Skill, MCP, or both. For a source checkout, run `npm run build` and substitute `node /absolute/path/to/scythe-context-mcp/dist/command.js` for `scythe-context` below.
+### CLI + Skill
+
+**1. Install the CLI and search your repository.** Replace the path and query with your own repository and relevant terms:
 
 ```bash
+cd /absolute/path/to/your/repo
 npm install -g scythe-context-mcp@0.1.24
-scythe-context status
-# Run when metadata is missing/stale, or once after upgrading to 0.1.22:
 scythe-context index
-scythe-context search "where is auth token validation handled?"
-scythe-context context "where is auth token validation handled?" --format compact
-scythe-context related src/auth.ts
-scythe-context doctor
+scythe-context context "auth token" --format compact --max-results 1
 ```
 
-CLI search/context default to local `keyword` mode and paths-only output. MCP retains its existing `hybrid` default. Both interfaces share validation, indexing, search, fallback, and response shaping; changing the interface does not improve retrieval accuracy by itself.
+`index` writes local metadata to `.scythe-context/`; it does not request embeddings. Refresh it after source changes. The terminal commands work without installing a Skill.
 
-Use `--project /absolute/repo/path` to override the configured project. Add `--json` for structured search/context results; status/index/related/doctor already return JSON. `--format` controls detail (`paths`, `compact`, `snippets` for search/context; `compact`, `full` for other commands). `--output /absolute/result.json` saves the structured payload and prints its path for selective reading. `--help` lists budgets and other options. Exit code 0 includes empty searches and hybrid fallback; errors and missing lookup indexes return nonzero. `doctor` returns nonzero on error, while warnings return 0.
+**2. Install the Skill for your agent.** Locate the global npm package directory:
 
-The packaged [Skill](skills/scythe-context/SKILL.md) teaches an agent when to search, read ranges, refresh metadata, and use embeddings. Copy the `skills/scythe-context/` folder into your agent's skill directory to enable discovery; the CLI must be available in that agent's execution environment. There is no automatic skill installation. `scythe-context` without arguments shows help; `scythe-context-mcp` without arguments continues to start MCP stdio. Either entrypoint accepts the subcommands above, and `serve` explicitly starts MCP.
+```bash
+npm root -g
+```
 
-## MCP quick start: local search
+Inside that directory, install the entire `scythe-context-mcp/skills/scythe-context/` folder using your agent's skill installer, or copy it into the agent's configured skill directory. It teaches the agent when to use `rg`, Scythe, and embeddings. npm installation or upgrades do **not** install or refresh this separate copy. See [Skill setup](docs/setup.md#cli--skill-local-search-first).
 
-Requires Node.js 24.11+ within the supported range `>=24.11.0 <27`; Node.js 24 is the tested baseline. Run Node and npm in the same environment as the MCP server.
+### MCP
 
-For Codex CLI on Linux, macOS, or WSL, add this to `~/.codex/config.toml` (or your configured Codex home). A trusted project can use `.codex/config.toml`:
+For Codex on Linux, macOS, or WSL, add the following to `~/.codex/config.toml` (or your configured Codex home), then restart the client. For native Windows or Windows App + WSL, use the [platform setup guide](docs/setup.md).
 
 ```toml
 [mcp_servers.scythe_context]
@@ -59,87 +63,67 @@ command = "npx"
 args = ["-y", "scythe-context-mcp"]
 ```
 
-Global installation is optional: `npx` downloads the package on first use. For native Windows or Windows Codex App with a WSL repository, follow the [platform setup guide](docs/setup.md) instead.
-
-Restart Codex after changing the configuration. In the CLI, `/mcp` shows connected servers. In the App, confirm that Scythe tools are available.
-
-Ask Codex to run the following **MCP tool calls, not shell commands**. Replace the repository path with its absolute path in the server's environment:
+Ask the agent to execute these **MCP tool calls, not shell commands**. Replace the path; reindex only when metadata is missing/stale:
 
 ```text
 repo_index_status({ "project_path": "/absolute/path/to/your/repo" })
 repo_reindex({ "project_path": "/absolute/path/to/your/repo", "dry_run": false, "index_embeddings": false })
-repo_context_pack({ "project_path": "/absolute/path/to/your/repo", "query": "where is auth token validation handled?", "mode": "keyword" })
+repo_context_pack({ "project_path": "/absolute/path/to/your/repo", "query": "auth token", "mode": "keyword" })
 ```
 
-Run `repo_reindex` only when the index is missing or stale. It writes metadata to `.scythe-context/`; `index_embeddings=false` avoids sending chunks to an embedding endpoint.
+This example stays local by explicitly selecting keyword. If setup fails, use `repo_doctor` and [troubleshooting](docs/troubleshooting.md).
 
-A successful lookup returns `primaryResults` containing paths and line ranges. `repo_context_pack` defaults to `response_mode="paths_only"`; let Codex read the matching file ranges next. Request `response_mode="compact"` for short snippets. If setup fails, start with `repo_doctor` and the [troubleshooting guide](docs/troubleshooting.md).
+## What a result looks like
+
+Actual CLI output from a two-file `src/auth.ts` / `src/app.ts` example, using the command above; the project path is normalized. Results depend on your repository:
+
+```text
+Project: /absolute/path/to/your/repo
+Mode: keyword
+src/auth.ts:1-3
+  keyword/path match
+export function validateToken(token: string) {
+  return token.length > 0;
+}
+Related: src/auth.ts (source)
+Related: src/app.ts (source)
+Suggested: src/auth.ts
+Suggested: src/app.ts
+```
+
+The agent can read the returned ranges and follow related files. See the [command and output reference](docs/setup.md#cli-commands-and-mcp-tools) for `search`, `related`, `status`, `doctor`, JSON, budgets, and saved results.
 
 ## Language support
 
-Text search works across supported text files. Structure and import navigation are language-specific:
+Text search works on supported text files. Structure and local navigation cover:
 
 | Language | Navigation coverage |
 | --- | --- |
-| JS / TS | Common declarations/imports, config aliases/inheritance, explicit project references, and declared workspace source exports. |
-| Python | Common declarations, flat/`src` packages, and relative imports. |
-| Go | Common declarations and packages within the nearest `go.mod` module. |
-| Rust | Common declarations, Cargo file modules, anchored paths, and literal library/binary target roots. |
-| C# | Namespace/type/common method declarations and literal `.csproj` project references; `using` stays a namespace/type hint. |
+| JS / TS | Declarations, relative imports, config aliases/inheritance, explicit project references, declared workspace source exports. |
+| Python | Declarations, flat/`src` packages, relative imports. |
+| Go | Declarations and packages in the nearest `go.mod` module. |
+| Rust | Declarations, Cargo file modules, anchored paths, literal library/binary target roots. |
+| C# | Namespace/type/common method declarations and literal `.csproj` project references; `using` remains a hint. |
 | C++ | Namespace/type/common function declarations and exact file-relative quoted includes. |
 
-Navigation is conservative and does not provide compiler-level binding or a complete runtime call graph. No target-language SDK or compiler is required. See [language support and limits](docs/language-support.md) and [config-driven navigation](docs/config-navigation.md).
+No target-language compiler or SDK is required. Navigation uses conservative source parsing, with language-specific limits; see [language support](docs/language-support.md) and [config-driven navigation](docs/config-navigation.md). Older installs should read [index upgrade notes](docs/setup.md#upgrading-an-existing-index).
 
-When upgrading from a version before 0.1.22, run `scythe-context index --project /absolute/path/to/repo` once even if the index reports fresh. MCP users can call `repo_reindex` with `dry_run=false` and `index_embeddings=false`. This refreshes navigation metadata and warms the chunking cache without requesting embeddings.
+## Optional: embeddings
 
-## Tools and current limits
+Use keyword first when likely source terms are known. When wording differences make local results insufficient, hybrid combines keyword and vector retrieval; semantic uses vectors alone. The Skill guides initial vector creation and updates when useful and within the task's authorized scope.
 
-| Tool | Purpose |
-| --- | --- |
-| `repo_index_status` | Check metadata, embedding coverage, and index freshness. |
-| `repo_reindex` | Update metadata; embed chunks only with `index_embeddings=true`. |
-| `repo_context_pack` | Find code for a task; paths and line ranges by default. |
-| `repo_semantic_search` | Inspect keyword, hybrid, or semantic search ranking; compact output by default. |
-| `repo_related_files` | Inspect a file's symbols, imports, and reverse imports. |
-| `repo_doctor` | Check local setup and index health without external API calls. |
-| `gemini_embedding_probe` | Test the configured embedding endpoint with supplied text. |
+Embeddings require a Gemini-compatible endpoint. Vector indexing sends code chunks; hybrid/semantic queries send query text when matching code vectors exist. Provider charges may apply. Without matching vectors, hybrid falls back locally and semantic errors before sending a query. CLI defaults to keyword; MCP defaults to hybrid.
 
-The default symbol/import extractor uses regex; tree-sitter is experimental and requires separately configured grammars. Related-file results are navigation hints, not a complete runtime call graph. Indexes need refreshing as files change; embedding coverage can be partial.
+See [semantic search, credentials, updates, and privacy](docs/semantic-search.md). An API key alone neither creates vectors nor enables automatic CLI mode switching.
 
-The project has retrieval benchmarks and integration tests. These do **not** establish that MCP improves GPT‑6.1 Sol task completion, speed, or total token use. See the [benchmark](docs/benchmark.md) and [task A/B protocol (Traditional Chinese)](docs/codex-evaluation.md).
+## Limits and privacy
 
-## Optional: semantic search with embeddings
+- Indexes need refreshing after edits; there is no automatic watcher. Related files are navigation hints, not compiler binding or a complete runtime call graph.
+- Exclude private files with the root `.gitignore`. Keep `.scythe-context/`, legacy `.repo-beacon/`, `.env`, and `local/` out of version control.
+- Retrieval benchmarks do not establish faster agent task completion or lower total token use. See the [benchmark](docs/benchmark.md) and [task A/B protocol (Traditional Chinese)](docs/codex-evaluation.md).
 
-Start with keyword search and import navigation. If relevant code uses different wording from your query and local results are insufficient, try hybrid or semantic retrieval and compare the results on your repository. Embeddings are optional; they are not required for language navigation or context packing.
+## More information
 
-Enabling them requires a Gemini-compatible endpoint and sends code chunks during embedding indexing and query text during hybrid/semantic search. Provider charges may apply. See [optional semantic search](docs/semantic-search.md) for setup, commands, modes, and privacy details.
-
-CLI search/context default to `keyword`; MCP defaults to `hybrid`. With a key configured, MCP queries can reach the provider unless you explicitly select `mode="keyword"`.
-
-With no code vectors for the configured endpoint/model/dimensions, hybrid falls back to keyword and semantic returns an error before sending a query.
-
-Keep `.scythe-context/`, legacy `.repo-beacon/`, `.env`, and `local/` out of version control. Use `.gitignore` to exclude private files from indexing.
-
-## Documentation
-
-- [Documentation index](docs/README.md)
-- [Platform setup and advanced configuration](docs/setup.md)
-- [Troubleshooting](docs/troubleshooting.md)
-- [Retrieval benchmark](docs/benchmark.md) · [Dogfood evaluation](docs/dogfood.md)
-- [Codex task A/B protocol (Traditional Chinese)](docs/codex-evaluation.md)
-- [Architecture](docs/architecture.md) · [Optional semantic search](docs/semantic-search.md)
-- [Contributing](CONTRIBUTING.md) · [Release process](docs/release.md) · [Changelog](CHANGELOG.md)
-
-## Development
-
-Install dependencies in the environment that will run Node, especially when using Windows and WSL:
-
-```bash
-git clone https://github.com/Lianye-Scythe/scythe-context-mcp.git
-cd scythe-context-mcp
-npm ci
-npm run build
-npm run verify
-```
-
-For a source-based MCP setup, point `node` at the absolute path to `dist/index.js`; see [setup](docs/setup.md). Update all three README languages together when changing user-facing behavior.
+- [Documentation index](docs/README.md) · [Setup and command reference](docs/setup.md) · [Troubleshooting](docs/troubleshooting.md)
+- [Architecture](docs/architecture.md) · [Workflow verification and remaining limits](docs/retrieval-workflow-audit.md)
+- [Changelog](CHANGELOG.md) · [Contributing and source development](CONTRIBUTING.md) · [Release process](docs/release.md)

@@ -6,6 +6,10 @@ This project follows semantic versioning before npm publication where practical.
 
 ## [Unreleased]
 
+### Changed
+
+- Restructure all three README languages around tool choice and first use, separate CLI/Skill installation, include captured CLI output, and move detailed commands, upgrade notes and source setup to maintained guides.
+
 ## [0.1.24] - 2026-10-18
 
 ### Fixed

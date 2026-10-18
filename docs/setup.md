@@ -11,18 +11,50 @@ npm install -g scythe-context-mcp@0.1.24
 scythe-context --version
 scythe-context status --project /absolute/path/to/repo
 scythe-context index --project /absolute/path/to/repo
-scythe-context context "where is auth token validation handled?" --project /absolute/path/to/repo --format compact
+scythe-context context "auth token" --project /absolute/path/to/repo --format compact
 ```
 
-Run `index` when metadata is missing/stale, or once when upgrading from before 0.1.22. This creates local metadata without embedding requests. CLI search/context use `keyword` by default; no API key is needed.
+Run `index` when metadata is missing/stale. See [upgrading an existing index](#upgrading-an-existing-index) for older-version migration. This creates local metadata without embedding requests. CLI search/context use `keyword` by default; no API key is needed.
 
-Copy the packaged `skills/scythe-context/` folder into your agent's skill directory using that agent's skill installation workflow. The CLI must be on PATH in the agent's execution environment; a global installation in another operating system or shell does not make it available automatically. Skill installation is separate from npm installation.
+Install the packaged Skill separately using your agent's skill installation workflow. To locate it after a global npm installation, run:
+
+```bash
+npm root -g
+```
+
+Inside the printed directory, find `scythe-context-mcp/skills/scythe-context/`. Copy that whole folder, including `SKILL.md`, into your agent's configured skill directory. From a source checkout, the folder is simply `skills/scythe-context/`. Updating the npm package does not update a separate Skill copy; copy it again or use the agent's skill update workflow after an upgrade. The CLI must be on PATH in the agent's execution environment; a global installation in another operating system or shell does not make it available automatically. Skill installation is separate from npm installation.
 
 For a Windows app running commands in WSL, install Node and Scythe in WSL and verify `command -v scythe-context` there. Keep the repository and its SQLite index in that environment. The MCP wrappers below are needed only when choosing MCP.
 
 From a source checkout, run `npm run build` and replace `scythe-context` with `node /absolute/path/to/scythe-context-mcp/dist/command.js`. The package also includes the MCP entrypoint, so choosing CLI does not require another package or an MCP server.
 
 For optional remote retrieval, see [semantic search](semantic-search.md). The remaining sections cover MCP configuration and advanced settings.
+
+## CLI commands and MCP tools
+
+Both interfaces use the same index and retrieval engine. CLI search/context default to keyword and paths-only output; MCP search defaults to hybrid. Select keyword explicitly for local MCP retrieval.
+
+| CLI command | MCP tool | Purpose |
+| --- | --- | --- |
+| `status` | `repo_index_status` | Index freshness and configured embedding coverage. |
+| `index` | `repo_reindex` | Refresh metadata; request vectors explicitly. |
+| `search` | `repo_semantic_search` | Ranked keyword/hybrid/semantic matches. |
+| `context` | `repo_context_pack` | Matches plus related-file navigation. |
+| `related <file>` | `repo_related_files` | Symbols, imports and reverse imports for an indexed repository-relative path. |
+| `doctor` | `repo_doctor` | Local setup and index diagnostics, without API calls. |
+| — | `gemini_embedding_probe` | Send test text to the configured embedding endpoint. |
+
+Use `--project /absolute/repo/path` to override the configured project. Add `--json` for structured search/context results; status/index/related/doctor already return JSON. `--format` controls detail (`paths`, `compact`, `snippets` for search/context; `compact`, `full` for other commands). `--output /absolute/result.json` saves the structured payload and prints its path for selective reading. `--help` lists budgets and other options. Exit code 0 includes empty searches and hybrid fallback; errors and missing lookup indexes return nonzero. `doctor` returns nonzero on error, while warnings return 0.
+
+`scythe-context` without arguments shows help. `scythe-context-mcp` without arguments starts MCP stdio. Either entrypoint accepts CLI subcommands; `serve` explicitly starts MCP. For a source checkout, replace the CLI command with `node /absolute/path/to/scythe-context-mcp/dist/command.js` after building.
+
+`index --dry-run` previews metadata indexing without writing or calling embeddings; it cannot be combined with `--embeddings` on the CLI. For optional hybrid/semantic retrieval, see the [semantic-search guide](semantic-search.md).
+
+## Upgrading an existing index
+
+When upgrading from before 0.1.22, run `scythe-context index --project /absolute/path/to/repo` once even if status reports fresh. MCP users can call `repo_reindex` with `dry_run=false` and `index_embeddings=false`. This refreshes navigation metadata and warms the chunking cache without requesting embeddings.
+
+After later upgrades, refresh metadata when missing/stale or when release notes require it. Creating/updating code vectors is a separate, optional decision; see [semantic search](semantic-search.md#creating-and-updating-code-vectors). Refresh a separately installed Skill too.
 
 ## MCP configuration
 

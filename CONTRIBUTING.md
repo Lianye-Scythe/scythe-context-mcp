@@ -3,6 +3,8 @@
 ## Development
 
 ```bash
+git clone https://github.com/Lianye-Scythe/scythe-context-mcp.git
+cd scythe-context-mcp
 npm ci
 npm test
 npm run build
