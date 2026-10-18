@@ -43,6 +43,8 @@ scythe-context index
 scythe-context context "auth token" --format compact --max-results 1
 ```
 
+The example limits results to one with `--max-results 1` for display; remove that option to return more matches.
+
 `index` writes local metadata to `.scythe-context/`; it does not request embeddings. Refresh it after source changes. The terminal commands work without installing a Skill.
 
 **2. Install the Skill for your agent.** Locate the global npm package directory:
@@ -51,9 +53,11 @@ scythe-context context "auth token" --format compact --max-results 1
 npm root -g
 ```
 
-Inside that directory, install the entire `scythe-context-mcp/skills/scythe-context/` folder using your agent's skill installer, or copy it into the agent's configured skill directory. It teaches the agent when to use `rg`, Scythe, and embeddings. npm installation or upgrades do **not** install or refresh this separate copy. See [Skill setup](docs/setup.md#cli--skill-local-search-first).
+Inside that directory, install the entire `scythe-context-mcp/skills/scythe-context/` folder using your agent's skill installer, or copy it into the agent's configured skill directory. It teaches the agent when to use `rg`, Scythe, and embeddings. npm installation or upgrades do **not** install or refresh this separate copy. See [client-specific Skill locations and invocation](docs/client-integration.md#install-and-discover-the-skill).
 
 ### MCP
+
+**Codex configuration example.** For Claude Code and Antigravity CLI, see [client-specific MCP registration](docs/client-integration.md#register-mcp-when-choosing-that-interface).
 
 For Codex on Linux, macOS, or WSL, add the following to `~/.codex/config.toml` (or your configured Codex home), then restart the client. For native Windows or Windows App + WSL, use the [platform setup guide](docs/setup.md).
 

@@ -43,6 +43,8 @@ scythe-context index
 scythe-context context "auth token" --format compact --max-results 1
 ```
 
+範例使用 `--max-results 1` 限制為一筆，方便展示；實際使用可移除此參數以取得更多結果。
+
 `index` 將本機 metadata 寫入 `.scythe-context/`，不會請求 embeddings；原始碼變更後需要更新。直接在終端機執行這些指令不必安裝 Skill。
 
 **2. 為 agent 安裝 Skill。** 先找到全域 npm 套件目錄：
@@ -51,9 +53,11 @@ scythe-context context "auth token" --format compact --max-results 1
 npm root -g
 ```
 
-在該目錄內，透過 agent 的技能安裝流程安裝整個 `scythe-context-mcp/skills/scythe-context/` 資料夾，或將它複製到 agent 設定的技能目錄。Skill 會指引何時使用 `rg`、Scythe 與 embeddings。npm 安裝或升級**不會**安裝、更新這份獨立副本；詳見 [Skill 設定（英文）](docs/setup.md#cli--skill-local-search-first)。
+在該目錄內，透過 agent 的技能安裝流程安裝整個 `scythe-context-mcp/skills/scythe-context/` 資料夾，或將它複製到 agent 設定的技能目錄。Skill 會指引何時使用 `rg`、Scythe 與 embeddings。npm 安裝或升級**不會**安裝、更新這份獨立副本；各客戶端的安裝位置與啟用方式，詳見 [Skill 安裝指南（英文）](docs/client-integration.md#install-and-discover-the-skill)。
 
 ### MCP
+
+**以下為 Codex 設定範例。** Claude Code 與 Antigravity CLI 請參閱[各客戶端的 MCP 註冊方式（英文）](docs/client-integration.md#register-mcp-when-choosing-that-interface)。
 
 Codex 在 Linux、macOS 或 WSL 執行時，將以下內容加入 `~/.codex/config.toml`（或你設定的 Codex home），再重新啟動客戶端。原生 Windows 或 Windows App＋WSL 請使用[平台設定指南](docs/setup.md)。
 
