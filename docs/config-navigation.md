@@ -101,6 +101,12 @@ The internal cleanup separates TypeScript config loading/overrides, nearest-conf
 
 A comparison against the source build saved immediately before this cleanup produced zero added/removed dependency edges across all five snapshots above. Chunk/symbol digests, fixed edge assertions and source-query results were identical; real CLI/MCP payload parity passed. The existing 319 tests and 61-case keyword quality gate also passed. This is behavior-preservation evidence for these cases, not a new coverage or performance claim.
 
+## Post-0.1.22 maintenance (unreleased)
+
+The follow-up source cleanup separates Cargo manifest parsing, nearest-workspace edition lookup, target selection, target contexts and anchored imports. The evaluation script separates argument parsing, snapshot copying, index inspection, edge/source probes, CLI/MCP comparison and report generation. No new resolution rules or runtime dependencies were added.
+
+Against the verified published 0.1.22 tarball, all five fixed snapshots retain identical dependency graphs, chunk/symbol digests, edge assertions and source-query results. CLI/MCP payload parity passes. Running both the published evaluation driver and the refactored driver produces identical complete JSON reports for both case suites. The 319 tests, 61-case keyword gate, build, CLI smoke, package checks and production audit pass (zero vulnerabilities). Reports remain in ignored `local/benchmark/`; these maintenance changes are not part of 0.1.22.
+
 ## References
 
 - [TypeScript paths](https://www.typescriptlang.org/tsconfig/#paths)

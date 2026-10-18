@@ -6,6 +6,11 @@ This project follows semantic versioning before npm publication where practical.
 
 ## [Unreleased]
 
+### Changed
+
+- Separate Cargo manifest parsing, workspace edition inheritance, target selection and anchored import resolution into named functions without changing supported resolution rules.
+- Split the navigation evaluation driver into snapshot, indexing, probe, CLI/MCP parity and reporting stages. Validate identical complete reports from the old/new driver across five fixed GitHub snapshots, with no dependency graph changes against published 0.1.22.
+
 ## [0.1.22] - 2026-10-18
 
 ### Added
