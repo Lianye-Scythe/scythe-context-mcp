@@ -3,6 +3,7 @@ import path from "node:path";
 import Database from "better-sqlite3";
 import type { Database as SqliteDatabase } from "better-sqlite3";
 import { scanProject } from "./scanner.js";
+import type { EmbeddingSetInput } from "../storage/schema.js";
 import { sha256Hex } from "./hash.js";
 import type { IndexingLimits } from "./types.js";
 
@@ -17,6 +18,7 @@ export interface DetailedIndexStatus {
   embeddingSets: Array<{
     id: number;
     provider: string;
+    baseUrlHash: string;
     model: string;
     dimensions: number;
     embeddings: number;
@@ -46,8 +48,24 @@ export interface IndexFreshness {
 }
 
 export interface IndexRecommendationOptions {
-  desiredDimensions: number;
+  desiredEmbeddingSet: EmbeddingSetInput;
   freshness?: IndexFreshness;
+}
+
+export function getEmbeddingCoverage(status: DetailedIndexStatus, desired: EmbeddingSetInput) {
+  const matching = status.embeddingSets.find((set) =>
+    set.provider === desired.provider && set.baseUrlHash === desired.baseUrlHash &&
+    set.model === desired.model && set.dimensions === desired.dimensions);
+  const embeddings = matching?.embeddings ?? 0;
+  return {
+    embeddingSetId: matching?.id ?? null,
+    provider: desired.provider,
+    model: desired.model,
+    dimensions: desired.dimensions,
+    embeddings,
+    chunks: status.chunks,
+    missingChunks: Math.max(0, status.chunks - embeddings),
+  };
 }
 
 export function recommendedNextActions(
@@ -78,14 +96,14 @@ export function recommendedNextActions(
     actions.push("Run repo_reindex with dry_run=false to populate dependency metadata.");
   }
 
-  const matchingEmbeddingSet = status.embeddingSets.find((set) => set.dimensions === options.desiredDimensions);
-  if (!matchingEmbeddingSet || matchingEmbeddingSet.embeddings === 0) {
+  const coverage = getEmbeddingCoverage(status, options.desiredEmbeddingSet);
+  if (coverage.embeddings === 0) {
     actions.push(
-      `Run repo_reindex with dry_run=false and index_embeddings=true to create ${options.desiredDimensions}-dimension embeddings for semantic search.`,
+      `Run repo_reindex with dry_run=false and index_embeddings=true to create ${options.desiredEmbeddingSet.dimensions}-dimension embeddings for the configured provider when hybrid or semantic search is needed.`,
     );
-  } else if (matchingEmbeddingSet.embeddings < status.chunks) {
+  } else if (coverage.embeddings < status.chunks) {
     actions.push(
-      "Run repo_reindex with dry_run=false and index_embeddings=true to fill missing embeddings for newly indexed chunks.",
+      "Run repo_reindex with dry_run=false and index_embeddings=true to fill missing embeddings for the configured provider when hybrid or semantic search is needed.",
     );
   }
 
@@ -134,6 +152,7 @@ export function readDetailedIndexStatus(dbPath: string): DetailedIndexStatus {
           .prepare(`
         select embedding_sets.id,
                embedding_sets.provider,
+               embedding_sets.base_url_hash as baseUrlHash,
                embedding_sets.model,
                embedding_sets.dimensions,
                count(embeddings.id) as embeddings

@@ -5,7 +5,7 @@ description: Find code in unfamiliar repositories with ranked local search, boun
 
 # Scythe Context CLI
 
-Use the installed `scythe-context` command. Read `scythe-context --help` when additional options are needed. If unavailable, use a built source checkout through `node /absolute/path/to/scythe-context-mcp/dist/command.js`; do not download or install packages just to discover commands.
+Use the installed `scythe-context` command. Check `--version` when newly documented fields or behavior are missing. Read `scythe-context --help` when additional options are needed. If unavailable, use a built source checkout through `node /absolute/path/to/scythe-context-mcp/dist/command.js`; do not download or install packages just to discover commands.
 
 ## Choose the lookup tool
 
@@ -39,7 +39,7 @@ scythe-context related src/auth.ts
 
 ## Structured and saved results
 
-`--json` returns the shared operation payload. Status, index, related, and doctor already print JSON by default. `--output /absolute/result.json` saves that payload and prints the absolute output path, allowing selective file reads instead of putting the full result into context. `--format` controls payload detail independently of `--json`.
+`--json` returns the shared operation payload. Status, index, related, and doctor already print JSON by default. `--output /absolute/result.json` saves that payload and prints the absolute output path, allowing selective file reads instead of putting the full result into context. `--format` controls payload detail independently of `--json`. Save private result files outside the indexed tree, or exclude them with the root `.gitignore`, so later indexing does not ingest prior results.
 
 Exit code 0 includes successful empty searches and reported hybrid fallback. Nonzero exit codes indicate invalid arguments, missing indexes for lookups, failed operations, or doctor errors. Check the JSON status and stderr. `doctor` runs local diagnostics without embedding requests. If a payload recommends an MCP tool, use `status` for `repo_index_status` or `index` for `repo_reindex`.
 
@@ -57,11 +57,13 @@ Choose the retrieval mode by the lookup need, not by whether an API key is confi
 
 ### Prepare or refresh hybrid retrieval
 
-1. Run `status` to check metadata freshness, chunk counts and embedding sets; use `status --format full` or `doctor` when configuration details are needed. Do not print credentials. Counts alone do not prove that vectors cover current relevant code or match the configured endpoint.
+1. Run `status` to check metadata freshness and `embeddingCoverage` for the configured endpoint/model/dimensions; use `status --format full` or `doctor` when configuration details are needed. Refresh stale metadata before trusting coverage. Counts describe indexed chunks, not every file or a proof of task-relevant coverage. Do not print credentials.
 2. If current vectors are usable for the lookup and query transmission is within scope, search with `--mode hybrid` directly. Do not rebuild vectors before every query.
 3. If vectors are absent, incomplete for the needed code, or source files have changed, decide whether semantic retrieval justifies creating/updating them. Sustained exploration of unfamiliar code with unknown terminology, or repeated keyword misses caused by wording differences, are useful reasons. A precise one-off lookup or an index coverage recommendation alone is not.
 4. When justified, credentials are available, and the task permits transmitting the indexed source and incurring provider usage, proactively run `index --embeddings` to create or refresh vectors. Continue under existing authorization; ask only if a required data-transmission or cost decision is unresolved. Preview unfamiliar indexing scope with `index --dry-run` when needed, and use `--max-embedding-chunks` to bound the job to a task-appropriate budget. The limit caps chunk count, not monetary cost, and does not select files by relevance.
 5. Check the indexing result and `status` before hybrid lookup. Metadata refresh happens before missing-vector indexing; unchanged chunks with existing vectors are reused for the configured endpoint/model/dimensions. Job limits or failures may leave partial coverage. Use hybrid with that limitation when useful, or continue with keyword/direct reads. Do not loop to fill all vectors unless the task warrants it, and do not repeat a failed API operation without addressing its cause.
+
+CLI credentials must be available to the command process: settings in an MCP server configuration are not automatically inherited by CLI commands. Use process environment variables or a protected, ignored `.env` in the command working directory; `--project` does not change which `.env` is loaded. Check `hasApiKey` through full status/doctor without exposing the value.
 
 If source transmission or provider usage is outside scope, continue local lookup. A configured API key by itself is not authorization to upload source. Query transmission and source-chunk transmission are separate decisions.
 
@@ -75,4 +77,4 @@ scythe-context context "temporarily block login after repeated failures" --mode 
 
 `index --embeddings` sends indexed chunks; hybrid and semantic lookup send query text. The configured Gemini-compatible service may charge for requests and can see the text. Keep credentials in the environment or a protected local `.env`. Keep `.scythe-context/` and result files containing private code out of commits.
 
-Hybrid lookup reports keyword fallback if query embedding fails; inspect the reported effective mode rather than assuming vector retrieval succeeded. Semantic mode returns an error instead. Do not repeat the same remote query without addressing the failure. Use explicit `--mode keyword` for local lookup, including when credentials are present.
+With no code vectors for the configured embedding set, hybrid reports keyword fallback and semantic returns an error before sending a query. Hybrid also reports keyword fallback if query embedding fails; inspect the reported effective mode rather than assuming vector retrieval succeeded. Semantic mode returns an error instead. Do not repeat the same remote query without addressing the failure. Use explicit `--mode keyword` for local lookup, including when credentials are present.

@@ -43,6 +43,19 @@ npm run bench:gate:hybrid
 
 `npm run verify` includes tests, build, `node scripts/bin-mode.mjs check`, CLI smoke, production audit, and `npm pack --dry-run`. If a tarball is left in the repo root after local checks, remove it before committing.
 
+## Check the user workflow
+
+Passing unit tests does not establish that the Skill covers the complete workflow. For changes to retrieval or embedding behavior, check these before tagging:
+
+- Direct read / `rg` / keyword / hybrid routing, including first-time vector creation and updates after edits.
+- Missing indexes, no matching vectors, limited/partial coverage, vector reuse, source deletion, and API failures with metadata still usable.
+- Endpoint/model/dimension changes: status and retrieval must select the same embedding set.
+- CLI credentials in the actual execution environment; MCP server environment settings do not automatically apply to CLI. Never include credentials or local indexes in packages.
+- A small real-provider flow when provider compatibility changes and usage is authorized; distinguish that result from tests using a local fixture endpoint. Skill validation does not prove an agent will always make the best routing choice.
+- Published package version, CLI binaries, Skill content, and three README languages. A separately installed Skill is not upgraded by updating the npm package.
+
+Record the checked behavior and remaining limits, without claiming that all possible bugs or agent decisions are covered. If a maintained audit record exists, link it from the documentation index.
+
 ## Commit, Tag, and Push
 
 ```bash

@@ -193,6 +193,7 @@ export function shapeIndexStatusPayload(payloadInput: object, mode: ToolResponse
           samples: freshness.samples,
         }
       : undefined,
+    embeddingCoverage: payload.embeddingCoverage,
     recommendedNextActions: payload.recommendedNextActions,
   };
   return withResponseStats(shaped);

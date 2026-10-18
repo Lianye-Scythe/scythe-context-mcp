@@ -4,7 +4,8 @@ import path from "node:path";
 import process from "node:process";
 import Database from "better-sqlite3";
 import type { AppConfig } from "../config.js";
-import { readDetailedIndexStatus, readIndexFreshness, recommendedNextActions, type IndexFreshness } from "../indexing/indexStatus.js";
+import { sha256Hex } from "../indexing/hash.js";
+import { getEmbeddingCoverage, readDetailedIndexStatus, readIndexFreshness, recommendedNextActions, type IndexFreshness } from "../indexing/indexStatus.js";
 import { findProviderCapability, providerCapabilityInput } from "../providers/capabilities.js";
 import { buildGeminiEndpoint, normalizeGeminiBaseUrl } from "../providers/gemini.js";
 import { loadSqliteVec } from "../storage/sqliteVec.js";
@@ -138,9 +139,15 @@ async function indexCheck(config: AppConfig, projectPath: string, dbPath: string
         limits: { maxFileBytes: config.indexing.maxFileBytes },
       })
     : undefined;
-  const matchingEmbeddingSet = index.embeddingSets.find((set) => set.dimensions === expectedDimensions);
+  const desiredEmbeddingSet = {
+    provider: "gemini",
+    baseUrlHash: sha256Hex(config.gemini.baseUrl),
+    model: config.gemini.model,
+    dimensions: expectedDimensions,
+  };
+  const coverage = getEmbeddingCoverage(index, desiredEmbeddingSet);
   const embeddingCoverageIncomplete =
-    index.chunks > 0 && (!matchingEmbeddingSet || matchingEmbeddingSet.embeddings < index.chunks);
+    index.chunks > 0 && coverage.missingChunks > 0;
   const status: DoctorStatus =
     !index.exists || index.chunks === 0 || freshness?.status === "stale" || embeddingCoverageIncomplete ? "warn" : "ok";
 
@@ -160,17 +167,9 @@ async function indexCheck(config: AppConfig, projectPath: string, dbPath: string
       symbols: index.symbols,
       dependencies: index.dependencies,
       freshnessStatus: freshness?.status,
-      embeddingCoverage: matchingEmbeddingSet
-        ? {
-            provider: matchingEmbeddingSet.provider,
-            model: matchingEmbeddingSet.model,
-            dimensions: matchingEmbeddingSet.dimensions,
-            embeddings: matchingEmbeddingSet.embeddings,
-            chunks: index.chunks,
-          }
-        : undefined,
+      embeddingCoverage: coverage,
     },
-    recommendedActions: recommendedNextActions(index, { desiredDimensions: expectedDimensions, freshness }),
+    recommendedActions: recommendedNextActions(index, { desiredEmbeddingSet, freshness }),
   };
 }
 

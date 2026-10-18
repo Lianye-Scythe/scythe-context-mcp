@@ -6,7 +6,7 @@ Both interfaces use the same provider and vector index. CLI search/context defau
 
 ## CLI setup
 
-Supply `GEMINI_API_KEY` through the CLI process environment. Do not put the key in command arguments or committed files. Provider settings and proxy options are documented in [setup](setup.md#gemini--v1beta-proxy).
+Supply `GEMINI_API_KEY` through the CLI process environment. MCP-server environment settings are not automatically inherited by CLI commands. Both entrypoints load a local `.env` from the command working directory; `--project` selects the indexed repository, not the `.env` location. If using `.env`, keep it ignored and restrict file access. Do not put the key in command arguments or committed files. Provider settings and proxy options are documented in [setup](setup.md#gemini--v1beta-proxy).
 
 ```bash
 # Preview index scope locally first; this does not send embedding requests:
@@ -24,7 +24,7 @@ The packaged Skill guides the agent to prepare vectors when hybrid retrieval is 
 
 The same command handles initial creation and updates: it refreshes metadata, then embeds chunks missing vectors for the configured endpoint, model and dimensions. Unchanged chunks with existing vectors are reused. New or changed chunks may need new embeddings; metadata-only indexing does not create them. This is an agent workflow, not a background watcher or automatic CLI mode switch.
 
-Use `--max-embedding-chunks` to bound work when appropriate. It limits the number of chunks processed, not provider charges, and processes chunks in file-path/line order rather than by task relevance. A limit or failure can leave partial coverage; inspect the indexing result and status. Do not rebuild before every query or fill the whole repository solely to satisfy a coverage recommendation. For a simple exact lookup, use `rg` or keyword search.
+Use `--max-embedding-chunks` to bound work when appropriate. It limits the number of chunks processed, not provider charges, and processes chunks in file-path/line order rather than by task relevance. A limit or failure can leave partial coverage; inspect the indexing result and status. `status.embeddingCoverage` reports the configured endpoint/model/dimensions, including `embeddings`, `chunks`, and `missingChunks`; other embedding sets remain listed separately. Refresh stale metadata first. Coverage counts apply only to indexed chunks, not ignored or truncated source. Do not rebuild before every query or fill the whole repository solely to satisfy a coverage recommendation. For a simple exact lookup, use `rg` or keyword search.
 
 ## MCP setup
 
@@ -49,8 +49,10 @@ These calls send repository chunks and query text to the configured endpoint, wh
 | Mode | Embedding requests | If query embedding fails |
 | --- | --- | --- |
 | `keyword` | None; metadata only | Not applicable |
-| `hybrid` (MCP default) | Sends the query; indexed vectors support semantic retrieval | Falls back to keyword and reports the fallback |
-| `semantic` | Sends the query; requires indexed vectors | Returns an error without keyword fallback |
+| `hybrid` (MCP default) | Sends the query when matching code vectors exist | Falls back to keyword and reports the fallback |
+| `semantic` | Sends the query when matching code vectors exist | Returns an error without keyword fallback |
+
+No matching code vectors means hybrid falls back to keyword, while semantic returns an error, before making an embedding request. Vectors from a different endpoint, model, or dimension are not used. With partial coverage, the vector side searches only covered chunks; hybrid still includes keyword candidates. Failed embedding indexing can leave metadata successfully refreshed and some vectors already written: inspect status before resuming.
 
 `GEMINI_REQUEST_TIMEOUT_MS` defaults to `10000` and bounds each embedding request, including the response body. It does not limit the entire indexing job. `gemini_embedding_probe` also sends its test text to the endpoint. Third-party proxies can see the text sent to them.
 

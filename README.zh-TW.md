@@ -116,6 +116,8 @@ repo_context_pack({ "project_path": "/absolute/path/to/your/repo", "query": "whe
 
 CLI search/context 預設為 `keyword`，MCP 預設為 `hybrid`。設定 key 後，MCP 查詢可能連線至 provider；純本機搜尋請明確指定 `mode="keyword"`。
 
+若設定的 endpoint／模型／維度沒有程式碼向量，hybrid 會退回 keyword，semantic 則回傳錯誤，兩者都不會先發送查詢。
+
 請勿將 `.scythe-context/`、舊版 `.repo-beacon/`、`.env` 與 `local/` 納入版本控制；使用 `.gitignore` 排除不應索引的私人檔案。
 
 ## 文件

@@ -20,6 +20,8 @@ Setup is the source for configuration examples. Troubleshooting links to those e
 
 ## Evaluation and maintenance records
 
+- [Retrieval workflow verification](retrieval-workflow-audit.md): lifecycle, configured-vector isolation, failure behavior, real-provider checks and remaining limits for 0.1.24.
+
 - [Retrieval benchmark](benchmark.md): method, metrics, and recorded results.
 - [Config-driven navigation](config-navigation.md): local TS/JS paths and Cargo target contexts, scope and fixed GitHub cases.
 - [Index performance](index-performance.md): synthetic indexing/search latency, process memory, and chunk reuse measurements.

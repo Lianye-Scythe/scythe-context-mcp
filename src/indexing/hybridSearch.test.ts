@@ -76,6 +76,26 @@ describe("mergeHybridResults", () => {
 });
 
 describe("searchKeywordOnly", () => {
+  it.each(["register_handler", "registerHandler"])("recovers an indented %s declaration from a natural-language query", async (name) => {
+    await fs.mkdir(path.join(tempDir, "src"));
+    await fs.mkdir(path.join(tempDir, "docs"));
+    await fs.writeFile(path.join(tempDir, "src", "operations.ts"),
+      `export function createOperations() {\n  const ${name} = () => true;\n  return { ${name} };\n}\n`);
+    for (let i = 0; i < 24; i++) {
+      await fs.writeFile(path.join(tempDir, "docs", `usage-${i}.md`),
+        `where is ${name} registered as a tool\n`.repeat(4));
+    }
+    const metadata = await persistentReindexMetadata({
+      projectPath: tempDir, indexDirName: ".scythe-context", vectorDimensions: 3,
+      maxFileBytes: 4096, targetChunkChars: 1000, chunkOverlapChars: 0, maxChunksPerFile: 10,
+    });
+    const results = searchKeywordOnly({
+      dbPath: metadata.dbPath, query: `where is ${name} registered as a tool`, maxResults: 3, maxSnippetChars: 100,
+    });
+    expect(results.map((result) => result.path)).toContain("src/operations.ts");
+    expect(results.find((result) => result.path === "src/operations.ts")?.snippet).toContain(`const ${name}`);
+  });
+
   it("returns hybrid-shaped keyword results without a query vector", async () => {
     await fs.writeFile(path.join(tempDir, "payment.ts"), "export function processPayment() { return 'paid'; }\n");
     const metadata = await persistentReindexMetadata({

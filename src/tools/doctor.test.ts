@@ -154,7 +154,7 @@ describe("runRepoDoctor", () => {
     const indexCheck = result.checks.find((check) => check.name === "index");
     expect(indexCheck).toEqual(expect.objectContaining({ status: "warn" }));
     expect(indexCheck?.recommendedActions).toContain(
-      "Run repo_reindex with dry_run=false and index_embeddings=true to create 1536-dimension embeddings for semantic search.",
+      "Run repo_reindex with dry_run=false and index_embeddings=true to create 1536-dimension embeddings for the configured provider when hybrid or semantic search is needed.",
     );
   });
 });

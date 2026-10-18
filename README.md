@@ -116,6 +116,8 @@ Enabling them requires a Gemini-compatible endpoint and sends code chunks during
 
 CLI search/context default to `keyword`; MCP defaults to `hybrid`. With a key configured, MCP queries can reach the provider unless you explicitly select `mode="keyword"`.
 
+With no code vectors for the configured endpoint/model/dimensions, hybrid falls back to keyword and semantic returns an error before sending a query.
+
 Keep `.scythe-context/`, legacy `.repo-beacon/`, `.env`, and `local/` out of version control. Use `.gitignore` to exclude private files from indexing.
 
 ## Documentation

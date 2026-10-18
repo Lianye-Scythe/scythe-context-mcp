@@ -1,4 +1,5 @@
 #!/usr/bin/env node
+import { createHash } from "node:crypto";
 import "dotenv/config";
 import fs from "node:fs";
 import path from "node:path";
@@ -718,6 +719,10 @@ async function runBenchmarkPass(options) {
             dbPath: options.dbPath,
             query: testCase.query,
             dimensions,
+            embeddingSet: {
+              provider: "gemini", model: config.gemini.model, dimensions,
+              baseUrlHash: createHash("sha256").update(config.gemini.baseUrl).digest("hex"),
+            },
             queryVector: embedding.vector,
             maxResults: options.args.maxResults,
             maxSnippetChars: options.args.maxSnippetChars,

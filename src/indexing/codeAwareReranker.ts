@@ -235,10 +235,16 @@ function readFirstChunk(db: SqliteDatabase, path: string, maxSnippetChars: numbe
 }
 
 /** Recover indexed declarations that lexical candidate truncation can hide behind usages. */
-function readExactDeclarations(db: SqliteDatabase, query: string, terms: readonly string[], maxCandidates: number, maxSnippetChars: number): HybridSearchResult[] {
-  const name = query.trim();
-  if (!/^[A-Za-z_$][\w$]*$/.test(name)) return [];
-  const choices: Array<{ path: string; line: number; role: number }> = [];
+function readExactDeclarations(db: SqliteDatabase, query: string, terms: readonly string[], maxCandidates: number, maxSnippetChars: number): Array<HybridSearchResult & { declarationName: string }> {
+  const identifier = /^[A-Za-z_$][\w$]*$/;
+  const trimmed = query.trim();
+  const declarationIntent = terms.some((term) =>
+    ["implementation", "implemented", "definition", "defined", "declaration", "declared", "register", "registered"].includes(term));
+  const names = identifier.test(trimmed) ? [trimmed] : (declarationIntent ? keywordTerms(query) : [])
+    .filter((term) => identifier.test(term) && (term.includes("_") || /[a-z0-9][A-Z]/.test(term)))
+    .slice(0, 4);
+  if (!names.length) return [];
+  const choices: Array<{ path: string; line: number; role: number; name: string }> = [];
   const compare = (a: typeof choices[number], b: typeof choices[number]) => b.role - a.role || a.path.localeCompare(b.path) || a.line - b.line;
   const symbols = db.prepare(`
     select files.path, file_symbols.line from file_symbols
@@ -246,11 +252,14 @@ function readExactDeclarations(db: SqliteDatabase, query: string, terms: readonl
   `);
   // Scan indexed exact-name matches, retaining at most one declaration per file and
   // a bounded set of candidates. Repeated test declarations cannot fill the cap first.
-  for (const item of symbols.iterate(name)) {
+  for (const name of names) for (const item of symbols.iterate(name)) {
     const row = item as { path: string; line: number };
     const existing = choices.find((choice) => choice.path === row.path);
-    if (existing) { existing.line = Math.min(existing.line, row.line); continue; }
-    choices.push({ ...row, role: roleScore(row.path, terms) });
+    if (existing) {
+      if (row.line < existing.line) { existing.line = row.line; existing.name = name; }
+      continue;
+    }
+    choices.push({ ...row, role: roleScore(row.path, terms), name });
     choices.sort(compare);
     if (choices.length > maxCandidates) choices.pop();
   }
@@ -264,7 +273,7 @@ function readExactDeclarations(db: SqliteDatabase, query: string, terms: readonl
     const chunk = readChunk.get(choice.path, choice.line, choice.line) as { startLine: number; endLine: number; text: string } | undefined;
     if (!chunk) return [];
     const text = chunk.text.split("\n").slice(choice.line - chunk.startLine).join("\n");
-    return [{ path: choice.path, startLine: choice.line, endLine: chunk.endLine, snippet: compactSnippet(text, maxSnippetChars), score: 0, matchTypes: ["local"] as Array<"local"> }];
+    return [{ path: choice.path, startLine: choice.line, endLine: chunk.endLine, snippet: compactSnippet(text, maxSnippetChars), declarationName: choice.name, score: 0, matchTypes: ["local"] as Array<"local"> }];
   });
 }
 
@@ -374,7 +383,7 @@ export function rerankCodeAware(options: CodeAwareRerankOptions): HybridSearchRe
     for (const candidate of exactDeclarations) {
       const alreadyVisible = Array.from(candidates.values()).some((item) => item.path === candidate.path
         && item.startLine <= candidate.startLine && item.endLine >= candidate.startLine
-        && item.snippet.includes(options.query.trim()));
+        && item.snippet.includes(candidate.declarationName));
       if (!alreadyVisible) addCandidate(candidates, { ...candidate, score: bestScore });
     }
 
@@ -384,7 +393,11 @@ export function rerankCodeAware(options: CodeAwareRerankOptions): HybridSearchRe
       if (existing) return existing;
       const details = readCandidateDetails(db, candidatePath);
       // The exact-name lookup can find declarations beyond the bounded symbol preview.
-      if (declarationPaths.has(candidatePath)) details.symbols.push(options.query.trim(), ...splitIdentifier(options.query.trim()));
+      if (declarationPaths.has(candidatePath)) {
+        for (const declaration of exactDeclarations.filter((item) => item.path === candidatePath)) {
+          details.symbols.push(declaration.declarationName, ...splitIdentifier(declaration.declarationName));
+        }
+      }
       detailCache.set(candidatePath, details);
       return details;
     };

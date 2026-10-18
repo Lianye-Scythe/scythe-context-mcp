@@ -1,12 +1,14 @@
 import path from "node:path";
 import fs from "node:fs";
 import { z } from "zod";
+import type { EmbeddingSetInput } from "../storage/schema.js";
+import { sha256Hex } from "../indexing/hash.js";
 import type { AppConfig } from "../config.js";
 import { buildContextPack } from "../indexing/contextPack.js";
 import { reindexDryRun } from "../indexing/dryRun.js";
 import { indexMissingEmbeddings } from "../indexing/embeddingWriter.js";
 import { searchHybrid, searchKeywordOnly } from "../indexing/hybridSearch.js";
-import { readDetailedIndexStatus, readIndexFreshness, recommendedNextActions } from "../indexing/indexStatus.js";
+import { getEmbeddingCoverage, readDetailedIndexStatus, readIndexFreshness, recommendedNextActions } from "../indexing/indexStatus.js";
 import { persistentReindexMetadata } from "../indexing/indexWriter.js";
 import { readRelatedFileGraph, readRelatedFiles } from "../indexing/relatedFiles.js";
 import { readRelatedSnippets } from "../indexing/relatedSnippets.js";
@@ -67,6 +69,7 @@ function searchIndexedChunks(options: {
   dbPath: string;
   query: string;
   dimensions: number;
+  embeddingSet: EmbeddingSetInput;
   queryVector: readonly number[];
   maxResults: number;
   maxSnippetChars: number;
@@ -77,6 +80,7 @@ function searchIndexedChunks(options: {
     ? searchByVector({
         dbPath: options.dbPath,
         dimensions: options.dimensions,
+        embeddingSet: options.embeddingSet,
         queryVector: options.queryVector,
         maxResults: options.maxResults,
         maxSnippetChars: options.maxSnippetChars,
@@ -85,6 +89,7 @@ function searchIndexedChunks(options: {
         dbPath: options.dbPath,
         query: options.query,
         dimensions: options.dimensions,
+        embeddingSet: options.embeddingSet,
         queryVector: options.queryVector,
         maxResults: options.maxResults,
         maxSnippetChars: options.maxSnippetChars,
@@ -128,6 +133,7 @@ async function executeSearch(options: {
   dbPath: string;
   query: string;
   dimensions: number;
+  embeddingSet: EmbeddingSetInput;
   maxResults: number;
   maxSnippetChars: number;
   mode: SearchMode;
@@ -138,6 +144,10 @@ async function executeSearch(options: {
   }
 
   try {
+    const coverage = getEmbeddingCoverage(readDetailedIndexStatus(options.dbPath), options.embeddingSet);
+    if (coverage.embeddings === 0) {
+      throw new Error("No code embeddings for the configured provider, endpoint, model and dimensions. Run index --embeddings (MCP: repo_reindex with dry_run=false, index_embeddings=true) when source transmission is within scope, or use keyword.");
+    }
     const queryEmbedding = await embeddingProvider.embed({ kind: "query", text: options.query });
     if (queryEmbedding.dimensions !== options.dimensions) {
       throw new Error(`Query embedding dimensions mismatch: expected ${options.dimensions}, got ${queryEmbedding.dimensions}`);
@@ -238,6 +248,12 @@ function buildGeminiDiagnostics(config: AppConfig["gemini"], expectedDimensions:
 export function createOperations(config: AppConfig) {
   const embeddingProvider = new GeminiEmbeddingProvider(config.gemini);
   const expectedDimensions = config.gemini.outputDimensionality ?? 1536;
+  const embeddingSet: EmbeddingSetInput = {
+    provider: "gemini",
+    baseUrlHash: sha256Hex(config.gemini.baseUrl),
+    model: config.gemini.model,
+    dimensions: expectedDimensions,
+  };
 
   const repo_doctor = defineOperation(
     {
@@ -284,8 +300,9 @@ export function createOperations(config: AppConfig) {
           projectPath,
           indexPath: path.join(projectPath, config.indexDirName),
           index,
+          embeddingCoverage: getEmbeddingCoverage(index, embeddingSet),
           recommendedNextActions: recommendedNextActions(index, {
-            desiredDimensions: expectedDimensions,
+            desiredEmbeddingSet: embeddingSet,
             freshness,
           }),
           freshness,
@@ -534,6 +551,7 @@ export function createOperations(config: AppConfig) {
         dbPath,
         query,
         dimensions,
+        embeddingSet,
         maxResults: max_results,
         maxSnippetChars: max_snippet_chars,
         mode,
@@ -682,6 +700,7 @@ export function createOperations(config: AppConfig) {
         dbPath,
         query,
         dimensions,
+        embeddingSet,
         maxResults: max_results,
         maxSnippetChars: max_snippet_chars,
         mode,

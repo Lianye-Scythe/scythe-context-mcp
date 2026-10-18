@@ -77,6 +77,13 @@ afterEach(async () => {
   if (projectPath) await fs.rm(projectPath, { recursive: true, force: true });
 });
 
+async function primeVectors() {
+  respondWithVectors = true;
+  await callTool("repo_reindex", { dry_run: false, index_embeddings: true, max_embedding_chunks: 1 });
+  respondWithVectors = false;
+  requests = 0;
+}
+
 describe("MCP search tool integration", () => {
   it.each(["repo_context_pack", "repo_semantic_search"])("%s reports a missing index before contacting the provider", async (name) => {
     const missingProject = path.join(projectPath, "missing");
@@ -93,6 +100,7 @@ describe("MCP search tool integration", () => {
     ["repo_semantic_search", "hybrid"],
     ["repo_semantic_search", "semantic"],
   ])("%s preserves %s behavior on embedding dimension mismatch", async (name, mode) => {
+    await primeVectors();
     respondWithVectors = true;
     responseVector = [1, 0];
     const payload = await callTool(name, { query: "validateToken", mode });
@@ -149,6 +157,7 @@ describe("MCP search tool integration", () => {
   });
 
   it.each(["repo_context_pack", "repo_semantic_search"])("%s retains default hybrid mode and falls back locally after timeout", async (name) => {
+    await primeVectors();
     const payload = await callTool(name, { query: "validateToken" });
     expect(payload.mode).toBe("hybrid");
     expect(payload.effectiveMode).toBe("keyword");
@@ -161,6 +170,7 @@ describe("MCP search tool integration", () => {
   });
 
   it.each(["repo_context_pack", "repo_semantic_search"])("%s reports semantic timeout without keyword fallback", async (name) => {
+    await primeVectors();
     const payload = await callTool(name, { query: "validateToken", mode: "semantic" });
     expect(payload.status).toBe("embedding_unavailable");
     expect(payload.error.retryable).toBe(true);

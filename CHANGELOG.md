@@ -6,6 +6,12 @@ This project follows semantic versioning before npm publication where practical.
 
 ## [Unreleased]
 
+### Fixed
+
+- Recover exact snake_case/camelCase declarations in natural-language definition/registration queries when usages hide the implementation; retain existing caller-search behavior and recognize indented const declarations.
+- Restrict semantic/hybrid vector candidates to the configured provider, endpoint, model and dimensions before nearest-neighbor selection, preventing mixed-model results and stale vector rows from suppressing valid candidates.
+- Report configured embedding-set coverage in status and doctor. With no matching code vectors, hybrid falls back locally and semantic returns an error before sending a query.
+
 ### Changed
 
 - Clarify Skill-driven initial embedding creation and incremental refresh before hybrid lookup, including existing authorization, job budgets, vector reuse, partial coverage and failure handling. Document the same workflow in the semantic-search guide.

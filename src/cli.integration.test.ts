@@ -68,6 +68,75 @@ async function index() {
 }
 
 describe("CLI real process workflow", () => {
+  it("creates, resumes and refreshes vectors incrementally and preserves metadata after provider failure", async () => {
+    const first = await cli(["index", "--embeddings", "--max-embedding-chunks=1", "--json"]);
+    expect(first.code).toBe(0);
+    expect(JSON.parse(first.stdout).embeddings.stats.embeddedChunks).toBe(1);
+    const partial = JSON.parse((await cli(["status"])).stdout);
+    expect(partial.embeddingCoverage).toMatchObject({ embeddings: 1, missingChunks: 1, chunks: 2 });
+    const resumed = await cli(["index", "--embeddings", "--json"]);
+    expect(JSON.parse(resumed.stdout).embeddings.stats.embeddedChunks).toBe(1);
+    const beforeReuse = requests;
+    const reused = await cli(["index", "--embeddings", "--json"]);
+    expect(JSON.parse(reused.stdout).embeddings.stats.embeddedChunks).toBe(0);
+    expect(requests).toBe(beforeReuse);
+
+    await fs.writeFile(path.join(projectPath, "auth.ts"), 'export function validateToken(token: string) { return token.startsWith("changed"); }\n');
+    expect(JSON.parse((await cli(["status"])).stdout).freshness.status).toBe("stale");
+    upstreamFails = true;
+    const interrupted = await cli(["index", "--embeddings", "--json"]);
+    expect(interrupted.code).toBe(1);
+    const afterFailure = JSON.parse((await cli(["status"])).stdout);
+    expect(afterFailure.freshness.status).toBe("fresh");
+    expect(afterFailure.embeddingCoverage).toMatchObject({ embeddings: 1, missingChunks: 1 });
+    const local = await cli(["search", "validateToken", "--json"]);
+    expect(local.code).toBe(0);
+    expect(JSON.parse(local.stdout).results.some((result: { path: string }) => result.path === "auth.ts")).toBe(true);
+    upstreamFails = false;
+    const refreshed = await cli(["index", "--embeddings", "--json"]);
+    expect(JSON.parse(refreshed.stdout).embeddings.stats.embeddedChunks).toBe(1);
+
+    await fs.rm(path.join(projectPath, "auth.ts"));
+    const beforeDeletion = requests;
+    const deleted = await cli(["index", "--embeddings", "--json"]);
+    expect(JSON.parse(deleted.stdout).embeddings.stats.embeddedChunks).toBe(0);
+    expect(requests).toBe(beforeDeletion);
+    expect(JSON.parse((await cli(["status"])).stdout).embeddingCoverage).toMatchObject({ embeddings: 1, missingChunks: 0, chunks: 1 });
+
+    const changed = { GEMINI_BASE_URL: `${env.GEMINI_BASE_URL}/different-endpoint` };
+    const beforeNewEndpoint = requests;
+    const noVectors = await cli(["search", "validateToken", "--mode=hybrid", "--json"], commandPath, changed);
+    expect(JSON.parse(noVectors.stdout).effectiveMode).toBe("keyword");
+    expect(requests).toBe(beforeNewEndpoint);
+    const newEndpoint = await cli(["index", "--embeddings", "--json"], commandPath, changed);
+    expect(newEndpoint.code).toBe(0);
+    expect(JSON.parse(newEndpoint.stdout).embeddings.stats.embeddedChunks).toBe(1);
+    const semantic = await cli(["search", "validateToken", "--mode=semantic", "--json"], commandPath, changed);
+    expect(semantic.code).toBe(0);
+    expect(JSON.parse(semantic.stdout).results.map((result: { path: string }) => result.path)).toEqual(["app.ts"]);
+  });
+
+  it("reports absent or incompatible vectors without sending a query", async () => {
+    await index();
+    const hybrid = await cli(["context", "validateToken", "--mode=hybrid", "--json"]);
+    expect(hybrid.code).toBe(0);
+    expect(JSON.parse(hybrid.stdout).effectiveMode).toBe("keyword");
+    expect(JSON.parse(hybrid.stdout).fallback.error.message).toContain("No code embeddings");
+    const semantic = await cli(["search", "validateToken", "--mode=semantic", "--json"]);
+    expect(semantic.code).toBe(1);
+    expect(JSON.parse(semantic.stdout).status).toBe("embedding_unavailable");
+    expect(requests).toBe(0);
+    expect((await cli(["index", "--embeddings"])).code).toBe(0);
+    const before = requests;
+    for (const changed of [{ GEMINI_MODEL: "different-model" }, { GEMINI_OUTPUT_DIMENSIONALITY: "4" }]) {
+      const status = JSON.parse((await cli(["status", "--json"], commandPath, changed)).stdout);
+      expect(status.embeddingCoverage).toMatchObject({ embeddings: 0, missingChunks: 2 });
+      const incompatible = await cli(["context", "validateToken", "--mode=hybrid", "--json"], commandPath, changed);
+      expect(JSON.parse(incompatible.stdout).effectiveMode).toBe("keyword");
+      expect(requests).toBe(before);
+    }
+  });
+
   it("shows help without loading invalid runtime config on either entrypoint", async () => {
     const help = await cli([], commandPath, { GEMINI_REQUEST_TIMEOUT_MS: "bad" });
     expect(help.code).toBe(0);

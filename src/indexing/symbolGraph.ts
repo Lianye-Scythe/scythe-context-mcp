@@ -49,7 +49,7 @@ const symbolPatterns: SymbolPattern[] = [
   { kind: "interface", regex: /^(\s*export\s+)?interface\s+([A-Za-z_$][\w$]*)\b/, nameGroup: 2, exportedGroup: 1 },
   { kind: "type", regex: /^(\s*export\s+)?type\s+([A-Za-z_$][\w$]*)\b/, nameGroup: 2, exportedGroup: 1 },
   { kind: "enum", regex: /^(\s*export\s+)?enum\s+([A-Za-z_$][\w$]*)\b/, nameGroup: 2, exportedGroup: 1 },
-  { kind: "const", regex: /^(\s*export\s+)?const\s+([A-Za-z_$][\w$]*)\b/, nameGroup: 2, exportedGroup: 1 },
+  { kind: "const", regex: /^\s*(export\s+)?const\s+([A-Za-z_$][\w$]*)\b/, nameGroup: 2, exportedGroup: 1 },
   { kind: "variable", regex: /^\s*(?:let|var)\s+([A-Za-z_$][\w$]*)\b/, nameGroup: 1 },
   { kind: "function", regex: /^\s*(?:async\s+)?def\s+([A-Za-z_]\w*)\b/, nameGroup: 1 },
   { kind: "class", regex: /^\s*class\s+([A-Za-z_]\w*)\b/, nameGroup: 1 },

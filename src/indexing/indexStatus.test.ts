@@ -3,8 +3,11 @@ import os from "node:os";
 import path from "node:path";
 import Database from "better-sqlite3";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
+import { sha256Hex } from "./hash.js";
 import { persistentReindexMetadata } from "./indexWriter.js";
-import { readDetailedIndexStatus, readIndexFreshness, recommendedNextActions, type DetailedIndexStatus } from "./indexStatus.js";
+import { getEmbeddingCoverage, readDetailedIndexStatus, readIndexFreshness, recommendedNextActions, type DetailedIndexStatus } from "./indexStatus.js";
+
+const desiredEmbeddingSet = { provider: "gemini", baseUrlHash: sha256Hex("memory://fake"), model: "gemini-embedding-2", dimensions: 1536 };
 
 let tempDir: string;
 
@@ -162,9 +165,20 @@ describe("readIndexFreshness", () => {
 });
 
 describe("recommendedNextActions", () => {
+  it.each(["provider", "baseUrlHash", "model"] as const)("does not reuse coverage after a %s change", (field) => {
+    const status: DetailedIndexStatus = {
+      exists: true, dbPath: "/repo/.scythe-context/index.sqlite", files: 2,
+      chunks: 4, ftsRows: 4, symbols: 3, dependencies: 1,
+      embeddingSets: [{ id: 1, ...desiredEmbeddingSet, embeddings: 4 }],
+    };
+    const changed = { ...desiredEmbeddingSet, [field]: "different" };
+    expect(getEmbeddingCoverage(status, changed)).toMatchObject({ embeddingSetId: null, embeddings: 0, missingChunks: 4 });
+    expect(getEmbeddingCoverage(status, desiredEmbeddingSet)).toMatchObject({ embeddingSetId: 1, embeddings: 4, missingChunks: 0 });
+  });
+
   it("recommends metadata indexing for a missing database", () => {
     const status = readDetailedIndexStatus(path.join(tempDir, "missing.sqlite"));
-    expect(recommendedNextActions(status, { desiredDimensions: 1536 })).toEqual([
+    expect(recommendedNextActions(status, { desiredEmbeddingSet })).toEqual([
       "Run repo_reindex with dry_run=false to create the metadata index.",
       "Then run repo_reindex with dry_run=false and index_embeddings=true when semantic search or context packs need vectors.",
     ]);
@@ -182,8 +196,8 @@ describe("recommendedNextActions", () => {
       embeddingSets: [],
     };
 
-    expect(recommendedNextActions(status, { desiredDimensions: 1536 })).toEqual([
-      "Run repo_reindex with dry_run=false and index_embeddings=true to create 1536-dimension embeddings for semantic search.",
+    expect(recommendedNextActions(status, { desiredEmbeddingSet })).toEqual([
+      "Run repo_reindex with dry_run=false and index_embeddings=true to create 1536-dimension embeddings for the configured provider when hybrid or semantic search is needed.",
     ]);
   });
 
@@ -196,10 +210,10 @@ describe("recommendedNextActions", () => {
       ftsRows: 4,
       symbols: 3,
       dependencies: 1,
-      embeddingSets: [{ id: 1, provider: "gemini", model: "gemini-embedding-2", dimensions: 1536, embeddings: 4 }],
+      embeddingSets: [{ id: 1, provider: "gemini", baseUrlHash: desiredEmbeddingSet.baseUrlHash, model: "gemini-embedding-2", dimensions: 1536, embeddings: 4 }],
     };
 
-    expect(recommendedNextActions(status, { desiredDimensions: 1536 })).toEqual([
+    expect(recommendedNextActions(status, { desiredEmbeddingSet })).toEqual([
       "Index is ready. Prefer repo_context_pack for task-oriented lookup.",
     ]);
   });
@@ -213,12 +227,12 @@ describe("recommendedNextActions", () => {
       ftsRows: 1,
       symbols: 1,
       dependencies: 0,
-      embeddingSets: [{ id: 1, provider: "gemini", model: "gemini-embedding-2", dimensions: 1536, embeddings: 1 }],
+      embeddingSets: [{ id: 1, provider: "gemini", baseUrlHash: desiredEmbeddingSet.baseUrlHash, model: "gemini-embedding-2", dimensions: 1536, embeddings: 1 }],
     };
 
     expect(
       recommendedNextActions(status, {
-        desiredDimensions: 1536,
+        desiredEmbeddingSet,
         freshness: {
           checked: true,
           status: "stale",

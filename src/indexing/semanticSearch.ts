@@ -1,10 +1,11 @@
 import Database from "better-sqlite3";
-import { vectorTableName } from "../storage/schema.js";
+import { vectorTableName, type EmbeddingSetInput } from "../storage/schema.js";
 import { loadSqliteVec, vectorToFloat32Buffer } from "../storage/sqliteVec.js";
 
 export interface VectorSearchOptions {
   dbPath: string;
   dimensions: number;
+  embeddingSet: EmbeddingSetInput;
   queryVector: readonly number[];
   maxResults: number;
   maxSnippetChars: number;
@@ -49,9 +50,18 @@ export function searchByVector(options: VectorSearchOptions): VectorSearchResult
         join files on files.id = chunks.file_id
         where vec.embedding match ?
           and vec.k = ?
+          and vec.rowid in (
+            select embeddings.id from embeddings
+            join embedding_sets on embedding_sets.id = embeddings.embedding_set_id
+            join chunks on chunks.id = embeddings.chunk_id
+            where embedding_sets.provider = ? and embedding_sets.base_url_hash = ?
+              and embedding_sets.model = ? and embedding_sets.dimensions = ?
+          )
         order by vec.distance
       `)
-      .all(vectorToFloat32Buffer(options.queryVector, options.dimensions), options.maxResults) as Array<{
+      .all(vectorToFloat32Buffer(options.queryVector, options.dimensions), options.maxResults,
+        options.embeddingSet.provider, options.embeddingSet.baseUrlHash,
+        options.embeddingSet.model, options.embeddingSet.dimensions) as Array<{
         path: string;
         startLine: number;
         endLine: number;

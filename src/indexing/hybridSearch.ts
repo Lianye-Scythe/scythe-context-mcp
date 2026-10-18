@@ -1,3 +1,4 @@
+import type { EmbeddingSetInput } from "../storage/schema.js";
 import { searchByKeyword, type KeywordSearchResult } from "./keywordSearch.js";
 import { rerankCodeAware, type CodeAwareRerankWeights } from "./codeAwareReranker.js";
 import { searchByVector, type VectorSearchResult } from "./semanticSearch.js";
@@ -8,6 +9,7 @@ export interface HybridSearchOptions {
   dbPath: string;
   query: string;
   dimensions: number;
+  embeddingSet: EmbeddingSetInput;
   queryVector: readonly number[];
   maxResults: number;
   maxSnippetChars: number;
@@ -89,6 +91,7 @@ export function searchHybrid(options: HybridSearchOptions): HybridSearchResult[]
   const semanticResults = searchByVector({
     dbPath: options.dbPath,
     dimensions: options.dimensions,
+    embeddingSet: options.embeddingSet,
     queryVector: options.queryVector,
     maxResults: Math.max(options.maxResults * 2, options.maxResults),
     maxSnippetChars: options.maxSnippetChars,
@@ -115,7 +118,7 @@ export function searchHybrid(options: HybridSearchOptions): HybridSearchResult[]
   });
 }
 
-export function searchKeywordOnly(options: Omit<HybridSearchOptions, "dimensions" | "queryVector">): HybridSearchResult[] {
+export function searchKeywordOnly(options: Omit<HybridSearchOptions, "dimensions" | "queryVector" | "embeddingSet">): HybridSearchResult[] {
   const keywordResults = searchByKeyword({
     dbPath: options.dbPath,
     query: options.query,
