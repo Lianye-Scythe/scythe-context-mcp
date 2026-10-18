@@ -6,6 +6,8 @@ This project follows semantic versioning before npm publication where practical.
 
 ## [Unreleased]
 
+## [0.1.24] - 2026-10-18
+
 ### Fixed
 
 - Recover exact snake_case/camelCase declarations in natural-language definition/registration queries when usages hide the implementation; retain existing caller-search behavior and recognize indented const declarations.
