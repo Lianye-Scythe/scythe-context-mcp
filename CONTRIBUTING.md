@@ -14,6 +14,20 @@ Before submitting a completed change, run:
 npm run verify
 ```
 
+## Tests
+
+Tests live beside the implementation and are grouped by responsibility:
+
+| Area | Test files |
+| --- | --- |
+| TS/JS aliases, project selection and workspace exports | `typescriptPaths.test.ts`, `typescriptProjects.test.ts`, `workspacePackages.test.ts` |
+| Cargo roots and Rust navigation rules | `rustTargets.test.ts` |
+| Metadata persistence, incremental updates and chunk/FTS caches | `indexWriter.test.ts` |
+| Related-file traversal, path classification and snippet budgets | `relatedFiles.test.ts`, `relatedSnippets.test.ts` |
+| Configuration refresh and real CLI/MCP workflows | `configNavigation.test.ts`, `multiLanguage.test.ts`, `cli.integration.test.ts` |
+
+The indexing tests are under `src/indexing/`; `cli.integration.test.ts` is directly under `src/`. Resolution-rule tests and workflow tests cover different boundaries, including filesystem changes, persistent indexes and transport behavior.
+
 ## Project Boundaries
 
 - Keep indexing, storage, provider, search, and MCP tool wiring decoupled.

@@ -6,8 +6,7 @@ import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import { chunkText } from "./chunker.js";
 import { regexStructureExtractor } from "./structureExtractor.js";
 import { persistentReindexMetadata } from "./indexWriter.js";
-import { classifyRelatedPath, readRelatedFileGraph, readRelatedFiles } from "./relatedFiles.js";
-import { readRelatedSnippets } from "./relatedSnippets.js";
+import { readRelatedFiles } from "./relatedFiles.js";
 import { vectorTableName } from "../storage/schema.js";
 
 let tempDir: string;
@@ -225,152 +224,6 @@ describe("persistentReindexMetadata", () => {
       expect.objectContaining({ specifier: "./helper", resolvedPath: "src/helper.ts" }),
     ]);
   });
-
-  it("reads a bounded multi-hop related file graph", async () => {
-    await fs.mkdir(path.join(tempDir, "src"));
-    await fs.writeFile(path.join(tempDir, "src", "controller.ts"), 'import { service } from "./service";\nservice();\n');
-    await fs.writeFile(path.join(tempDir, "src", "service.ts"), 'import { repo } from "./repo";\nexport function service() { repo(); }\n');
-    await fs.writeFile(path.join(tempDir, "src", "repo.ts"), "export function repo() {}\n");
-
-    const metadata = await persistentReindexMetadata({
-      projectPath: tempDir,
-      indexDirName: ".scythe-context",
-      vectorDimensions: 1536,
-      maxFileBytes: 2048,
-      targetChunkChars: 100,
-      chunkOverlapChars: 0,
-      maxChunksPerFile: 10,
-    });
-
-    const graph = readRelatedFileGraph({
-      dbPath: metadata.dbPath,
-      seedPaths: ["src/controller.ts"],
-      maxDepth: 2,
-      maxFiles: 10,
-      maxResultsPerFile: 10,
-    });
-
-    expect(graph.map((node) => ({ path: node.path, depth: node.depth, via: node.via }))).toEqual([
-      { path: "src/controller.ts", depth: 0, via: null },
-      { path: "src/service.ts", depth: 1, via: "src/controller.ts" },
-      { path: "src/repo.ts", depth: 2, via: "src/service.ts" },
-    ]);
-  });
-
-  it("prioritizes source neighbors before tests in related traversal", async () => {
-    await fs.mkdir(path.join(tempDir, "src"));
-    await fs.writeFile(path.join(tempDir, "src", "service.ts"), "export function service() {}\n");
-    await fs.writeFile(path.join(tempDir, "src", "controller.ts"), 'import { service } from "./service";\nservice();\n');
-    await fs.writeFile(path.join(tempDir, "src", "service.test.ts"), 'import { service } from "./service";\nservice();\n');
-
-    const metadata = await persistentReindexMetadata({
-      projectPath: tempDir,
-      indexDirName: ".scythe-context",
-      vectorDimensions: 1536,
-      maxFileBytes: 2048,
-      targetChunkChars: 100,
-      chunkOverlapChars: 0,
-      maxChunksPerFile: 10,
-    });
-
-    const graph = readRelatedFileGraph({
-      dbPath: metadata.dbPath,
-      seedPaths: ["src/service.ts"],
-      maxDepth: 1,
-      maxFiles: 3,
-      maxResultsPerFile: 10,
-    });
-
-    expect(graph.map((node) => node.path)).toEqual(["src/service.ts", "src/controller.ts", "src/service.test.ts"]);
-  });
-
-  it("prioritizes source files globally across queued traversal branches", async () => {
-    await fs.mkdir(path.join(tempDir, "src"));
-    await fs.writeFile(path.join(tempDir, "src", "root.ts"), 'import { a } from "./a";\nimport { b } from "./b";\na(); b();\n');
-    await fs.writeFile(path.join(tempDir, "src", "a.ts"), "export function a() {}\n");
-    await fs.writeFile(path.join(tempDir, "src", "b.ts"), "export function b() {}\n");
-    await fs.writeFile(path.join(tempDir, "src", "a.test.ts"), 'import { a } from "./a";\na();\n');
-    await fs.writeFile(path.join(tempDir, "src", "b-helper.ts"), 'import { b } from "./b";\nexport function helper() { b(); }\n');
-
-    const metadata = await persistentReindexMetadata({
-      projectPath: tempDir,
-      indexDirName: ".scythe-context",
-      vectorDimensions: 1536,
-      maxFileBytes: 2048,
-      targetChunkChars: 100,
-      chunkOverlapChars: 0,
-      maxChunksPerFile: 10,
-    });
-
-    const graph = readRelatedFileGraph({
-      dbPath: metadata.dbPath,
-      seedPaths: ["src/root.ts"],
-      maxDepth: 2,
-      maxFiles: 5,
-      maxResultsPerFile: 10,
-    });
-
-    expect(graph.map((node) => node.path)).toEqual([
-      "src/root.ts",
-      "src/a.ts",
-      "src/b.ts",
-      "src/b-helper.ts",
-      "src/a.test.ts",
-    ]);
-  });
-
-  it("reads related snippets with an independent context budget", async () => {
-    await fs.mkdir(path.join(tempDir, "src"));
-    await fs.writeFile(path.join(tempDir, "src", "service.ts"), "export function service() {\n  return 'service';\n}\n");
-    await fs.writeFile(path.join(tempDir, "src", "repo.ts"), "export function repo() {\n  return 'repo';\n}\n");
-
-    const metadata = await persistentReindexMetadata({
-      projectPath: tempDir,
-      indexDirName: ".scythe-context",
-      vectorDimensions: 1536,
-      maxFileBytes: 2048,
-      targetChunkChars: 100,
-      chunkOverlapChars: 0,
-      maxChunksPerFile: 10,
-    });
-
-    const pack = readRelatedSnippets({
-      dbPath: metadata.dbPath,
-      paths: ["src/service.ts", "src/repo.ts"],
-      maxSnippetsPerFile: 1,
-      maxSnippetChars: 24,
-      maxRelatedContextChars: 40,
-    });
-
-    expect(pack.snippets.map((snippet) => snippet.path)).toEqual(["src/service.ts", "src/repo.ts"]);
-    expect(pack.summary.relatedSnippetCount).toBe(2);
-    expect(pack.summary.usedRelatedContextChars).toBeLessThanOrEqual(40);
-    expect(pack.summary.truncatedRelatedSnippets).toBeGreaterThan(0);
-  });
-
-  it("returns an empty related snippet pack for an uninitialized database", async () => {
-    const dbPath = path.join(tempDir, "empty.sqlite");
-    const db = new Database(dbPath);
-    db.close();
-
-    expect(
-      readRelatedSnippets({
-        dbPath,
-        paths: ["src/service.ts"],
-        maxSnippetsPerFile: 1,
-        maxSnippetChars: 100,
-        maxRelatedContextChars: 100,
-      }),
-    ).toEqual({
-      snippets: [],
-      summary: {
-        maxRelatedContextChars: 100,
-        usedRelatedContextChars: 0,
-        relatedSnippetCount: 0,
-        truncatedRelatedSnippets: 0,
-      },
-    });
-  });
 });
 
 describe("incremental chunk reuse", () => {
@@ -499,20 +352,5 @@ describe("incremental chunk reuse", () => {
     const second = await persistentReindexMetadata(options());
     expect(rows(first.dbPath, "select count(*) as count from chunk_fts")).toEqual([{ count: second.stats.chunks }]);
     expect(rows(first.dbPath, "select count(*) as count from file_chunking")).toEqual([{ count: 1 }]);
-  });
-});
-
-describe("related path classification", () => {
-  it.each(["src/token_test.go", "src/test_token.py", "src/token_test.py"])("classifies language test files: %s", (file) => {
-    expect(classifyRelatedPath(file)).toBe("test");
-  });
-
-  it("classifies common support file roles", () => {
-    expect(classifyRelatedPath("src/service.ts")).toBe("source");
-    expect(classifyRelatedPath("src/service.test.ts")).toBe("test");
-    expect(classifyRelatedPath("src/__mocks__/service.ts")).toBe("mock");
-    expect(classifyRelatedPath("fixtures/user.json")).toBe("fixture");
-    expect(classifyRelatedPath("src/generated/client.ts")).toBe("generated");
-    expect(classifyRelatedPath("docs/usage.md")).toBe("docs");
   });
 });
