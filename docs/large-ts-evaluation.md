@@ -95,3 +95,12 @@ Preparation issues were identified and corrected:
 - An own-project `npm run verify` accidentally discovered and executed some external snapshot tests under ignored `local/`. The attempt failed due to missing target dependencies/environment and was excluded. `npm test` now adds the additive `--exclude "local/**"` flag; no maintained test or assertion was removed. The original 351 tests in 36 files, build, smoke, audit and package checks passed afterward, as did the existing benchmark gate. A fresh archive comparison confirmed all 3,611 regular source-file contents still match the pinned commit.
 
 No target dependencies were installed. Preserve these corrections and all original failures when publishing results. This evaluation remains read-only lookup work, not implementation, debugging acceptance tests or a general claim of speed/token savings.
+
+
+## Archive-time validation (2026-10-19)
+
+Maintenance ended after this evaluation. Hybrid remains unmeasured; no further collection or releases are planned. The public results above remain the original local comparison, separate from the own-repository checks below.
+
+`npm run verify` passed all 351 tests in 36 files, build, executable/smoke checks, production dependency audit (zero vulnerabilities) and package dry run. The final documentation and data snapshot was pushed in commit `8cc9865`. Its [GitHub CI run](https://github.com/Lianye-Scythe/scythe-context-mcp/actions/runs/39182161964) passed unit tests and build but failed the existing own-repository keyword search gate: hit@5 was 60/61 (0.9836) against the unchanged 1.0 requirement, with MRR 0.8511. The `npm-package-files` case did not return an expected implementation path in its first five results. A local rerun reproduced the failure.
+
+This later result supersedes the earlier preparation-time gate pass for the expanded archive corpus. It does not change the recorded TanStack task results. The ranking limitation and original failed CI are retained; no ranking behavior, expected answers or acceptance thresholds were changed to obtain a green archive.

@@ -6,7 +6,7 @@ This project follows semantic versioning before npm publication where practical.
 
 ## [Unreleased]
 
-Final source snapshot; not an npm release. Maintenance ended on 2026-10-19. Source, documentation and evaluation results are preserved for reference; no further releases are planned.
+Final source snapshot; not an npm release. Maintenance ended on 2026-10-19. Source, documentation and evaluation results are preserved for reference; no further releases are planned. All 25 published npm versions are marked deprecated. The archive-time own-repository keyword gate result (60/61 hit@5, below its unchanged requirement) is retained in the final evaluation report.
 
 ### Fixed
 
