@@ -1,0 +1,161 @@
+{
+  "schemaVersion": 1,
+  "scope": "Full TanStack Query repository using default Scythe scanner, six fixed read-only questions, three rotated workflow orders and three repetitions; no code execution or edits.",
+  "repo": "TanStack/query",
+  "commit": "ddff3a70be3255d6154cbb828fb9b00a209ba382",
+  "repetitions": 3,
+  "model": "gpt-6.1-sol",
+  "reasoning": "medium",
+  "timeoutSeconds": 150,
+  "tasks": [
+    {
+      "id": "identity-depth",
+      "kind": "identifier",
+      "prompt": "In replaceEqualDeep, what happens past the recursion depth limit, and under what final condition is the original value a returned instead of a new container?",
+      "evidence": [
+        {
+          "file": "packages/query-core/src/utils.ts",
+          "symbol": "replaceEqualDeep",
+          "anchors": [
+            "if (depth > 500) return b",
+            "return aSize === bSize && equalItems === aSize ? a : copy"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "react-property-tracking",
+      "kind": "cross-package",
+      "prompt": "In the React adapter, find how a query result records which properties a component reads. Trace the adapter handoff into the core implementation. What option bypasses the tracking wrapper, how are reads intercepted, and where are accessed property names stored? Cite both packages.",
+      "evidence": [
+        {
+          "file": "packages/react-query/src/useBaseQuery.ts",
+          "symbol": "useBaseQuery",
+          "anchors": [
+            "!defaultedOptions.notifyOnChangeProps",
+            "observer.trackResult(result)"
+          ]
+        },
+        {
+          "file": "packages/query-core/src/queryObserver.ts",
+          "symbol": "trackResult",
+          "anchors": [
+            "new Proxy(result",
+            "this.trackProp(",
+            "this.#trackedProps.add(key)"
+          ],
+          "allowedSymbols": [
+            "trackResult",
+            "trackProp",
+            "QueryObserver"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "zh-shared-client-lifecycle",
+      "kind": "chinese-cross-package",
+      "prompt": "React 裡多個 Provider 共用同一個快取客戶端時，為什麼移除其中一個 Provider 不會立刻取消視窗焦點與網路恢復的監聽？請從 React 的生命週期接到核心套件，說明建立與清除監聽的計數條件，引用兩個套件的實作。",
+      "evidence": [
+        {
+          "file": "packages/react-query/src/QueryClientProvider.tsx",
+          "symbol": "QueryClientProvider",
+          "anchors": [
+            "client.mount()",
+            "client.unmount()"
+          ]
+        },
+        {
+          "file": "packages/query-core/src/queryClient.ts",
+          "symbol": "mount",
+          "anchors": [
+            "this.#mountCount++",
+            "this.#mountCount !== 1",
+            "this.#mountCount--",
+            "this.#mountCount !== 0"
+          ],
+          "allowedSymbols": [
+            "mount",
+            "QueryClient"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "persist-stale-revision",
+      "kind": "paraphrase-cross-package",
+      "prompt": "A saved cache image from an older application revision, or one left on disk too long, should not resurrect stale server state. Locate where the persistence layer discards such an image, including an image without a save time. Identify the core function that receives an acceptable image, with source evidence from both packages.",
+      "evidence": [
+        {
+          "file": "packages/query-persist-client-core/src/persist.ts",
+          "symbol": "persistQueryClientRestore",
+          "anchors": [
+            "Date.now() - persistedClient.timestamp > maxAge",
+            "persistedClient.buster !== buster",
+            "persister.removeClient()",
+            "hydrate(queryClient, persistedClient.clientState, hydrateOptions)"
+          ]
+        },
+        {
+          "file": "packages/query-core/src/hydration.ts",
+          "symbol": "hydrate",
+          "anchors": [
+            "export function hydrate("
+          ]
+        }
+      ]
+    },
+    {
+      "id": "zh-last-listener-cancel",
+      "kind": "chinese",
+      "prompt": "最後一個訂閱者離開後，正在執行的請求一定會被中止嗎？找出核心的分支：已使用取消訊號、尚未開始且暫停中、以及沒有使用訊號的一般進行中請求，分別如何處理？並追到重試控制器，說明「取消整個執行」和「只停止後續重試」的差異，引用實作。",
+      "evidence": [
+        {
+          "file": "packages/query-core/src/query.ts",
+          "symbol": "removeObserver",
+          "anchors": [
+            "this.#abortSignalConsumed",
+            "this.state.fetchStatus === 'paused'",
+            "this.state.status === 'pending'",
+            "this.#retryer.cancel({ revert: true })",
+            "this.#retryer.cancelRetry()"
+          ]
+        },
+        {
+          "file": "packages/query-core/src/retryer.ts",
+          "symbol": "createRetryer",
+          "anchors": [
+            "const cancel =",
+            "reject(error)",
+            "config.onCancel?.(error)",
+            "const cancelRetry =",
+            "isRetryCancelled = true"
+          ],
+          "allowedSymbols": [
+            "createRetryer",
+            "cancel"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "vue-restoration-disposal",
+      "kind": "adapter-disambiguation",
+      "prompt": "Several framework adapters have a file called useBaseQuery. In the Vue implementation specifically, find how observer subscription is delayed during cache restoration and later attached, how changed default options refresh the observer, and how leaving the effect scope cleans up the subscription. Do not answer from the React implementation.",
+      "evidence": [
+        {
+          "file": "packages/vue-query/src/useBaseQuery.ts",
+          "symbol": "useBaseQuery",
+          "anchors": [
+            "if (client.isRestoring)",
+            "if (!isRestoring)",
+            "observer.subscribe(",
+            "watch(defaultedOptions, updater)",
+            "onScopeDispose(() =>",
+            "unsubscribe()"
+          ]
+        }
+      ]
+    }
+  ]
+}

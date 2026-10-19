@@ -1,5 +1,7 @@
 # Scythe Context MCP
 
+> **已停止维护 — 2026-10-19。** 本项目停止开发与发版，公开归档源码、历史使用说明及评测结果。评测未证明相对 `rg` 具有普遍的速度或 token 节省优势，详见[最后的大型 TypeScript 评测](docs/large-ts-evaluation.md)。已有 npm 版本保留供参考；下方安装步骤为历史配置说明。
+
 [![CI](https://github.com/Lianye-Scythe/scythe-context-mcp/actions/workflows/ci.yml/badge.svg)](https://github.com/Lianye-Scythe/scythe-context-mcp/actions/workflows/ci.yml)
 [![npm version](https://img.shields.io/npm/v/scythe-context-mcp.svg)](https://www.npmjs.com/package/scythe-context-mcp)
 [![License: Apache-2.0](https://img.shields.io/badge/License-Apache--2.0-blue.svg)](LICENSE)

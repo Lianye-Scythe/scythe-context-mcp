@@ -1,5 +1,7 @@
 # Contributing
 
+> Maintenance ended on 2026-10-19. No further releases, fixes or pull-request review are planned. The instructions below are preserved for reproducing the final source snapshot or maintaining an independent fork.
+
 ## Development
 
 ```bash
@@ -29,6 +31,8 @@ Tests live beside the implementation and are grouped by responsibility:
 | Configuration refresh and real CLI/MCP workflows | `configNavigation.test.ts`, `multiLanguage.test.ts`, `cli.integration.test.ts` |
 
 The indexing tests are under `src/indexing/`; `cli.integration.test.ts` is directly under `src/`. Resolution-rule tests and workflow tests cover different boundaries, including filesystem changes, persistent indexes and transport behavior.
+
+`npm test` excludes the ignored `local/` scratch directory so downloaded evaluation repositories are not discovered as this project's tests. Keep reference snapshots and private evaluation outputs there, outside the maintained test suite.
 
 ## Project Boundaries
 

@@ -74,6 +74,8 @@ See [Antigravity MCP documentation](https://antigravity.google/docs/mcp). Use yo
 
 For embeddings, use the same Skill decision rules across clients: check configured coverage, create/update vectors only when justified and source transmission/provider usage are within scope, reuse existing vectors, and inspect fallback results. A client's model login is not an embedding authorization or a substitute for the provider key.
 
+When the command shell supplies an HTTP/HTTPS proxy, start remote Scythe commands with `NODE_USE_ENV_PROXY=1 scythe-context ...`. Node must receive this setting at startup; Scythe's runtime `.env` loading happens later. Do not print proxy URLs, which may include credentials. Antigravity's sandbox also requires the destination domain to be permitted; proxy support does not change that permission. See [Node's proxy configuration](https://nodejs.org/learn/http/enterprise-network-configuration) and [Antigravity CLI sandbox networking](https://www.antigravity.google/docs/sandbox?tab=cli).
+
 ## Check an installation
 
 First verify the client discovers the Skill. Then explicitly invoke it and ask:
@@ -99,3 +101,5 @@ The checks used separate temporary repositories containing two generic TypeScrip
 Global client configuration files were not changed. Codex used an ephemeral run without user config, Claude used project settings with an empty per-run MCP configuration, and the Antigravity fixture disabled inherited MCP entries within that workspace. No model was explicitly selected, and no blanket permission-bypass flags were used. These checks confirm one explicitly invoked local workflow, not implicit Skill selection quality, all permission modes, all platforms, or client-specific MCP end-to-end execution.
 
 The package's existing tests cover CLI/MCP operation parity and multilingual navigation independently. See [retrieval workflow verification](retrieval-workflow-audit.md) for vector lifecycle checks and remaining retrieval limits.
+
+A later [full TypeScript repository check](ts-client-check.md) used installed user Skills with Codex CLI 0.163.0 and Antigravity CLI 1.4.2. It records the original 14 lookup runs, an Antigravity timeout with an empty success response, proxy-related hybrid fallbacks, and separate successful hybrid checks after updating the Skill's proxy guidance.

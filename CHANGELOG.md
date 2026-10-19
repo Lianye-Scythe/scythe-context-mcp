@@ -6,13 +6,19 @@ This project follows semantic versioning before npm publication where practical.
 
 ## [Unreleased]
 
+Final source snapshot; not an npm release. Maintenance ended on 2026-10-19. Source, documentation and evaluation results are preserved for reference; no further releases are planned.
+
 ### Fixed
 
+- Exclude ignored local reference repositories from own-project test discovery, preserving all maintained tests.
+- Teach the CLI Skill to opt Node into a supplied HTTP/HTTPS proxy before remote commands; verify actual hybrid retrieval in Antigravity's sandbox without changing its network grants.
 - Keep rate limits, timeouts and authentication failures from poisoning batch capability observations or triggering immediate single-request fan-out. Recheck legacy unsupported observations and verify individual support before caching a batch fallback.
 - Retry transient document embedding failures with bounded exponential backoff and Retry-After support; preserve query fallback latency. Persist successful single vectors immediately and report resumable progress, configured coverage and classified diagnostics through CLI/MCP indexing failures.
 
 ### Added
 
+- Record a pinned TanStack Query monorepo evaluation with 36 local rg/keyword attempts, preserved timeouts/account interruption, actual client usage, source/citation reviews and mixed efficiency results; retain the provider quota blocker for pending hybrid measurements. Add a resumable source-checkout manual driver with isolated sessions and explicit local-only groups.
+- Record a full ts-pattern client check with installed Codex/Antigravity user Skills, 14 original read-only runs, preserved timeout/fallback failures and two separate successful proxy follow-ups.
 - Add a manual source-checkout agent lookup pilot for rg, keyword and hybrid workflows, with fixed public-source tasks, fresh sessions, actual client token usage and source-grounding checks.
 
 - Add a source-checkout-only hybrid fusion experiment comparing the current merge, RRF and score-scaled RRF with shared vector/keyword candidates, fixed public-source cases and file-rank metrics. Production search defaults remain unchanged.

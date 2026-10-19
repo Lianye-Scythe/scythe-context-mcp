@@ -1,5 +1,7 @@
 # Support
 
+> Maintenance ended on 2026-10-19. No ongoing setup support, issue triage or fixes are planned. The following material is preserved for independent troubleshooting of historical versions.
+
 For setup or usage problems, start with:
 
 - [Troubleshooting and first-run checks](docs/troubleshooting.md)
@@ -7,7 +9,7 @@ For setup or usage problems, start with:
 - [Setup and platform configuration](docs/setup.md)
 - [Documentation index](docs/README.md)
 
-Before opening an issue, run the compact diagnostics when possible:
+For independent troubleshooting, run the compact diagnostics when possible:
 
 ```text
 repo_doctor

@@ -1,5 +1,9 @@
 # Security Policy
 
+## Maintenance Status
+
+Maintenance ended on 2026-10-19. No versions receive security updates or guaranteed report handling. The data-handling and installation guidance below is retained for reference.
+
 ## Sensitive Data
 
 Scythe Context indexes local repository text and can send chunk/query text to the configured Gemini-compatible embedding endpoint when `index_embeddings=true` or semantic search/context packs require query embeddings.

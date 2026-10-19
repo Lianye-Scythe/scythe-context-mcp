@@ -1,6 +1,7 @@
 {
   "name": "scythe-context-mcp",
   "version": "0.1.24",
+  "private": true,
   "description": "Local code search, import navigation, and bounded context for coding agents via CLI + Skill or MCP.",
   "type": "module",
   "license": "Apache-2.0",
@@ -65,7 +66,7 @@
     "prepack": "npm run build",
     "release:prepare": "node scripts/prepare-release.mjs",
     "smoke": "node dist/index.js --version && node dist/index.js --help && node dist/command.js --version && node dist/command.js --help",
-    "test": "vitest run",
+    "test": "vitest run --exclude \"local/**\"",
     "typecheck": "tsc -p tsconfig.json --noEmit",
     "verify": "npm test && npm run build && node scripts/bin-mode.mjs check && npm run smoke && npm audit --omit=dev && npm pack --dry-run",
     "bench:index": "npm run build && node scripts/index-performance.mjs",

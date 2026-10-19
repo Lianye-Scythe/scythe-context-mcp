@@ -1,0 +1,861 @@
+{
+  "date": "2026-10-18",
+  "repository": "gvergnaud/ts-pattern",
+  "commit": "f11be73acb18e1d653d4f252e7d75981d873a2e6",
+  "scope": "Full repository, read-only client integration; two unknown-location tasks per workflow plus one identifier/Skill check per client; one attempt each. Follow-ups are separate.",
+  "versions": {
+    "scythe": "0.1.24",
+    "codex": "0.163.0",
+    "antigravity": "1.4.2",
+    "node": "24.21.0"
+  },
+  "models": {
+    "codex": "gpt-6.1-sol, medium",
+    "antigravityConfigured": "Gemini 3.8 Flash (Medium)"
+  },
+  "index": {
+    "files": 113,
+    "chunks": 247,
+    "vectors": 247,
+    "dimensions": 1536,
+    "model": "gemini-embedding-2",
+    "embeddingPreparationSeconds": 144.47,
+    "embeddingWriter": "source checkout 6916355; queries used installed 0.1.24",
+    "antigravityExtraConfig": "Each Antigravity fixture additionally indexes one local MCP-disabling config chunk without a vector; all 247 original source-index chunks retain vectors."
+  },
+  "tasks": [
+    {
+      "id": "identifier",
+      "prompt": "In isMatching, what happens when a caller supplies neither one nor two arguments? Find the runtime implementation and report the error, including how the received argument count is included.",
+      "file": "src/is-matching.ts",
+      "symbol": "isMatching"
+    },
+    {
+      "id": "natural",
+      "prompt": "When an earlier branch of a pattern-matching expression has already succeeded, can a later branch evaluate its guard or execute its callback? Locate the runtime early-exit check for adding a branch and explain what it returns.",
+      "file": "src/match.ts",
+      "symbol": "with"
+    },
+    {
+      "id": "paraphrase",
+      "prompt": "Where does the type system avoid expanding nested alternatives when removing cases that consist entirely of scalar values? Identify the conditional shortcut and explain why it is cheaper and when the general path is used.",
+      "file": "src/types/DeepExclude.ts",
+      "symbol": "DeepExclude"
+    }
+  ],
+  "runs": [
+    {
+      "id": "codex-identifier-keyword",
+      "client": "codex",
+      "task": "identifier",
+      "workflow": "keyword",
+      "seconds": 16.86,
+      "exitCode": 0,
+      "agentStatus": null,
+      "checks": {
+        "correctImplementationFile": true,
+        "exactContiguousQuote": true,
+        "quoteInReportedSpan": true,
+        "sourceUnchanged": true,
+        "lookupOperational": true,
+        "skillFileReadOrExpansionObserved": true
+      },
+      "tools": [
+        "command_execution",
+        "command_execution",
+        "command_execution"
+      ],
+      "toolCount": 3,
+      "commandOutputChars": 11437,
+      "usage": {
+        "input_tokens": 61942,
+        "cached_input_tokens": 52608,
+        "cache_write_input_tokens": 0,
+        "output_tokens": 296,
+        "reasoning_output_tokens": 0
+      },
+      "searchQueries": [
+        {
+          "query": "isMatching",
+          "effectiveMode": "keyword"
+        }
+      ],
+      "answer": {
+        "file": "src/is-matching.ts",
+        "symbol": "isMatching",
+        "start_line": 66,
+        "end_line": 68,
+        "quote": "  throw new Error(\n    `isMatching wasn't given the right number of arguments: expected 1 or 2, received ${args.length}.`\n  );",
+        "answer": "When called with zero or more than two arguments, isMatching throws an Error: \"isMatching wasn't given the right number of arguments: expected 1 or 2, received N.\" N is the actual received argument count, interpolated from args.length."
+      },
+      "manualAnswerCorrect": true,
+      "notes": []
+    },
+    {
+      "id": "codex-natural-keyword",
+      "client": "codex",
+      "task": "natural",
+      "workflow": "keyword",
+      "seconds": 13.95,
+      "exitCode": 0,
+      "agentStatus": null,
+      "checks": {
+        "correctImplementationFile": true,
+        "exactContiguousQuote": true,
+        "quoteInReportedSpan": true,
+        "sourceUnchanged": true,
+        "lookupOperational": true,
+        "skillFileReadOrExpansionObserved": true
+      },
+      "tools": [
+        "command_execution",
+        "command_execution",
+        "command_execution"
+      ],
+      "toolCount": 3,
+      "commandOutputChars": 14700,
+      "usage": {
+        "input_tokens": 63001,
+        "cached_input_tokens": 20992,
+        "cache_write_input_tokens": 0,
+        "output_tokens": 297,
+        "reasoning_output_tokens": 0
+      },
+      "searchQueries": [
+        {
+          "query": "match with guard matched",
+          "effectiveMode": "keyword"
+        }
+      ],
+      "answer": {
+        "file": "src/match.ts",
+        "symbol": "MatchExpression.with",
+        "start_line": 50,
+        "end_line": 51,
+        "quote": "  with(...args: any[]): MatchExpression<input, output> {\n    if (this.state.matched) return this;",
+        "answer": "No. Once an earlier branch succeeds, `.with()` immediately returns the same MatchExpression instance, preserving its matched state and result. It exits before evaluating the later guard (line 76) or invoking its callback (line 87). `.when()` has the same early exit at line 98."
+      },
+      "manualAnswerCorrect": true,
+      "notes": []
+    },
+    {
+      "id": "codex-natural-hybrid",
+      "client": "codex",
+      "task": "natural",
+      "workflow": "hybrid",
+      "seconds": 14.6,
+      "exitCode": 0,
+      "agentStatus": null,
+      "checks": {
+        "correctImplementationFile": true,
+        "exactContiguousQuote": true,
+        "quoteInReportedSpan": true,
+        "sourceUnchanged": true,
+        "lookupOperational": true,
+        "skillFileReadOrExpansionObserved": false
+      },
+      "tools": [
+        "command_execution",
+        "command_execution"
+      ],
+      "toolCount": 2,
+      "commandOutputChars": 6432,
+      "usage": {
+        "input_tokens": 59516,
+        "cached_input_tokens": 38016,
+        "cache_write_input_tokens": 0,
+        "output_tokens": 260,
+        "reasoning_output_tokens": 0
+      },
+      "searchQueries": [
+        {
+          "query": "pattern matching add branch early exit already matched guard callback",
+          "effectiveMode": "hybrid"
+        }
+      ],
+      "answer": {
+        "file": "src/match.ts",
+        "symbol": "MatchExpression.with",
+        "start_line": 50,
+        "end_line": 51,
+        "quote": "  with(...args: any[]): MatchExpression<input, output> {\n    if (this.state.matched) return this;",
+        "answer": "No. Once an earlier branch has matched, `.with()` immediately returns the same MatchExpression instance, preserving its stored result. This skips the later branch\u2019s pattern matching, guard evaluation, and callback execution. `.when()` has the same early-exit check at line 98."
+      },
+      "manualAnswerCorrect": true,
+      "notes": []
+    },
+    {
+      "id": "codex-natural-rg",
+      "client": "codex",
+      "task": "natural",
+      "workflow": "rg",
+      "seconds": 14.65,
+      "exitCode": 0,
+      "agentStatus": null,
+      "checks": {
+        "correctImplementationFile": true,
+        "exactContiguousQuote": true,
+        "quoteInReportedSpan": true,
+        "sourceUnchanged": true,
+        "lookupOperational": true,
+        "skillFileReadOrExpansionObserved": null
+      },
+      "tools": [
+        "command_execution",
+        "command_execution",
+        "command_execution"
+      ],
+      "toolCount": 3,
+      "commandOutputChars": 8337,
+      "usage": {
+        "input_tokens": 55114,
+        "cached_input_tokens": 34816,
+        "cache_write_input_tokens": 0,
+        "output_tokens": 314,
+        "reasoning_output_tokens": 0
+      },
+      "searchQueries": [],
+      "answer": {
+        "file": "src/match.ts",
+        "symbol": "MatchExpression.with",
+        "start_line": 50,
+        "end_line": 51,
+        "quote": "  with(...args: any[]): MatchExpression<input, output> {\n    if (this.state.matched) return this;",
+        "answer": "No. Once an earlier branch succeeds, this check returns the same MatchExpression instance, preserving its matched state and result. It exits before pattern matching, guard evaluation (lines 74\u201376), or callback execution (line 87). MatchExpression.when has the same early exit at line 98."
+      },
+      "manualAnswerCorrect": true,
+      "notes": []
+    },
+    {
+      "id": "codex-paraphrase-hybrid",
+      "client": "codex",
+      "task": "paraphrase",
+      "workflow": "hybrid",
+      "seconds": 19.96,
+      "exitCode": 0,
+      "agentStatus": null,
+      "checks": {
+        "correctImplementationFile": true,
+        "exactContiguousQuote": true,
+        "quoteInReportedSpan": true,
+        "sourceUnchanged": true,
+        "lookupOperational": true,
+        "skillFileReadOrExpansionObserved": false
+      },
+      "tools": [
+        "command_execution",
+        "command_execution",
+        "command_execution"
+      ],
+      "toolCount": 3,
+      "commandOutputChars": 8008,
+      "usage": {
+        "input_tokens": 80169,
+        "cached_input_tokens": 58496,
+        "cache_write_input_tokens": 0,
+        "output_tokens": 408,
+        "reasoning_output_tokens": 14
+      },
+      "searchQueries": [
+        {
+          "query": "type system removing cases entirely scalar values avoid expanding nested alternatives",
+          "effectiveMode": "hybrid"
+        }
+      ],
+      "answer": {
+        "file": "src/types/DeepExclude.ts",
+        "symbol": "DeepExclude",
+        "start_line": 13,
+        "end_line": 15,
+        "quote": "export type DeepExclude<a, b> = [b] extends [Primitives]\n  ? Exclude<a, b>\n  : Exclude<DistributeMatchingUnions<a, b>, b>;",
+        "answer": "The tuple-wrapped condition checks whether all of b consists of primitives. If so, it uses Exclude directly: primitives can remove only top-level union members, so expanding unions nested in objects or tuples cannot reveal additional removable cases. This avoids the cost of finding nested unions, generating combinations, and rebuilding structures. When b is not entirely primitive, the general path runs DistributeMatchingUnions before Exclude."
+      },
+      "manualAnswerCorrect": true,
+      "notes": []
+    },
+    {
+      "id": "codex-paraphrase-rg",
+      "client": "codex",
+      "task": "paraphrase",
+      "workflow": "rg",
+      "seconds": 22.56,
+      "exitCode": 0,
+      "agentStatus": null,
+      "checks": {
+        "correctImplementationFile": true,
+        "exactContiguousQuote": true,
+        "quoteInReportedSpan": true,
+        "sourceUnchanged": true,
+        "lookupOperational": true,
+        "skillFileReadOrExpansionObserved": null
+      },
+      "tools": [
+        "command_execution",
+        "command_execution",
+        "command_execution",
+        "command_execution"
+      ],
+      "toolCount": 4,
+      "commandOutputChars": 10408,
+      "usage": {
+        "input_tokens": 92692,
+        "cached_input_tokens": 71168,
+        "cache_write_input_tokens": 0,
+        "output_tokens": 439,
+        "reasoning_output_tokens": 0
+      },
+      "searchQueries": [],
+      "answer": {
+        "file": "src/types/DeepExclude.ts",
+        "symbol": "DeepExclude",
+        "start_line": 13,
+        "end_line": 15,
+        "quote": "export type DeepExclude<a, b> = [b] extends [Primitives]\n  ? Exclude<a, b>\n  : Exclude<DistributeMatchingUnions<a, b>, b>;",
+        "answer": "The shortcut checks whether all of b consists of primitive types, including literals. If so, it uses Exclude<a, b> directly: primitives can remove only top-level union members, so expanding unions nested inside objects or tuples cannot reveal additional removable cases. This avoids the cost of finding nested unions, generating combinations, and rebuilding structures. Otherwise, the general path distributes matching nested unions before excluding b."
+      },
+      "manualAnswerCorrect": true,
+      "notes": []
+    },
+    {
+      "id": "codex-paraphrase-keyword",
+      "client": "codex",
+      "task": "paraphrase",
+      "workflow": "keyword",
+      "seconds": 16.4,
+      "exitCode": 0,
+      "agentStatus": null,
+      "checks": {
+        "correctImplementationFile": true,
+        "exactContiguousQuote": true,
+        "quoteInReportedSpan": true,
+        "sourceUnchanged": true,
+        "lookupOperational": true,
+        "skillFileReadOrExpansionObserved": true
+      },
+      "tools": [
+        "command_execution",
+        "command_execution",
+        "command_execution"
+      ],
+      "toolCount": 3,
+      "commandOutputChars": 16668,
+      "usage": {
+        "input_tokens": 64011,
+        "cached_input_tokens": 39936,
+        "cache_write_input_tokens": 0,
+        "output_tokens": 345,
+        "reasoning_output_tokens": 0
+      },
+      "searchQueries": [
+        {
+          "query": "subtract scalar union",
+          "effectiveMode": "keyword"
+        }
+      ],
+      "answer": {
+        "file": "src/types/DeepExclude.ts",
+        "symbol": "DeepExclude",
+        "start_line": 13,
+        "end_line": 15,
+        "quote": "export type DeepExclude<a, b> = [b] extends [Primitives]\n  ? Exclude<a, b>\n  : Exclude<DistributeMatchingUnions<a, b>, b>;",
+        "answer": "The tuple-wrapped condition checks whether all of b consists of primitive types. If so, it uses Exclude directly: primitives can remove only top-level union members, so expanding unions nested in objects or tuples cannot reveal additional removable cases. This avoids the costly discovery, combination, and rebuilding of nested alternatives. When b is not entirely primitive, the general path distributes matching unions before excluding b."
+      },
+      "manualAnswerCorrect": true,
+      "notes": []
+    },
+    {
+      "id": "agy-identifier-keyword",
+      "client": "agy",
+      "task": "identifier",
+      "workflow": "keyword",
+      "seconds": 32.99,
+      "exitCode": 0,
+      "agentStatus": "SUCCESS",
+      "checks": {
+        "correctImplementationFile": true,
+        "exactContiguousQuote": true,
+        "quoteInReportedSpan": true,
+        "sourceUnchanged": true,
+        "lookupOperational": true,
+        "skillFileReadOrExpansionObserved": true
+      },
+      "tools": [
+        "run_command",
+        "view_file",
+        "view_file",
+        "run_command",
+        "run_command"
+      ],
+      "toolCount": 5,
+      "commandOutputChars": 4232,
+      "usage": {
+        "input_tokens": 43982,
+        "output_tokens": 2454,
+        "thinking_tokens": 1833,
+        "cache_read_tokens": 65056,
+        "total_tokens": 46436
+      },
+      "searchQueries": [
+        {
+          "query": "isMatching",
+          "effectiveMode": "keyword"
+        }
+      ],
+      "answer": {
+        "answer": "When a caller provides neither 1 nor 2 arguments to `isMatching`, the runtime implementation throws an `Error` with the message: `isMatching wasn't given the right number of arguments: expected 1 or 2, received ${args.length}.`. The received argument count is dynamically interpolated into the template literal using `${args.length}`, which reflects the number of elements in the rest parameter `...args`.",
+        "end_line": 68,
+        "file": "src/is-matching.ts",
+        "quote": "  throw new Error(\n    `isMatching wasn't given the right number of arguments: expected 1 or 2, received ${args.length}.`\n  );",
+        "start_line": 66,
+        "symbol": "isMatching"
+      },
+      "manualAnswerCorrect": true,
+      "notes": []
+    },
+    {
+      "id": "agy-natural-keyword",
+      "client": "agy",
+      "task": "natural",
+      "workflow": "keyword",
+      "seconds": 102.46,
+      "exitCode": 0,
+      "agentStatus": "SUCCESS",
+      "checks": {
+        "correctImplementationFile": false,
+        "exactContiguousQuote": false,
+        "quoteInReportedSpan": false,
+        "sourceUnchanged": true,
+        "lookupOperational": true,
+        "skillFileReadOrExpansionObserved": true
+      },
+      "tools": [
+        "run_command",
+        "run_command",
+        "view_file",
+        "run_command",
+        "run_command",
+        "run_command",
+        "run_command",
+        "run_command",
+        "run_command",
+        "view_file",
+        "view_file"
+      ],
+      "toolCount": 11,
+      "commandOutputChars": 14553,
+      "usage": {
+        "input_tokens": 62787,
+        "output_tokens": 7330,
+        "thinking_tokens": 6389,
+        "cache_read_tokens": 185881,
+        "total_tokens": 70117
+      },
+      "searchQueries": [
+        {
+          "query": "branch guard callback match",
+          "effectiveMode": "keyword"
+        }
+      ],
+      "answer": null,
+      "manualAnswerCorrect": false,
+      "notes": [
+        "100-second print timeout; stderr confirms partial return. CLI exit 0 and SUCCESS envelope contained no answer or structured output. Counted incomplete."
+      ]
+    },
+    {
+      "id": "agy-natural-hybrid",
+      "client": "agy",
+      "task": "natural",
+      "workflow": "hybrid",
+      "seconds": 29.38,
+      "exitCode": 0,
+      "agentStatus": "SUCCESS",
+      "checks": {
+        "correctImplementationFile": true,
+        "exactContiguousQuote": true,
+        "quoteInReportedSpan": true,
+        "sourceUnchanged": true,
+        "lookupOperational": false,
+        "skillFileReadOrExpansionObserved": true
+      },
+      "tools": [
+        "run_command",
+        "run_command",
+        "view_file"
+      ],
+      "toolCount": 3,
+      "commandOutputChars": 1834,
+      "usage": {
+        "input_tokens": 39458,
+        "output_tokens": 2708,
+        "thinking_tokens": 2242,
+        "cache_read_tokens": 30702,
+        "total_tokens": 42166
+      },
+      "searchQueries": [
+        {
+          "query": "pattern match branch guard callback early exit",
+          "effectiveMode": "keyword"
+        }
+      ],
+      "answer": {
+        "answer": "No, a later branch cannot evaluate its guard or execute its callback if an earlier branch has already succeeded.\n\nIn `src/match.ts`, the runtime early-exit check for adding a branch via `MatchExpression.with` is:\n```typescript\nif (this.state.matched) return this;\n```\nWhen `this.state.matched` is `true`, it immediately returns `this` (the current `MatchExpression` instance unchanged). This early return bypasses all pattern checking, guard predicate execution (`predicate(this.input)`), and branch handler callback execution (`handler(...)`).",
+        "end_line": 51,
+        "file": "src/match.ts",
+        "quote": "    if (this.state.matched) return this;",
+        "start_line": 51,
+        "symbol": "MatchExpression.with"
+      },
+      "manualAnswerCorrect": true,
+      "notes": [
+        "fetch failed and actual mode keyword; not a successful vector retrieval comparison."
+      ]
+    },
+    {
+      "id": "agy-natural-rg",
+      "client": "agy",
+      "task": "natural",
+      "workflow": "rg",
+      "seconds": 41.16,
+      "exitCode": 0,
+      "agentStatus": "SUCCESS",
+      "checks": {
+        "correctImplementationFile": true,
+        "exactContiguousQuote": true,
+        "quoteInReportedSpan": true,
+        "sourceUnchanged": true,
+        "lookupOperational": true,
+        "skillFileReadOrExpansionObserved": null
+      },
+      "tools": [
+        "run_command",
+        "view_file",
+        "run_command",
+        "run_command",
+        "run_command"
+      ],
+      "toolCount": 5,
+      "commandOutputChars": 8033,
+      "usage": {
+        "input_tokens": 57093,
+        "output_tokens": 3337,
+        "thinking_tokens": 2713,
+        "cache_read_tokens": 51030,
+        "total_tokens": 60430
+      },
+      "searchQueries": [],
+      "answer": {
+        "answer": "No. When an earlier branch has already succeeded, a later branch cannot evaluate its guard or execute its callback. In `MatchExpression.with` (as well as `MatchExpression.when`), the method checks `if (this.state.matched)` as its very first statement. If `this.state.matched` is `true`, it immediately performs an early exit by returning `this` (the current `MatchExpression` instance) directly, bypassing pattern evaluation, predicate/guard evaluation, and handler callback execution.",
+        "end_line": 51,
+        "file": "src/match.ts",
+        "quote": "    if (this.state.matched) return this;",
+        "start_line": 51,
+        "symbol": "MatchExpression.with"
+      },
+      "manualAnswerCorrect": true,
+      "notes": []
+    },
+    {
+      "id": "agy-paraphrase-hybrid",
+      "client": "agy",
+      "task": "paraphrase",
+      "workflow": "hybrid",
+      "seconds": 43.06,
+      "exitCode": 0,
+      "agentStatus": "SUCCESS",
+      "checks": {
+        "correctImplementationFile": true,
+        "exactContiguousQuote": true,
+        "quoteInReportedSpan": true,
+        "sourceUnchanged": true,
+        "lookupOperational": false,
+        "skillFileReadOrExpansionObserved": true
+      },
+      "tools": [
+        "run_command",
+        "run_command",
+        "view_file",
+        "view_file",
+        "run_command",
+        "view_file",
+        "view_file"
+      ],
+      "toolCount": 7,
+      "commandOutputChars": 4678,
+      "usage": {
+        "input_tokens": 50561,
+        "output_tokens": 3240,
+        "thinking_tokens": 2228,
+        "cache_read_tokens": 102681,
+        "total_tokens": 53801
+      },
+      "searchQueries": [
+        {
+          "query": "avoid expanding nested alternatives when removing cases that consist entirely of scalar values",
+          "effectiveMode": "keyword"
+        }
+      ],
+      "answer": {
+        "answer": "In `src/types/DeepExclude.ts`, the type system avoids expanding nested alternatives via the conditional shortcut `[b] extends [Primitives] ? Exclude<a, b> : Exclude<DistributeMatchingUnions<a, b>, b>;`.\n\n- **Conditional Shortcut**: `[b] extends [Primitives] ? Exclude<a, b> : ...`\n- **Why it is cheaper**: When `b` consists entirely of primitive/scalar types, it can only exclude top-level union members of `a`. Distributing unions nested inside objects or tuples cannot surface new excludable cases. Invoking TypeScript's built-in `Exclude<a, b>` directly bypasses `DistributeMatchingUnions<a, b>`, which avoids expensive type-level traversal, tree generation, and combinatorial union distribution, drastically accelerating exhaustiveness checks for large enums and literal unions.\n- **When the general path is used**: The general path (`Exclude<DistributeMatchingUnions<a, b>, b>`) is used whenever `b` is not exclusively composed of primitive types (e.g. non-scalar compound structures like objects, tuples, or arrays), where nested unions inside `a` must be distributed into all matching combinations so the structured pattern `b` can properly match and exclude deep cases.",
+        "end_line": 15,
+        "file": "src/types/DeepExclude.ts",
+        "quote": "export type DeepExclude<a, b> = [b] extends [Primitives]\n  ? Exclude<a, b>\n  : Exclude<DistributeMatchingUnions<a, b>, b>;",
+        "start_line": 13,
+        "symbol": "DeepExclude"
+      },
+      "manualAnswerCorrect": true,
+      "notes": [
+        "fetch failed and actual mode keyword; not a successful vector retrieval comparison."
+      ]
+    },
+    {
+      "id": "agy-paraphrase-rg",
+      "client": "agy",
+      "task": "paraphrase",
+      "workflow": "rg",
+      "seconds": 46.42,
+      "exitCode": 0,
+      "agentStatus": "SUCCESS",
+      "checks": {
+        "correctImplementationFile": true,
+        "exactContiguousQuote": true,
+        "quoteInReportedSpan": true,
+        "sourceUnchanged": true,
+        "lookupOperational": true,
+        "skillFileReadOrExpansionObserved": null
+      },
+      "tools": [
+        "run_command",
+        "run_command",
+        "run_command",
+        "view_file",
+        "view_file",
+        "run_command",
+        "view_file",
+        "view_file",
+        "run_command"
+      ],
+      "toolCount": 9,
+      "commandOutputChars": 3570,
+      "usage": {
+        "input_tokens": 104290,
+        "output_tokens": 3170,
+        "thinking_tokens": 2035,
+        "cache_read_tokens": 65507,
+        "total_tokens": 107460
+      },
+      "searchQueries": [],
+      "answer": {
+        "answer": "In `src/types/DeepExclude.ts`, the type system avoids expanding nested union alternatives via the conditional shortcut `[b] extends [Primitives] ? Exclude<a, b> : ...` within `DeepExclude<a, b>`.\n\n- **Conditional Shortcut**: `[b] extends [Primitives]` tests whether the excluded pattern `b` consists solely of primitive/scalar types (`number | boolean | string | undefined | null | symbol | bigint`). If true, it branches directly to TypeScript's built-in `Exclude<a, b>`.\n- **Why It Is Cheaper**: A scalar/primitive value can only match and exclude top-level union members of `a`. Distributing unions nested within objects or tuples cannot reveal new excludable cases. Bypassing `DistributeMatchingUnions` avoids the expensive three-step process of discovering nested unions (`FindUnionsMany`), computing combinations (`Distribute`), and rebuilding data structures (`BuildMany`), significantly speeding up exhaustiveness checking for enum and literal unions.\n- **When the General Path Is Used**: The fallback branch `Exclude<DistributeMatchingUnions<a, b>, b>` is evaluated when `b` is not composed entirely of primitives (i.e. contains objects, tuples, or composite structures), which requires distributing nested unions in `a` to match and remove partial structured cases.",
+        "end_line": 15,
+        "file": "src/types/DeepExclude.ts",
+        "quote": "export type DeepExclude<a, b> = [b] extends [Primitives]\n  ? Exclude<a, b>\n  : Exclude<DistributeMatchingUnions<a, b>, b>;",
+        "start_line": 13,
+        "symbol": "DeepExclude"
+      },
+      "manualAnswerCorrect": true,
+      "notes": []
+    },
+    {
+      "id": "agy-paraphrase-keyword",
+      "client": "agy",
+      "task": "paraphrase",
+      "workflow": "keyword",
+      "seconds": 58.0,
+      "exitCode": 0,
+      "agentStatus": "SUCCESS",
+      "checks": {
+        "correctImplementationFile": true,
+        "exactContiguousQuote": true,
+        "quoteInReportedSpan": true,
+        "sourceUnchanged": true,
+        "lookupOperational": true,
+        "skillFileReadOrExpansionObserved": true
+      },
+      "tools": [
+        "run_command",
+        "run_command",
+        "view_file",
+        "view_file",
+        "view_file",
+        "view_file",
+        "run_command",
+        "view_file"
+      ],
+      "toolCount": 8,
+      "commandOutputChars": 3537,
+      "usage": {
+        "input_tokens": 53625,
+        "output_tokens": 4154,
+        "thinking_tokens": 3062,
+        "cache_read_tokens": 124056,
+        "total_tokens": 57779
+      },
+      "searchQueries": [
+        {
+          "query": "scalar alternatives remove cases",
+          "effectiveMode": "keyword"
+        }
+      ],
+      "answer": {
+        "answer": "The type system avoids expanding nested alternatives for scalar values in `DeepExclude` via the conditional shortcut `[b] extends [Primitives] ? Exclude<a, b> : ...`.\n\n- Conditional shortcut: `[b] extends [Primitives] ? Exclude<a, b> : Exclude<DistributeMatchingUnions<a, b>, b>;`\n- Why it is cheaper: When `b` consists entirely of scalar/primitive types, it can only match and exclude top-level union members of `a`. Distributing unions nested inside objects or tuples can never surface new excludable cases for a primitive pattern. Built-in `Exclude<a, b>` performs direct top-level union filtering without invoking `DistributeMatchingUnions`, which avoids the expensive recursive union discovery (`FindUnionsMany`), combinatorial distribution (`Distribute`), and reconstruction (`BuildMany`), significantly speeding up exhaustiveness checking for large enums and literal unions.\n- When the general path is used: The general path (`Exclude<DistributeMatchingUnions<a, b>, b>`) is taken whenever `b` contains non-primitive types (e.g., objects, tuples, or arrays) where `[b] extends [Primitives]` evaluates to false. In those cases, nested unions within `a` must be distributed across combinations to properly match and eliminate structured sub-patterns.",
+        "end_line": 15,
+        "file": "src/types/DeepExclude.ts",
+        "quote": "export type DeepExclude<a, b> = [b] extends [Primitives]\n  ? Exclude<a, b>\n  : Exclude<DistributeMatchingUnions<a, b>, b>;",
+        "start_line": 13,
+        "symbol": "DeepExclude"
+      },
+      "manualAnswerCorrect": true,
+      "notes": []
+    }
+  ],
+  "limitations": [
+    "One repository, one run per task/workflow; not statistical or coding-productivity evidence.",
+    "Agents choose different queries and follow-up reads; this compares workflows, not fixed-query ranking.",
+    "Client defaults, caches, startup and exported token accounting differ; do not compare model efficiency across clients.",
+    "Codex Skill file reads are visible in three of five explicit Skill runs; two hybrid runs announced Skill use without a separate file-read event.",
+    "Parent-agent semantic review is not independent or blinded."
+  ],
+  "skillChecksums": {
+    "originalSha256": "c8ca7a8a2a1a3fdafe71f97788287c556e5b7aaec4d11ecb6d75e4a61a02d950",
+    "updatedSha256": "0877c37dc8042f999dd245477701fb734aafd067125c6129c7aac6f0be21c5e2"
+  },
+  "proxyDiagnostic": [
+    {
+      "exitCode": 0,
+      "envReadError": null,
+      "hasApiKey": true,
+      "hasConfiguredBaseUrl": true,
+      "proxyVariablesPresent": [
+        "HTTP_PROXY",
+        "HTTPS_PROXY",
+        "http_proxy",
+        "https_proxy"
+      ],
+      "nodeEnvProxyEnabled": false,
+      "requestedMode": "hybrid",
+      "effectiveMode": "keyword",
+      "requests": [
+        {
+          "error": "TypeError",
+          "causeCode": "EAI_AGAIN",
+          "causeName": "Error"
+        }
+      ]
+    },
+    {
+      "exitCode": 0,
+      "envReadError": null,
+      "hasApiKey": true,
+      "hasConfiguredBaseUrl": true,
+      "proxyVariablesPresent": [
+        "HTTP_PROXY",
+        "HTTPS_PROXY",
+        "http_proxy",
+        "https_proxy"
+      ],
+      "nodeEnvProxyEnabled": true,
+      "requestedMode": "hybrid",
+      "effectiveMode": "hybrid",
+      "requests": [
+        {
+          "status": 200
+        }
+      ]
+    }
+  ],
+  "followups": [
+    {
+      "id": "agy-natural-hybrid-proxy-followup",
+      "task": "natural",
+      "exitCode": 0,
+      "seconds": 32.04,
+      "scytheInvocations": [
+        {
+          "args": [
+            "context",
+            "pattern matching branch early exit guard callback",
+            "--mode",
+            "hybrid",
+            "--format",
+            "compact",
+            "--max-results",
+            "3"
+          ],
+          "exitCode": 0,
+          "outputChars": 1051,
+          "effectiveMode": "hybrid"
+        }
+      ],
+      "status": "SUCCESS",
+      "answer": {
+        "answer": "No, a later branch cannot evaluate its guard or execute its callback once an earlier branch has succeeded. In `MatchExpression.with`, the runtime check `if (this.state.matched) return this;` immediately exits and returns `this` (the current `MatchExpression` instance) without testing patterns, invoking guard predicates, or running callback handlers.",
+        "end_line": 51,
+        "file": "src/match.ts",
+        "quote": "    if (this.state.matched) return this;",
+        "start_line": 51,
+        "symbol": "MatchExpression.with"
+      },
+      "usage": {
+        "input_tokens": 39750,
+        "output_tokens": 2924,
+        "thinking_tokens": 2506,
+        "cache_read_tokens": 31778,
+        "total_tokens": 42674
+      },
+      "checks": {
+        "sourceUnchanged": true,
+        "exactContiguousQuote": true,
+        "quoteInReportedSpan": true,
+        "hybridConfirmed": true
+      },
+      "manualAnswerCorrect": true
+    },
+    {
+      "id": "agy-paraphrase-hybrid-proxy-followup",
+      "task": "paraphrase",
+      "exitCode": 0,
+      "seconds": 40.01,
+      "scytheInvocations": [
+        {
+          "args": [
+            "context",
+            "avoid expanding nested alternatives when removing cases that consist entirely of scalar values",
+            "--mode",
+            "hybrid",
+            "--format",
+            "compact",
+            "--max-results",
+            "5"
+          ],
+          "exitCode": 0,
+          "outputChars": 1632,
+          "effectiveMode": "hybrid"
+        }
+      ],
+      "status": "SUCCESS",
+      "answer": {
+        "answer": "In `src/types/DeepExclude.ts`, the type system optimizes case exclusion via the conditional shortcut `[b] extends [Primitives] ? Exclude<a, b> : ...`.\n\n- **Conditional Shortcut**: `[b] extends [Primitives]` checks if the excluded case `b` consists strictly of scalar/primitive types (`number | boolean | string | undefined | null | symbol | bigint`).\n- **Why It Is Cheaper**: A scalar/primitive can only exclude top-level members of the input union `a`. Expanding and distributing nested unions inside objects or tuples can never yield new excludable cases against a scalar. Directly delegating to TypeScript's native `Exclude<a, b>` bypasses expensive combinatorial union distribution (`DistributeMatchingUnions`), significantly accelerating exhaustiveness checking for large enum and literal unions.\n- **When the General Path Is Used**: The fallback general path `Exclude<DistributeMatchingUnions<a, b>, b>` is evaluated whenever `b` contains non-primitive types (such as objects or tuples), where nested union members within `a` must be distributed so structured nested patterns can be matched and excluded.",
+        "end_line": 15,
+        "file": "src/types/DeepExclude.ts",
+        "quote": "export type DeepExclude<a, b> = [b] extends [Primitives]\n  ? Exclude<a, b>\n  : Exclude<DistributeMatchingUnions<a, b>, b>;",
+        "start_line": 13,
+        "symbol": "DeepExclude"
+      },
+      "usage": {
+        "input_tokens": 48048,
+        "output_tokens": 3450,
+        "thinking_tokens": 2576,
+        "cache_read_tokens": 84315,
+        "total_tokens": 51498
+      },
+      "checks": {
+        "sourceUnchanged": true,
+        "exactContiguousQuote": true,
+        "quoteInReportedSpan": true,
+        "hybridConfirmed": true
+      },
+      "manualAnswerCorrect": true
+    }
+  ]
+}

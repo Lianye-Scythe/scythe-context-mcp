@@ -65,6 +65,8 @@ Choose the retrieval mode by the lookup need, not by whether an API key is confi
 
 CLI credentials must be available to the command process: settings in an MCP server configuration are not automatically inherited by CLI commands. Use process environment variables or a protected, ignored `.env` in the command working directory; `--project` does not change which `.env` is loaded. Check `hasApiKey` through full status/doctor without exposing the value.
 
+If the command shell supplies `HTTP_PROXY`/`HTTPS_PROXY` (including lowercase variants), launch remote Scythe commands with `NODE_USE_ENV_PROXY=1 scythe-context ...` so Node's `fetch` uses the provided proxy. Check variable presence without printing proxy URLs, which may contain credentials. Set this before Node starts; adding it only to Scythe's runtime-loaded `.env` is too late. Proxy opt-in preserves the sandbox's existing domain permissions; it does not grant network access.
+
 If source transmission or provider usage is outside scope, continue local lookup. A configured API key by itself is not authorization to upload source. Query transmission and source-chunk transmission are separate decisions.
 
 When step 4 applies, prepare embeddings before the query; otherwise use existing usable vectors:

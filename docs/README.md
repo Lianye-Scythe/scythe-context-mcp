@@ -1,8 +1,10 @@
 # Documentation
 
-Start with the [English README](../README.md), [Traditional Chinese](../README.zh-TW.md), or [Simplified Chinese](../README.zh-CN.md). This index separates current guides from dated evidence and historical design records.
+> No longer maintained as of 2026-10-19. These guides describe the historical implementation. See the [final larger TypeScript evaluation](large-ts-evaluation.md) for measured outcomes and limits.
 
-## Current guides
+Start with the [English README](../README.md), [Traditional Chinese](../README.zh-TW.md), or [Simplified Chinese](../README.zh-CN.md). This index separates historical usage guides from dated evidence and design records.
+
+## Usage guides (historical)
 
 | Goal | Read |
 | --- | --- |
@@ -29,6 +31,8 @@ Setup is the source for configuration examples. Troubleshooting links to those e
 - [Index performance](index-performance.md): synthetic indexing/search latency, process memory, and chunk reuse measurements.
 - [Dogfood evaluation](dogfood.md): repository-specific observations, not a controlled model productivity study.
 - [Agent lookup pilot](agent-lookup-pilot.md): measured rg/keyword/hybrid workflow usage on 12 read-only tasks; exploratory, not a coding-productivity claim.
+- [TypeScript client check](ts-client-check.md): installed user Skills, a full ts-pattern snapshot, and Codex/Antigravity lookup checks, including verified proxy recovery.
+- [Larger TypeScript evaluation](large-ts-evaluation.md): full TanStack Query corpus, 36 local rg/keyword attempts with preserved failures, and hybrid pending after provider quota limits.
 - [Codex task A/B protocol](codex-evaluation.md) (Traditional Chinese): how to measure real task outcomes.
 - [Dependency maintenance policy and PR cleanup](dependency-maintenance.md): automation scope and the 2026-10-12 dependency update.
 - [Dependency security maintenance](dependency-security.md): audit and dependency review dated 2026-10-11.

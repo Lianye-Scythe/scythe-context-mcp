@@ -1,5 +1,7 @@
 # Scythe Context MCP
 
+> **No longer maintained — 2026-10-19.** Development and releases have ended. This public archive preserves the source, historical usage instructions and evaluation results. The evaluations did not establish a general speed or token-saving advantage over `rg`. See the [final larger TypeScript evaluation](docs/large-ts-evaluation.md). Existing npm versions remain available for reference; the installation instructions below describe the historical setup.
+
 [![CI](https://github.com/Lianye-Scythe/scythe-context-mcp/actions/workflows/ci.yml/badge.svg)](https://github.com/Lianye-Scythe/scythe-context-mcp/actions/workflows/ci.yml)
 [![npm version](https://img.shields.io/npm/v/scythe-context-mcp.svg)](https://www.npmjs.com/package/scythe-context-mcp)
 [![License: Apache-2.0](https://img.shields.io/badge/License-Apache--2.0-blue.svg)](LICENSE)
